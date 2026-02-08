@@ -1,223 +1,154 @@
-# QPS.jl - Quantum Photo-Science Laboratory Analysis Package
+# QPSTools.jl - Quantum Photo-Science Laboratory Analysis Package
 
 **The standardized analysis package for all lab members.**
 
-This package provides common tools for spectroscopic data analysis, pump-probe measurements, and publication-quality plotting. **All students should use QPS.jl** to ensure consistency and enable collaboration across research projects.
+QPSTools.jl provides common tools for spectroscopic data analysis, pump-probe measurements, and publication-quality plotting. All students should use QPSTools.jl to ensure consistency and enable collaboration across research projects.
+
+## Ecosystem
+
+| Package | Role |
+|---|---|
+| **QPSTools.jl** | Analysis, fitting, plotting, reporting (this package) |
+| **QPSDrive.jl** | Instrument control & scanning |
+| **QPSView.jl** | Live data viewer & scan monitor |
 
 ## Quick Start
 
-### Installation
-
 ```julia
-# In Julia REPL, navigate to project directory
 julia --project=.
-
-# Install dependencies (first time only)
-using Pkg; Pkg.instantiate()
-
-# Load the package
-using QPS
+using Revise
+using QPSTools
+using CairoMakie  # or GLMakie for interactive
 ```
 
-### Basic Usage
+### FTIR Workflow
 
 ```julia
-using QPS, CairoMakie
+using QPSTools, CairoMakie
 
-# Set up publication-quality plots
-setup_publication_plot()
+# Load from registry
+spec = load_ftir(solute="NH4SCN", concentration="1.0M")
 
-# Load experimental data
-data = load_lvm("your_data.lvm")
+# Fit peaks in the CN stretch region
+result = fit_peaks(spec, (2000, 2100))
+report(result)
 
-# Calculate change in absorbance  
-ΔA = calc_ΔA(data)
+# Plot with fit and residuals
+fig, ax, ax_res = plot_spectrum(spec; fit=result, residuals=true)
+save("figures/cn_stretch.pdf", fig)
+```
 
-# Fit exponential decay
-result = fit_decay_trace(data.time, ΔA; 
-    truncate_time=0.5,    # Start fitting 0.5 ps after t0
-    initial_tau=2.0       # Initial guess for time constant
-)
+### Pump-Probe Workflow
 
-# Extract fitted parameters
-τ, στ = extract_tau(result.fit)
-println("Time constant: $τ ± $στ ps")
+```julia
+using QPSTools, CairoMakie
 
-# Create publication figure
-fig, ax = plot_kinetics(data.time, ΔA)
-lines!(ax, data.time, model_prediction, 
-    color=lab_colors()[:fit], linestyle=:dash, 
-    label="Fit (τ = $τ ps)")
-save("kinetics.pdf", fig)
+# Load kinetic trace (peak auto-shifted to t=0)
+trace = load_ta_trace("data/kinetics.lvm"; mode=:OD)
+
+# Fit with IRF deconvolution
+result = fit_exp_decay(trace)
+report(result)
+
+# Plot with automatic residuals panel
+fig, ax, ax_res = plot_kinetics(trace; fit=result)
+save("figures/kinetics.pdf", fig)
+
+# Global fit across ESA and GSB traces
+trace_gsb = load_ta_trace("data/kinetics_gsb.lvm"; mode=:OD)
+global_result = fit_global([trace, trace_gsb]; labels=["ESA", "GSB"])
+report(global_result)
+```
+
+### Publication Figure
+
+```julia
+set_theme!(publication_theme())
+fig = Figure(size=(1000, 400))
+
+# Panel A: Spectra
+ax_a = Axis(fig[1, 1], xlabel="Wavenumber (cm-1)", ylabel="DA")
+lines!(ax_a, spec_1ps.wavenumber, spec_1ps.signal, label="1 ps")
+lines!(ax_a, spec_5ps.wavenumber, spec_5ps.signal, label="5 ps")
+axislegend(ax_a)
+
+# Panel B: Kinetics
+ax_b = Axis(fig[1, 2], xlabel="Time (ps)", ylabel="DA")
+scatter!(ax_b, trace.time, trace.signal, label="Data")
+lines!(ax_b, trace.time, predict(result, trace), color=:red, label="Fit")
+axislegend(ax_b)
+
+save("figures/publication.pdf", fig)
 ```
 
 ## Core Features
 
-### 🔬 Spectroscopic Analysis
-- **calc_ΔA**: Calculate absorbance changes from transient data
-- **fit_decay_trace**: Exponential decay fitting with configurable models
-- **fit_global_decay**: Global kinetics analysis across multiple wavelengths
-- **subtract_spectrum**: Baseline subtraction and solvent correction
-- **calc_fwhm**: Peak width analysis with automated smoothing
+### Transient Absorption
+- Single/biexponential fitting with IRF deconvolution
+- Global analysis with shared parameters across traces
+- Broadband TA matrix loading and indexing (`matrix[t=1.0]`, `matrix[l=800]`)
+- TA spectrum fitting (ESA/GSB decomposition)
 
-### 📊 Standardized Plotting
-- **publication_theme()**: High-quality figures for papers
-- **poster_theme()**: Large fonts for conference posters  
-- **compact_theme()**: Space-efficient multi-panel layouts
-- **lab_colors()**: Consistent color schemes across all lab publications
-- **plot_spectrum()**, **plot_kinetics()**: Common plot types with sensible defaults
+### Steady-State Spectroscopy
+- FTIR and Raman loading via sample registry
+- Peak detection (`find_peaks`) and fitting (`fit_peaks`)
+- Gaussian, Lorentzian, Pseudo-Voigt models via CurveFitModels.jl
+- Baseline correction (ALS, ARPLS, SNIP)
 
-### ⚡ Pump-Probe Analysis
-- **PumpProbeData**: Structured data handling
-- **fit_decay_irf()**: Instrument response function deconvolution
-- **process_pumpprobe()**: End-to-end analysis pipeline
+### Plotting
+- `plot_spectrum`, `plot_kinetics` with keyword-driven layouts
+- `plot_comparison`, `plot_waterfall` for multi-spectrum views
+- `publication_theme()`, `poster_theme()`, `compact_theme()`
+- Layer functions: `plot_peak_decomposition!`, `plot_peaks!`
 
-### 🧹 Data Processing
-- **linear_baseline_correction**: Automated baseline removal
-- **savitzky_golay**: Peak-preserving smoothing
-- **smooth_data**: Moving average filtering
+### eLabFTW Integration
+- Log results to electronic lab notebook with `log_to_elab()`
+- Auto-tagging from sample registry metadata
+- Search, create, update experiments
 
-## Research Squad Integration
+### Fit Reporting
+- `report(result)` for formatted terminal output
+- `format_results(result)` for markdown tables
+- Works for all fit types (peaks, exponential, global, TA spectrum)
 
-This package supports our lab's transformation to vertical research squads:
+## Data Import
 
-- **VSC Squad**: Use cavity spectrum fitting and polariton analysis tools
-- **TMDC Squad**: Apply standard pump-probe analysis to 2D materials
-- **MOF Squad**: Utilize FTIR processing and kinetics analysis
-- **Equipment Squad**: Develop new analysis modules for emerging techniques
+| Format | Loader | Source |
+|---|---|---|
+| LabVIEW `.lvm` | `load_ta_trace`, `load_ta_spectrum` | Pump-probe setup |
+| JASCO `.csv` | `load_ftir`, `load_raman` | FTIR/Raman via registry |
+| Broadband TA | `load_ta_matrix` | Time x wavelength matrices |
+| Auto-detect | `load_spectroscopy` | Any of the above |
 
-## Examples
+## Installation
 
-### Basic Spectrum Analysis
-```julia
-using QPS, CairoMakie
-setup_publication_plot()
-
-# Load and process FTIR data
-sample = load_spectrum("sample.lvm") 
-solvent = load_spectrum("solvent.lvm")
-
-# Subtract solvent background
-corrected = subtract_spectrum(sample, solvent)
-
-# Apply baseline correction
-final = linear_baseline_correction(
-    corrected.x, corrected.y, (1950, 2150)
-)
-
-# Plot result
-fig, ax = plot_spectrum(final.x, final.y, 
-    ylabel="Corrected Absorbance")
-save("corrected_spectrum.pdf", fig)
-```
-
-### Kinetics Analysis
-```julia
-# Load time-resolved data
-data = load_lvm("kinetics.lvm")
-ΔA = calc_ΔA(data, mode=:transmission)
-
-# Fit single exponential
-result = fit_decay_trace(data.time, ΔA; 
-    truncate_time=0.3, initial_tau=1.8)
-    
-# Extract and report results
-τ, στ = extract_tau(result.fit)
-println("Lifetime: $τ ± $στ ps")
-
-# Global analysis across multiple traces
-signals = [ΔA_probe1, ΔA_probe2, ΔA_probe3]
-global_result = fit_global_decay(data.time, signals; 
-    start_idx=result.start_idx, initial_tau=τ)
-```
-
-### Multi-Panel Publication Figure
-```julia
-using CairoMakie
-set_theme!(publication_theme())
-
-fig = Figure(size=(800, 600))
-
-# Panel A: Spectrum
-ax1 = Axis(fig[1, 1], xlabel="Wavenumber (cm⁻¹)", 
-    ylabel="ΔA", title="(a)")
-lines!(ax1, wavenumber, spectrum, color=lab_colors()[:primary])
-
-# Panel B: Kinetics  
-ax2 = Axis(fig[1, 2], xlabel="Time (ps)", 
-    ylabel="ΔA", title="(b)")
-lines!(ax2, time, kinetics, color=lab_colors()[:kinetics])
-lines!(ax2, time, fit, color=lab_colors()[:fit], linestyle=:dash)
-
-save("figure2.pdf", fig)
-```
-
-## Installation & Setup
-
-### First Time Setup
 ```bash
-# Clone or download to your local machine
-cd /Users/your-username/Documents/projects/
-git clone <repository-url> QPS.jl
-cd QPS.jl
-
-# Start Julia in project mode
-julia --project=.
-
-# Install all dependencies
-julia> using Pkg; Pkg.instantiate()
+cd /path/to/projects/
+git clone <repository-url> QPSTools.jl
+cd QPSTools.jl
+julia --project=. -e 'using Pkg; Pkg.instantiate()'
 ```
 
-### Daily Usage
-```julia
-# Start Julia with the package
-julia --project=/path/to/QPS.jl
+## Requirements
 
-# Load for analysis
-using QPS, CairoMakie
-setup_publication_plot()
-
-# Your analysis here...
-```
-
-## Package Philosophy
-
-1. **Standardization over customization**: Use provided functions rather than writing from scratch
-2. **Theme-based plotting**: Let themes handle styling, focus on data
-3. **Semantic naming**: Use `lab_colors()[:primary]` not `"#1f77b4"`
-4. **Reproducible analysis**: Save scripts alongside figures
-5. **Documentation**: Comment your analysis for future lab members
+- **Julia 1.10+** (LTS)
+- **CurveFit.jl** / **CurveFitModels.jl**: Lab standard for curve fitting
+- **Makie.jl**: CairoMakie (publications), GLMakie (interactive)
+- **SpectroscopyTools.jl**: Base types and general spectroscopy functions
 
 ## Contributing
 
 All lab members are expected to contribute improvements:
 
-1. **Report bugs**: Use GitHub issues for problems
-2. **Suggest features**: Propose new analysis functions needed for your research
-3. **Contribute code**: Add project-specific functions that could benefit others
-4. **Improve documentation**: Update examples and docstrings
+1. Add new types in `types.jl`, loaders in `io.jl`/`ftir.jl`/`raman.jl`
+2. Implement `report()` for any new fit result type
+3. Add examples in `examples/` and tests in `test/`
+4. Export new functions in `src/QPSTools.jl`
 
-### Adding New Functions
-```julia
-# Add to appropriate file (spectroscopy.jl, plotting.jl, etc.)
-# Follow existing documentation patterns
-# Export in main QPS.jl module
-# Add tests if possible
-```
-
-## Requirements
-
-- **Julia 1.10+** (LTS version)
-- **CurveFit.jl**: For all curve fitting (lab standard)
-- **Makie.jl ecosystem**: CairoMakie (publications), GLMakie (interactive)
+See `CLAUDE.md` for full development conventions.
 
 ## Support
 
-- **Questions**: Ask squad members or Garrek
-- **Documentation**: Check function docstrings with `?function_name`
-- **Examples**: See analysis/ directory for real-world usage
-- **Issues**: Report problems via GitHub issues
-
----
-
-**This package is the technical foundation of our lab transformation to high-output research squads. Using QPS.jl consistently is essential for lab-wide collaboration and knowledge retention.**
+- **Questions**: Ask team members or Garrek
+- **Documentation**: `?function_name` in the REPL
+- **Examples**: See `examples/` directory
