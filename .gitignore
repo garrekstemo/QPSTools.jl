@@ -1,0 +1,6 @@
+Manifest.toml
+data/
+figures/
+docs/build/
+.DS_Store
+*.pdf

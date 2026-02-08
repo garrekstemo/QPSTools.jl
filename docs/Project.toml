@@ -1,0 +1,6 @@
+[deps]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+QPS = "ca89dcb4-c50e-4ab8-a889-55cbaf2d2f78"
+
+[sources]
+QPS = {path = ".."}

@@ -1,0 +1,25 @@
+name = "QPSTools"
+uuid = "ca89dcb4-c50e-4ab8-a889-55cbaf2d2f78"
+version = "0.1.0"
+authors = ["Garrek Stemo <8449000+garrekstemo@users.noreply.github.com>"]
+
+[deps]
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+JASCOFiles = "f5313e42-1c70-4c1c-9d6b-58b8b47ab6cb"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+SpectroscopyTools = "f1436f7a-66ba-4269-a153-8996db8f0853"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+[sources]
+JASCOFiles = {path = "../JASCOFiles.jl"}
+SpectroscopyTools = {path = "/Users/garrek/Documents/projects/SpectroscopyTools.jl"}
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
