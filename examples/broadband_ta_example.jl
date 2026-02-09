@@ -1,11 +1,13 @@
 # Broadband Transient Absorption Example
 # Demonstrates the TAMatrix API for 2D TA data (time × wavelength)
-#
-# Run from project root: julia --project=. examples/broadband_ta_example.jl
 
 using Revise
 using QPSTools
 using CairoMakie
+
+PROJECT_ROOT = dirname(@__DIR__)
+FIGDIR = joinpath(PROJECT_ROOT, "figures", "EXAMPLES", "broadband_ta")
+mkpath(FIGDIR)
 
 # ============================================================================
 # PART 1: LOAD 2D TA DATA
@@ -15,7 +17,7 @@ println("=" ^ 60)
 println("Loading broadband TA data...")
 println("=" ^ 60)
 
-DATA_ROOT = "/Users/garrek/Documents/projects/QPS.jl/data/broadband-TA"
+DATA_ROOT = joinpath(PROJECT_ROOT, "data", "broadband-TA")
 
 # Load with automatic file detection
 matrix = load_ta_matrix(DATA_ROOT;
@@ -36,8 +38,7 @@ println("=" ^ 60)
 
 fig1, ax1, hm = plot_ta_heatmap(matrix; colorrange=(-0.02, 0.02))
 
-figpath1 = joinpath(@__DIR__, "..", "figures", "EXAMPLES", "broadband_ta", "broadband_ta_heatmap.pdf")
-mkpath(dirname(figpath1))
+figpath1 = joinpath(FIGDIR, "broadband_ta_heatmap.png")
 save(figpath1, fig1)
 println("Saved: $figpath1")
 
@@ -73,7 +74,7 @@ target_wavelengths = [700.0, 750.0, 800.0, 850.0]
 fig2, ax2 = plot_kinetics(matrix; λ=target_wavelengths)
 ax2.title = "Kinetics at selected wavelengths"
 
-figpath2 = joinpath(@__DIR__, "..", "figures", "EXAMPLES", "broadband_ta", "broadband_ta_kinetics.pdf")
+figpath2 = joinpath(FIGDIR, "broadband_ta_kinetics.png")
 save(figpath2, fig2)
 println("Saved: $figpath2")
 
@@ -88,7 +89,7 @@ println("=" ^ 60)
 fig3, ax3, ax3_res = plot_kinetics(trace_800nm; fit=result, residuals=true,
                                     title="Fit at $(round(Int, trace_800nm.wavelength)) nm (τ = $(round(result.tau, digits=1)) ps)")
 
-figpath3 = joinpath(@__DIR__, "..", "figures", "EXAMPLES", "broadband_ta", "broadband_ta_fit.pdf")
+figpath3 = joinpath(FIGDIR, "broadband_ta_fit.png")
 save(figpath3, fig3)
 println("Saved: $figpath3")
 
@@ -104,7 +105,7 @@ target_times = [-0.5, 0.1, 0.5, 1.0, 3.0]
 fig4, ax4 = plot_spectra(matrix; t=target_times)
 ax4.title = "Transient spectra at selected times"
 
-figpath4 = joinpath(@__DIR__, "..", "figures", "EXAMPLES", "broadband_ta", "broadband_ta_spectra.pdf")
+figpath4 = joinpath(FIGDIR, "broadband_ta_spectra.png")
 save(figpath4, fig4)
 println("Saved: $figpath4")
 
@@ -149,7 +150,7 @@ println("""
   plot_kinetics(trace; fit=result)    # Single trace with fit
 """)
 
-println("\nDone! Generated 4 figures in figures/EXAMPLES/broadband_ta/")
+println("\nDone! Generated 4 figures in $FIGDIR")
 
 # ============================================================================
 # LOG TO ELABFTW (optional)

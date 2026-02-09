@@ -1,10 +1,14 @@
 # FTIR Analysis Example
 #
 # Demonstrates the FTIR loading, labeling, fitting, and plotting API.
-# Run from project root: julia --project=. examples/ftir_analysis.jl
 
 using QPSTools
 using CairoMakie
+
+PROJECT_ROOT = dirname(@__DIR__)
+FIGDIR = joinpath(PROJECT_ROOT, "figures", "EXAMPLES", "ftir")
+mkpath(FIGDIR)
+set_data_dir(joinpath(PROJECT_ROOT, "data"))
 
 # =============================================================================
 # 1. Label all peaks for each molecule
@@ -20,7 +24,7 @@ for s in samples
     spec_i = load_ftir(; s.kw...)
     peaks = find_peaks(spec_i)
     fig, ax = plot_spectrum(spec_i; peaks=peaks)
-    save("figures/EXAMPLES/ftir/ftir_labeled_$(s.label).pdf", fig)
+    save(joinpath(FIGDIR, "ftir_labeled_$(s.label).png"), fig)
     println("$(s.label): $(length(peaks)) peaks detected")
 end
 println()
@@ -39,7 +43,7 @@ println()
 report(result)
 
 fig, ax, ax_res = plot_spectrum(spec; fit=result, residuals=true)
-save("figures/EXAMPLES/ftir/ftir_fit.pdf", fig)
+save(joinpath(FIGDIR, "ftir_fit.png"), fig)
 
 # =============================================================================
 # 3. Background subtraction
@@ -65,7 +69,7 @@ println("\n=== Model Comparison ===")
 report(result)
 report(result_g)
 
-println("\nFigures saved to figures/EXAMPLES/ftir/")
+println("\nFigures saved to $FIGDIR")
 
 # =============================================================================
 # 5. Log to eLabFTW (optional)
@@ -86,6 +90,6 @@ println("\nFigures saved to figures/EXAMPLES/ftir/")
 #
 # $(format_results(result))
 # """,
-#     attachments = ["figures/EXAMPLES/ftir/ftir_fit.pdf"],
+#     attachments = [joinpath(FIGDIR, "ftir_fit.png")],
 #     tags = ["ftir", "nh4scn", "cn_stretch"]
 # )

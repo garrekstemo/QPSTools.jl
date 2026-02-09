@@ -1,10 +1,13 @@
 # XRD Analysis Example
 #
 # Demonstrates peak labeling on X-ray diffraction data.
-# Run from project root: julia --project=. examples/xrd_analysis.jl
 
 using QPSTools
 using CairoMakie
+
+PROJECT_ROOT = dirname(@__DIR__)
+FIGDIR = joinpath(PROJECT_ROOT, "figures", "EXAMPLES", "xrd")
+mkpath(FIGDIR)
 
 # =============================================================================
 # Helper: load Rigaku SmartLab .txt files
@@ -30,28 +33,27 @@ end
 # 1. Label peaks for all three samples
 # =============================================================================
 
+xrd_dir = joinpath(PROJECT_ROOT, "data", "xrd")
 samples = [
-    ("ZIF-62(Co) powder",           "data/xrd/ZIF62-Co_powder.txt"),
-    ("ZIF-62(Co) powder (low XRF)", "data/xrd/ZIF62-Co_powder_lowXRF.txt"),
-    ("ZIF-62(Zn) crystal",          "data/xrd/ZIF62-Zn_crystal.txt"),
+    ("ZIF-62(Co) powder",           joinpath(xrd_dir, "ZIF62-Co_powder.txt")),
+    ("ZIF-62(Co) powder (low XRF)", joinpath(xrd_dir, "ZIF62-Co_powder_lowXRF.txt")),
+    ("ZIF-62(Zn) crystal",          joinpath(xrd_dir, "ZIF62-Zn_crystal.txt")),
 ]
 
 for (name, path) in samples
     twotheta, intensity = load_xrd(path)
     println("$name: $(length(twotheta)) points, 2θ = $(twotheta[1])–$(twotheta[end])°")
 
-    fig, peaks = label_peaks(twotheta, intensity;
-        xlabel_text="2θ (°)",
-        ylabel_text="Intensity (cps)",
-        title=name,
-        min_prominence=0.02)
+    peaks = find_peaks(twotheta, intensity; min_prominence=0.02)
+    fig, ax = plot_spectrum(twotheta, intensity; peaks=peaks,
+        xlabel="2θ (°)", ylabel="Intensity (cps)", title=name)
 
     tag = replace(replace(name, " " => "_"), r"[()]" => "")
-    save("figures/EXAMPLES/xrd/xrd_labeled_$(tag).pdf", fig)
+    save(joinpath(FIGDIR, "xrd_labeled_$(tag).png"), fig)
 
     println("  $(length(peaks)) peaks detected")
     println(peak_table(peaks))
     println()
 end
 
-println("Figures saved to figures/EXAMPLES/xrd/")
+println("Figures saved to $FIGDIR")

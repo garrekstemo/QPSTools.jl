@@ -57,7 +57,7 @@ using SpectroscopyTools
 # Functions that QPS extends with new method dispatches
 import SpectroscopyTools: find_peaks, fit_peaks
 import SpectroscopyTools: transmittance_to_absorbance, absorbance_to_transmittance
-import SpectroscopyTools: subtract_spectrum
+import SpectroscopyTools: subtract_spectrum, correct_baseline
 import SpectroscopyTools: xdata, ydata, xlabel, ylabel, source_file
 
 # Resolve name conflict: LinearAlgebra.normalize vs SpectroscopyTools.normalize
@@ -176,7 +176,7 @@ include("peakfitting.jl")
 # Plotting: themes, layers, layouts, and public API
 include("plotting.jl")
 export qps_theme
-export publication_theme, compact_theme, poster_theme
+export print_theme, compact_theme, poster_theme
 export lab_colors, lab_linewidths
 export setup_publication_plot, setup_poster_plot
 export plot_spectrum, plot_kinetics

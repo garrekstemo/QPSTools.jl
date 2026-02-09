@@ -890,8 +890,8 @@ and merges them with any additional tags you specify.
 ```julia
 spec = load_ftir(solute="NH4SCN", concentration="1.0M")
 result = fit_peaks(spec, (2000, 2100))
-fig = plot_peaks(result)
-save("figures/fit.pdf", fig)
+fig, ax, ax_res = plot_spectrum(spec; fit=result, residuals=true)
+save("figures/fit.png", fig)
 
 # Tags auto-populated: NH4SCN, DMF, 1.0M, CaF2
 log_to_elab(spec, result;

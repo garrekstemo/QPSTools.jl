@@ -13,11 +13,15 @@ using CurveFit
 using CurveFitModels
 using Statistics: mean
 
+PROJECT_ROOT = dirname(@__DIR__)
+FIGDIR = joinpath(PROJECT_ROOT, "figures", "EXAMPLES", "single_beam")
+mkpath(FIGDIR)
+
 # ============================================================================
 # Data path
 # ============================================================================
 
-DATA_FILE = "/Users/garrek/Documents/projects/QPS.jl/data/MIRpumpprobe/single_beam_spectrum.lvm"
+DATA_FILE = joinpath(PROJECT_ROOT, "data", "MIRpumpprobe", "single_beam_spectrum.lvm")
 
 # ============================================================================
 # Manual loading (until load_lvm supports single-beam mode)
@@ -92,8 +96,7 @@ lines!(ax1, wavenumber, signal, color=:blue)
 # Reverse x-axis (convention: higher wavenumber on left)
 ax1.xreversed = true
 
-figpath1 = joinpath(@__DIR__, "..", "figures", "EXAMPLES", "single_beam", "single_beam_raw.pdf")
-mkpath(dirname(figpath1))
+figpath1 = joinpath(FIGDIR, "single_beam_raw.png")
 save(figpath1, fig1)
 println("Saved: $figpath1")
 
@@ -181,7 +184,7 @@ lines!(ax2b, wavenumber, resid, color=:gray)
 hlines!(ax2b, [0], color=:black, linestyle=:dash, linewidth=0.5)
 ax2b.xreversed = true
 
-figpath2 = joinpath(@__DIR__, "..", "figures", "EXAMPLES", "single_beam", "single_beam_fit.pdf")
+figpath2 = joinpath(FIGDIR, "single_beam_fit.png")
 save(figpath2, fig2)
 println("Saved: $figpath2")
 
@@ -206,7 +209,7 @@ end
 ax3.xreversed = true
 axislegend(ax3, position=:lb)
 
-figpath3 = joinpath(@__DIR__, "..", "figures", "EXAMPLES", "single_beam", "single_beam_channels.pdf")
+figpath3 = joinpath(FIGDIR, "single_beam_channels.png")
 save(figpath3, fig3)
 println("Saved: $figpath3")
 

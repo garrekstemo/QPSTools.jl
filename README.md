@@ -63,7 +63,7 @@ report(global_result)
 ### Publication Figure
 
 ```julia
-set_theme!(publication_theme())
+set_theme!(print_theme())
 fig = Figure(size=(1000, 400))
 
 # Panel A: Spectra
@@ -98,7 +98,7 @@ save("figures/publication.pdf", fig)
 ### Plotting
 - `plot_spectrum`, `plot_kinetics` with keyword-driven layouts
 - `plot_comparison`, `plot_waterfall` for multi-spectrum views
-- `publication_theme()`, `poster_theme()`, `compact_theme()`
+- `print_theme()`, `poster_theme()`, `compact_theme()`
 - Layer functions: `plot_peak_decomposition!`, `plot_peaks!`
 
 ### eLabFTW Integration

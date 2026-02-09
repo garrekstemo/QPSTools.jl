@@ -1,72 +1,83 @@
 # Raman Analysis Example
 #
-# Demonstrates the full Raman workflow: load → label → fit → decompose
-# Run from project root: julia --project=. examples/raman_analysis.jl
+# MoSe2 flake: peak detection, fitting, and publication figure
+# comparing spectra at two spatial positions.
 
 using QPSTools
 using CairoMakie
+using FileIO
+
+PROJECT_ROOT = dirname(@__DIR__)
+FIGDIR = joinpath(PROJECT_ROOT, "figures", "EXAMPLES", "raman")
+mkpath(FIGDIR)
+set_data_dir(joinpath(PROJECT_ROOT, "data"))
 
 # =============================================================================
-# 1. Load and label all peaks
+# 1. Load spectra and label peaks
 # =============================================================================
 
-spec = load_raman(phase="crystal", composition="Co")
-println("Loaded: ", spec)
+center = load_raman(material="MoSe2", sample="center")
+right = load_raman(material="MoSe2", sample="right")
 
-peaks = find_peaks(spec)
-fig, ax = plot_spectrum(spec; peaks=peaks)
-save("figures/EXAMPLES/raman/raman_labeled.pdf", fig)
-
-println("\nDetected $(length(peaks)) peaks:")
+peaks = find_peaks(center)
+fig, ax = plot_spectrum(center; peaks=peaks)
+save(joinpath(FIGDIR, "mose2_peaks.png"), fig)
 println(peak_table(peaks))
 
 # =============================================================================
-# 2. Single peak fit
+# 2. Fit the A₁g peak (~242 cm⁻¹) at both positions
 # =============================================================================
 
-# Pick the most prominent peak and expand bounds for fitting
-peak = argmax(p -> p.prominence, peaks)
-margin = peak.width
-region = (peak.bounds[1] - margin, peak.bounds[2] + margin)
-
-result = fit_peaks(spec, region)
-pk = result[1]
+result_center = fit_peaks(center, (225, 260))
+result_right = fit_peaks(right, (225, 260))
 
 println()
-report(result)
+report(result_center)
+report(result_right)
 
-fig, ax, ax_res = plot_spectrum(spec; fit=result, residuals=true)
-save("figures/EXAMPLES/raman/raman_fit.pdf", fig)
+fig, ax, ax_res = plot_spectrum(center; fit=result_center, residuals=true)
+save(joinpath(FIGDIR, "mose2_a1g_fit.png"), fig)
 
 # =============================================================================
-# 3. Multi-peak fit
+# 3. Publication figure: microscopy + spectra + peak fits
 # =============================================================================
 
-# Fit two peaks in a wider region using the two most prominent detections
-sorted_peaks = sort(peaks, by=p -> p.prominence, rev=true)
-top2 = sort(sorted_peaks[1:2], by=p -> p.position)
-lo = top2[1].bounds[1] - top2[1].width
-hi = top2[2].bounds[2] + top2[2].width
+data_dir = get_data_dir()
+img_center = load(joinpath(data_dir, "raman/MoSe2/MoSe2_x100_center.PNG"))
+img_right = load(joinpath(data_dir, "raman/MoSe2/MoSe2_x100_right.PNG"))
 
-result2 = fit_peaks(spec, (lo, hi); n_peaks=2)
+set_theme!(print_theme())
+fig = Figure(size=(900, 800))
 
-println()
-report(result2)
+# Microscopy images
+ax1 = Axis(fig[1, 1], title="(a) Center", aspect=DataAspect())
+image!(ax1, rotr90(img_center))
+hidedecorations!(ax1)
 
-# Plot with individual peak curves shown
-fig = Figure(size=(700, 500))
-ax = Axis(fig[1, 1],
-    xlabel="Raman Shift (cm⁻¹)",
-    ylabel="Intensity",
-    title="Two-peak decomposition"
-)
-scatter!(ax, result2._x, result2._y, color=lab_colors()[:primary], label="Data")
-plot_peak_decomposition!(ax, result2)
-axislegend(ax, position=:rt)
+ax2 = Axis(fig[1, 2], title="(b) Right", aspect=DataAspect())
+image!(ax2, rotr90(img_right))
+hidedecorations!(ax2)
 
-save("figures/EXAMPLES/raman/raman_multipeak.pdf", fig)
+# Spectra overlay
+ax3 = Axis(fig[2, 1:2], xlabel="Raman Shift (cm⁻¹)", ylabel="Intensity",
+    title="(c) MoSe₂ Raman spectra")
+lines!(ax3, xdata(center), ydata(center), label="Center")
+lines!(ax3, xdata(right), ydata(right), label="Right")
+vspan!(ax3, 225, 260, color=(:gray, 0.15))
+axislegend(ax3, position=:rt)
 
-println("\nFigures saved to figures/EXAMPLES/raman/")
+# A₁g peak fits
+ax4 = Axis(fig[3, 1:2], xlabel="Raman Shift (cm⁻¹)", ylabel="Intensity",
+    title="(d) A₁g peak fits")
+scatter!(ax4, result_center._x, result_center._y, label="Center")
+lines!(ax4, result_center._x, predict(result_center), color=:red, label="Fit")
+scatter!(ax4, result_right._x, result_right._y, label="Right")
+lines!(ax4, result_right._x, predict(result_right), color=:orange, label="Fit")
+axislegend(ax4, position=:rt)
+
+save(joinpath(FIGDIR, "mose2_publication.png"), fig)
+
+println("\nFigures saved to $FIGDIR")
 
 # =============================================================================
 # 4. Log to eLabFTW (optional)
@@ -75,20 +86,19 @@ println("\nFigures saved to figures/EXAMPLES/raman/")
 # Uncomment to log results to your lab notebook:
 #
 # log_to_elab(
-#     title = "Raman: ZIF-62(Co) peak analysis",
+#     title = "Raman: MoSe2 A₁g peak comparison",
 #     body = """
 # ## Sample
-# ZIF-62(Co) crystal
+# MoSe₂ flake, two positions (center and right edge)
 #
-# ## Single Peak Fit
-# $(format_results(result))
+# ## A₁g Peak Fits
 #
-# ## Two-Peak Decomposition
-# $(format_results(result2))
+# ### Center
+# $(format_results(result_center))
+#
+# ### Right
+# $(format_results(result_right))
 # """,
-#     attachments = [
-#         "figures/EXAMPLES/raman/raman_fit.pdf",
-#         "figures/EXAMPLES/raman/raman_multipeak.pdf"
-#     ],
-#     tags = ["raman", "zif-62", "mof"]
+#     attachments = [joinpath(FIGDIR, "mose2_publication.png")],
+#     tags = ["raman", "mose2", "tmdc", "a1g"]
 # )

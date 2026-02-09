@@ -8,20 +8,25 @@
 using QPSTools
 using CairoMakie
 
+PROJECT_ROOT = dirname(@__DIR__)
+FIGDIR = joinpath(PROJECT_ROOT, "figures", "EXAMPLES", "mir_workflow")
+mkpath(FIGDIR)
+
 # ============================================================================
 # PART 1: TRANSIENT SPECTRA
 # ============================================================================
 
 # Load spectra at different time delays
-spec_1ps = load_ta_spectrum("data/MIRpumpprobe/spectra/bare_1M_1ps.lvm";
+spectra_dir = joinpath(PROJECT_ROOT, "data", "MIRpumpprobe", "spectra")
+spec_1ps = load_ta_spectrum(joinpath(spectra_dir, "bare_1M_1ps.lvm");
                             mode=:OD, calibration=-19.0, time_delay=1.0)
-spec_5ps = load_ta_spectrum("data/MIRpumpprobe/spectra/bare_1M_5ps.lvm";
+spec_5ps = load_ta_spectrum(joinpath(spectra_dir, "bare_1M_5ps.lvm");
                             mode=:OD, calibration=-19.0, time_delay=5.0)
-spec_10ps = load_ta_spectrum("data/MIRpumpprobe/spectra/bare_1M_10ps.lvm";
+spec_10ps = load_ta_spectrum(joinpath(spectra_dir, "bare_1M_10ps.lvm");
                              mode=:OD, calibration=-19.0, time_delay=10.0)
 
 # Load different concentration for comparison
-spec_3p5M = load_ta_spectrum("data/MIRpumpprobe/spectra/bare_3p5M_1ps.lvm";
+spec_3p5M = load_ta_spectrum(joinpath(spectra_dir, "bare_3p5M_1ps.lvm");
                              mode=:OD, calibration=-19.0, time_delay=1.0)
 
 println("=== Transient Spectra ===")
@@ -40,15 +45,16 @@ report(fit_3p5M)
 # Plot spectrum with fit and residuals
 fig_spec, ax_spec, ax_res_spec = plot_spectrum(spec_1ps; fit=fit_1M, residuals=true,
                                                 title="1M NH₄SCN at 1 ps")
-save("figures/EXAMPLES/mir_workflow/spectrum_fit.pdf", fig_spec)
+save(joinpath(FIGDIR, "spectrum_fit.png"), fig_spec)
 
 # ============================================================================
 # PART 2: KINETIC TRACES
 # ============================================================================
 
 # Load kinetic traces (single wavelength, time-resolved)
-trace_esa = load_ta_trace("data/MIRpumpprobe/pp_kinetics_esa.lvm"; mode=:OD)
-trace_gsb = load_ta_trace("data/MIRpumpprobe/pp_kinetics_gsb.lvm"; mode=:OD)
+pp_dir = joinpath(PROJECT_ROOT, "data", "MIRpumpprobe")
+trace_esa = load_ta_trace(joinpath(pp_dir, "pp_kinetics_esa.lvm"); mode=:OD)
+trace_gsb = load_ta_trace(joinpath(pp_dir, "pp_kinetics_gsb.lvm"); mode=:OD)
 
 println("\n=== Kinetic Traces ===")
 println(trace_esa)
@@ -79,11 +85,11 @@ end
 # Plot kinetics with fit and residuals
 fig_esa, ax_esa, ax_res_esa = plot_kinetics(trace_esa; fit=result_esa, residuals=true,
                                              title="ESA (τ = $(round(result_esa.tau, digits=1)) ps)")
-save("figures/EXAMPLES/mir_workflow/esa_kinetics_fit.pdf", fig_esa)
+save(joinpath(FIGDIR, "esa_kinetics_fit.png"), fig_esa)
 
 fig_gsb, ax_gsb, ax_res_gsb = plot_kinetics(trace_gsb; fit=result_gsb, residuals=true,
                                              title="GSB (τ = $(round(result_gsb.tau, digits=1)) ps)")
-save("figures/EXAMPLES/mir_workflow/gsb_kinetics_fit.pdf", fig_gsb)
+save(joinpath(FIGDIR, "gsb_kinetics_fit.png"), fig_gsb)
 
 # Multi-exponential fitting
 result_biexp = fit_exp_decay(trace_esa; n_exp=2)
@@ -105,7 +111,7 @@ report(result_global)
 # PART 5: PUBLICATION FIGURE
 # ============================================================================
 
-set_theme!(publication_theme())
+set_theme!(print_theme())
 
 fig = Figure(size=(900, 700))
 
@@ -144,9 +150,9 @@ axislegend(ax_d, position=:rt)
 
 fig
 
-save("figures/EXAMPLES/mir_workflow/mir_publication_figure.pdf", fig)
+save(joinpath(FIGDIR, "mir_publication_figure.png"), fig)
 
-println("\nFigures saved to figures/EXAMPLES/mir_workflow/")
+println("\nFigures saved to $FIGDIR")
 println("  - spectrum_fit.pdf          (spectrum + fit + residuals)")
 println("  - esa_kinetics_fit.pdf      (ESA kinetics + fit + residuals)")
 println("  - gsb_kinetics_fit.pdf      (GSB kinetics + fit + residuals)")
@@ -174,8 +180,8 @@ println("  - mir_publication_figure.pdf (4-panel composite)")
 # $(format_results(result_global))
 # """,
 #     attachments = [
-#         "figures/EXAMPLES/mir_workflow/mir_publication_figure.pdf",
-#         "figures/EXAMPLES/mir_workflow/spectrum_fit.pdf"
+#         joinpath(FIGDIR, "mir_publication_figure.png"),
+#         joinpath(FIGDIR, "spectrum_fit.png")
 #     ],
 #     tags = ["pump-probe", "mir", "nh4scn", "kinetics"]
 # )

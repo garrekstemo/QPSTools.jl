@@ -132,7 +132,7 @@ For a deeper discussion of when to use each model, see [Choose a Peak Model](@re
 Combine everything into a multi-panel figure:
 
 ```julia
-set_theme!(publication_theme())
+set_theme!(print_theme())
 
 fig = Figure(size=(900, 400))
 

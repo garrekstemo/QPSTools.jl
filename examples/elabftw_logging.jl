@@ -1,7 +1,6 @@
 # eLabFTW Logging Example
 #
 # Demonstrates logging analysis results to eLabFTW as experiment entries.
-# Run from project root: julia --project=. examples/elabftw_logging.jl
 #
 # Prerequisites:
 #   1. A running eLabFTW instance
@@ -10,6 +9,11 @@
 
 using QPSTools
 using CairoMakie
+
+PROJECT_ROOT = dirname(@__DIR__)
+FIGDIR = joinpath(PROJECT_ROOT, "figures", "EXAMPLES", "elabftw")
+mkpath(FIGDIR)
+set_data_dir(joinpath(PROJECT_ROOT, "data"))
 
 # =============================================================================
 # 1. Configure eLabFTW
@@ -33,9 +37,8 @@ report(result)
 # 3. Generate and save the figure
 # =============================================================================
 
-mkpath("figures/EXAMPLES/elabftw")
-fig = plot_peaks(result; residuals=true)
-save("figures/EXAMPLES/elabftw/cn_stretch_fit.pdf", fig)
+fig, ax, ax_res = plot_spectrum(spec; fit=result, residuals=true)
+save(joinpath(FIGDIR, "cn_stretch_fit.png"), fig)
 
 # =============================================================================
 # 4. Log to eLabFTW with auto-tags from registry
@@ -48,7 +51,7 @@ save("figures/EXAMPLES/elabftw/cn_stretch_fit.pdf", fig)
 id = log_to_elab(spec, result;
     title = "FTIR: NH4SCN CN stretch fit",
     body = "CN stretch region (2000-2100 cm⁻¹).",
-    attachments = ["figures/EXAMPLES/elabftw/cn_stretch_fit.pdf"],
+    attachments = [joinpath(FIGDIR, "cn_stretch_fit.png")],
     extra_tags = ["ftir", "peak_fit"]  # Added to auto-extracted tags
 )
 
@@ -92,7 +95,7 @@ end
 # log_to_elab(
 #     title = "Manual experiment",
 #     body = format_results(result),
-#     attachments = ["figure.pdf"],
+#     attachments = ["figure.png"],
 #     tags = ["tag1", "tag2"]
 # )
 
