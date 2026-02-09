@@ -242,22 +242,44 @@ function _load_lvm_raw_channels(lines, filepath)
 end
 
 """
-Parse a section of the LVM file where header + first data row share the same line.
+Parse a section of the LVM file, extracting n_cols numeric columns.
 Returns Matrix{Float64} with n_cols columns.
 
-Handles both tab-separated and carriage-return-separated values (LabVIEW quirk).
+Handles two LabVIEW conventions:
+1. Header + first data row on the same line (separated by \\r) — MIR format
+2. Header on its own line, data on subsequent lines — broadband format
+
+Also handles tab-separated and carriage-return-separated values.
 """
 function _parse_section(lines, start_idx, end_idx, n_cols)
-    n_rows = end_idx - start_idx + 1
+    # Check if the first line contains enough parseable numeric values.
+    # If not, it's a header-only line and data starts on the next line.
+    first_line = lines[start_idx]
+    parts = split(replace(first_line, '\r' => '\t'), '\t')
+    parts = filter(p -> !isempty(strip(p)), parts)
+
+    # Count how many trailing values parse as Float64
+    n_numeric = 0
+    for j in length(parts):-1:1
+        if tryparse(Float64, strip(parts[j])) !== nothing
+            n_numeric += 1
+        else
+            break
+        end
+    end
+
+    # If the first line has enough numeric values, it contains data (MIR format)
+    # Otherwise it's a header-only line (broadband format)
+    data_start = n_numeric >= n_cols ? start_idx : start_idx + 1
+
+    n_rows = end_idx - data_start + 1
     data = Matrix{Float64}(undef, n_rows, n_cols)
 
-    for (i, line_idx) in enumerate(start_idx:end_idx)
+    for (i, line_idx) in enumerate(data_start:end_idx)
         line = lines[line_idx]
-        # Handle both \t and \r as delimiters (LabVIEW sometimes uses \r)
         parts = split(replace(line, '\r' => '\t'), '\t')
-        # Filter empty strings from split
-        parts = filter(!isempty, parts)
-        # Data values are the last n_cols elements (header names come first on line 1)
+        parts = filter(p -> !isempty(strip(p)), parts)
+        # Data values are the last n_cols elements (header names come first on mixed lines)
         values = parts[end-n_cols+1:end]
         data[i, :] = parse.(Float64, values)
     end
@@ -360,7 +382,7 @@ end
 
 """
     load_ta_matrix(dir; time_file=nothing, wavelength_file=nothing, data_file=nothing,
-                   time_unit=:fs, wavelength_unit=:nm) -> TAMatrix
+                   time=nothing, time_unit=:fs, wavelength_unit=:nm) -> TAMatrix
 
 Load 2D transient absorption data (time × wavelength) from separate files.
 
@@ -372,18 +394,21 @@ for the time axis, wavelength axis, and data matrix.
 - `time_file`: Time axis file (auto-detected if not specified)
 - `wavelength_file`: Wavelength axis file (auto-detected if not specified)
 - `data_file`: TA matrix file (auto-detected if not specified)
-- `time_unit`: Unit of time axis, `:fs` (default) or `:ps`
+- `time`: Time axis as a `Vector{Float64}` (in ps). Overrides `time_file` when provided.
+  Use this when the time axis is not stored in a file (e.g., CCD data with instrument-defined delays).
+- `time_unit`: Unit of time axis file, `:fs` (default) or `:ps`. Ignored when `time` vector is provided.
 - `wavelength_unit`: Unit of wavelength axis, `:nm` (default) or `:cm⁻¹`
 
 # Auto-detection
 If files are not specified, looks for common naming patterns:
 - Time: `time*.txt`, `delay*.txt`, `*time*.txt`
-- Wavelength: `wavelength*.txt`, `lambda*.txt`, `*wavelength*.txt`
-- Data: `*.lvm`, `ta_matrix*.txt`, `*matrix*.txt`
+- Wavelength: `wavelength*.txt`, `lambda*.txt`, `wl_axis*.txt`, `波長*.txt`
+- Data: `CCDABS*.lvm`, `ta_matrix*.txt`, `*matrix*.txt`, `*data*.lvm`
 
 # File Formats
-- Time/wavelength axis files: Single column of numeric values
-- Data matrix: Tab or comma-separated, rows = time points, cols = wavelengths
+- Time/wavelength axis files: Single or multi-column numeric values (first column used)
+- Data matrix: Tab or comma-separated, rows = time points, cols = wavelengths.
+  A single-integer first line (row count) is automatically skipped.
 
 # Returns
 `TAMatrix` ready for extraction and fitting.
@@ -399,6 +424,12 @@ matrix = load_ta_matrix("data/",
     wavelength_file="wavelength.txt",
     data_file="ta_matrix.lvm")
 
+# CCD data with instrument-defined time axis (no time file)
+time_fs = collect(-20000:400.28:180000)  # instrument step size
+matrix = load_ta_matrix("data/ccd/",
+    time=time_fs ./ 1000,  # convert to ps
+    data_file="CCDABS_251202.lvm")
+
 # Extract kinetics and fit
 trace = matrix[λ=800]
 result = fit_exp_decay(trace)
@@ -407,52 +438,71 @@ result = fit_exp_decay(trace)
 function load_ta_matrix(dir::String; time_file::Union{String,Nothing}=nothing,
                         wavelength_file::Union{String,Nothing}=nothing,
                         data_file::Union{String,Nothing}=nothing,
+                        time::Union{AbstractVector,Nothing}=nothing,
                         time_unit::Symbol=:fs,
                         wavelength_unit::Symbol=:nm)
 
-    # Auto-detect files if not specified
-    if isnothing(time_file)
-        time_file = _find_file(dir, ["time", "delay", "t_axis"])
-    end
-    if isnothing(wavelength_file)
-        wavelength_file = _find_file(dir, ["wavelength", "lambda", "wl_axis", "nm"])
-    end
+    # Auto-detect data file if not specified
     if isnothing(data_file)
-        data_file = _find_file(dir, ["matrix", "ta_", "data"]; extensions=[".lvm", ".txt", ".csv"])
+        data_file = _find_file(dir, ["CCDABS", "matrix", "ta_", "data"];
+                               extensions=[".lvm", ".txt", ".csv"])
+    end
+
+    # Auto-detect wavelength file if not specified
+    if isnothing(wavelength_file)
+        wavelength_file = _find_file(dir, ["wavelength", "lambda", "wl_axis", "波長", "nm"])
     end
 
     # Build full paths
-    time_path = joinpath(dir, time_file)
     wavelength_path = joinpath(dir, wavelength_file)
     data_path = joinpath(dir, data_file)
 
-    # Load time axis
-    time_raw = _load_axis_file(time_path)
-    time = time_unit == :fs ? time_raw ./ 1000 : time_raw  # Convert to ps
+    # Load time axis (from vector, file, or row indices)
+    if !isnothing(time)
+        time_vec = collect(Float64, time)
+    elseif !isnothing(time_file)
+        time_raw = _load_axis_file(joinpath(dir, time_file))
+        time_vec = time_unit == :fs ? time_raw ./ 1000 : Float64.(time_raw)
+    else
+        # Try auto-detecting a time file
+        time_file_found = _find_file_or_nothing(dir, ["time", "delay", "t_axis"])
+        if !isnothing(time_file_found)
+            time_raw = _load_axis_file(joinpath(dir, time_file_found))
+            time_vec = time_unit == :fs ? time_raw ./ 1000 : Float64.(time_raw)
+            time_file = time_file_found
+        else
+            time_vec = nothing  # Will be set after loading matrix
+        end
+    end
 
     # Load wavelength axis
     wavelength = _load_axis_file(wavelength_path)
-    # wavelength_unit is informational; stored as-is
 
     # Load data matrix
     data = _load_matrix_file(data_path)
 
+    # If no time axis was found, use row indices
+    if isnothing(time_vec)
+        time_vec = collect(1.0:size(data, 1))
+        @warn "No time axis found. Using row indices (1:$(size(data, 1)))."
+    end
+
     # Validate dimensions
     n_time, n_wl = size(data)
-    if length(time) != n_time
+    if length(time_vec) != n_time
         # Try transpose
-        if length(time) == n_wl && length(wavelength) == n_time
-            data = data'
+        if length(time_vec) == n_wl && length(wavelength) == n_time
+            data = collect(data')
             n_time, n_wl = size(data)
         else
-            @warn "Time axis length ($(length(time))) does not match matrix rows ($n_time). Truncating."
-            n = min(length(time), n_time)
-            time = time[1:n]
+            @warn "Time axis length ($(length(time_vec))) does not match matrix rows ($n_time). Truncating."
+            n = min(length(time_vec), n_time)
+            time_vec = time_vec[1:n]
             data = data[1:n, :]
         end
     end
     if length(wavelength) != n_wl
-        @warn "Wavelength axis length ($(length(wavelength))) does not match matrix columns ($n_wl). Truncating."
+        @warn "Wavelength axis length ($(length(wavelength))) does not match matrix columns ($n_wl). Truncating to shorter."
         n = min(length(wavelength), n_wl)
         wavelength = wavelength[1:n]
         data = data[:, 1:n]
@@ -460,20 +510,32 @@ function load_ta_matrix(dir::String; time_file::Union{String,Nothing}=nothing,
 
     metadata = Dict{Symbol,Any}(
         :source => dir,
-        :time_file => time_file,
+        :time_file => something(time_file, "direct"),
         :wavelength_file => wavelength_file,
         :data_file => data_file,
         :time_unit => time_unit,
         :wavelength_unit => wavelength_unit
     )
 
-    return TAMatrix(time, wavelength, data, metadata)
+    return TAMatrix(time_vec, wavelength, data, metadata)
 end
 
 """
 Find a file in directory matching any of the patterns.
 """
 function _find_file(dir::String, patterns::Vector{String}; extensions=[".txt", ".csv", ".lvm"])
+    result = _find_file_or_nothing(dir, patterns; extensions=extensions)
+    if isnothing(result)
+        files = readdir(dir)
+        error("Could not find file matching patterns $patterns in $dir. Found: $files")
+    end
+    return result
+end
+
+"""
+Find a file in directory matching any of the patterns. Returns `nothing` if no match.
+"""
+function _find_file_or_nothing(dir::String, patterns::Vector{String}; extensions=[".txt", ".csv", ".lvm"])
     files = readdir(dir)
     for ext in extensions
         for pattern in patterns
@@ -484,28 +546,31 @@ function _find_file(dir::String, patterns::Vector{String}; extensions=[".txt", "
             end
         end
     end
-    error("Could not find file matching patterns $patterns in $dir. Found: $files")
+    return nothing
 end
 
 """
 Load a single-column axis file (time or wavelength).
-Handles common formats: plain values, with header, whitespace-separated.
+Handles common formats: plain values, with header, multi-column with header.
+
+For multi-column files (e.g., wavelength reference with extra CCD data),
+takes the **first** numeric column by default. Use `column` keyword to override.
 """
-function _load_axis_file(path::String)
+function _load_axis_file(path::String; column::Int=1)
     lines = readlines(path)
 
     # Skip header lines that are non-numeric or contain text
     start_idx = 1
     for (i, line) in enumerate(lines)
-        stripped = strip(line)
+        # Handle \r in line (LabVIEW quirk: header\rdata on same line)
+        stripped = strip(replace(line, '\r' => '\t'))
         isempty(stripped) && continue
-        # Check if line looks like a header (contains letters or is just a count)
-        # Skip lines that are just integers (like "53" as a header)
+        # Check if line contains letters (header text)
         if occursin(r"[a-zA-Z_]", stripped)
             start_idx = i + 1
             continue
         end
-        # Check if it's a single integer (likely a count header)
+        # Check if it's a single integer on line 1 (likely a count header)
         if match(r"^\d+$", stripped) !== nothing && i == 1
             start_idx = i + 1
             continue
@@ -515,16 +580,18 @@ function _load_axis_file(path::String)
         break
     end
 
-    # Parse values
+    # Parse values from the specified column
     values = Float64[]
     for i in start_idx:length(lines)
-        stripped = strip(lines[i])
+        line = lines[i]
+        stripped = strip(replace(line, '\r' => '\t'))
         isempty(stripped) && continue
         parts = split(stripped)
-        # Take last numeric value (handles "index value" format)
-        val = tryparse(Float64, parts[end])
-        if !isnothing(val)
-            push!(values, val)
+        if length(parts) >= column
+            val = tryparse(Float64, parts[column])
+            if !isnothing(val)
+                push!(values, val)
+            end
         end
     end
 

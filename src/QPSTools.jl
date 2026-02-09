@@ -66,6 +66,11 @@ import SpectroscopyTools: normalize
 # Import unexported SpectroscopyTools names that QPSTools re-exports
 import SpectroscopyTools: n_exp, weights, anharmonicity, format_results
 
+# Chirp correction (moved to SpectroscopyTools)
+import SpectroscopyTools: ChirpCalibration, polynomial,
+    detect_chirp, correct_chirp, subtract_background,
+    save_chirp, load_chirp
+
 # Re-export SpectroscopyTools public names
 # Types (from SpectroscopyTools)
 export AbstractSpectroscopyData
@@ -173,17 +178,27 @@ include("peakdetection.jl")
 # QPS-specific peak fitting dispatches (AnnotatedSpectrum)
 include("peakfitting.jl")
 
+# Chirp correction (re-export from SpectroscopyTools)
+export ChirpCalibration
+export detect_chirp, correct_chirp, subtract_background
+export save_chirp, load_chirp
+
 # Plotting: themes, layers, layouts, and public API
-include("plotting.jl")
+include("plotting/themes.jl")
+include("plotting/layers.jl")
+include("plotting/plot_spectrum.jl")
+include("plotting/plot_kinetics.jl")
+include("plotting/plot_chirp.jl")
 export qps_theme
-export print_theme, compact_theme, poster_theme
+export print_theme, poster_theme
 export lab_colors, lab_linewidths
-export setup_publication_plot, setup_poster_plot
+export setup_poster_plot
 export plot_spectrum, plot_kinetics
 export plot_ta_heatmap, plot_spectra  # TAMatrix plotting
 export plot_data  # Generic plotting via interface
 export plot_peak_decomposition!, plot_peaks!  # Layer functions for existing axes
 export plot_comparison, plot_waterfall  # Multi-spectrum views
+export plot_chirp, plot_chirp!  # Chirp diagnostic visualization
 
 # ============================================================================
 # Auto-configure eLabFTW from environment variables

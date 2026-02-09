@@ -621,6 +621,8 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
         @test "DMF" in tags_spec
     end
 
+    include("test_chirp.jl")
+
     @testset "format_results" begin
         # Test format_results returns markdown strings for all fit types
 
