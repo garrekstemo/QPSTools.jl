@@ -416,7 +416,7 @@ If files are not specified, looks for common naming patterns:
 # Example
 ```julia
 # Auto-detect files in directory
-matrix = load_ta_matrix("data/broadband-TA/")
+matrix = load_ta_matrix("data/CCD/")
 
 # Explicit file paths
 matrix = load_ta_matrix("data/",
@@ -428,7 +428,7 @@ matrix = load_ta_matrix("data/",
 time_fs = collect(-20000:400.28:180000)  # instrument step size
 matrix = load_ta_matrix("data/ccd/",
     time=time_fs ./ 1000,  # convert to ps
-    data_file="CCDABS_251202.lvm")
+    data_file="ta_matrix.lvm")
 
 # Extract kinetics and fit
 trace = matrix[λ=800]

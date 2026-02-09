@@ -100,7 +100,7 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
         @test xlabel(spec) == "Wavenumber (cm⁻¹)"
 
         # Directory → TAMatrix
-        matrix = load_spectroscopy(joinpath(PROJECT_ROOT, "data/broadband-TA"))
+        matrix = load_spectroscopy(joinpath(PROJECT_ROOT, "data/CCD"))
         @test matrix isa TAMatrix
         @test is_matrix(matrix) == true
 
@@ -442,11 +442,11 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
 
     @testset "TAMatrix loading and indexing" begin
         # Load TAMatrix
-        data_dir = joinpath(PROJECT_ROOT, "data/broadband-TA")
+        data_dir = joinpath(PROJECT_ROOT, "data/CCD")
         matrix = load_ta_matrix(data_dir;
-            time_file="time_axis_240528.txt",
+            time_file="time_axis.txt",
             wavelength_file="wavelength_axis.txt",
-            data_file="ta_matrix_240528.lvm",
+            data_file="ta_matrix.lvm",
             time_unit=:fs)
 
         @test matrix isa TAMatrix
@@ -475,11 +475,11 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
     end
 
     @testset "TAMatrix fitting" begin
-        data_dir = joinpath(PROJECT_ROOT, "data/broadband-TA")
+        data_dir = joinpath(PROJECT_ROOT, "data/CCD")
         matrix = load_ta_matrix(data_dir;
-            time_file="time_axis_240528.txt",
+            time_file="time_axis.txt",
             wavelength_file="wavelength_axis.txt",
-            data_file="ta_matrix_240528.lvm",
+            data_file="ta_matrix.lvm",
             time_unit=:fs)
 
         # Extract and fit

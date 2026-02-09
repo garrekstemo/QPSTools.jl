@@ -126,7 +126,7 @@ Tuple of (figure, axis, heatmap_object) for further customization.
 
 # Example
 ```julia
-matrix = load_ta_matrix("data/broadband-TA/")
+matrix = load_ta_matrix("data/CCD/")
 fig, ax, hm = plot_ta_heatmap(matrix; colorrange=(-0.02, 0.02))
 save("ta_heatmap.pdf", fig)
 ```
@@ -175,7 +175,7 @@ Tuple of (figure, axis) for further customization.
 
 # Example
 ```julia
-matrix = load_ta_matrix("data/broadband-TA/")
+matrix = load_ta_matrix("data/CCD/")
 fig, ax = plot_kinetics(matrix; λ=[700, 750, 800, 850])
 save("kinetics.pdf", fig)
 ```
@@ -221,7 +221,7 @@ Tuple of (figure, axis) for further customization.
 
 # Example
 ```julia
-matrix = load_ta_matrix("data/broadband-TA/")
+matrix = load_ta_matrix("data/CCD/")
 fig, ax = plot_spectra(matrix; t=[-0.5, 0.1, 0.5, 1.0, 3.0])
 save("spectra.pdf", fig)
 ```
