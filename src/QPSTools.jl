@@ -63,38 +63,44 @@ import SpectroscopyTools: xdata, ydata, xlabel, ylabel, source_file
 # Resolve name conflict: LinearAlgebra.normalize vs SpectroscopyTools.normalize
 import SpectroscopyTools: normalize
 
-# Re-export all SpectroscopyTools public names
-# Types
-export AbstractSpectroscopyData, AxisType
-export TATrace, TASpectrum, TAMatrix, PumpProbeData
+# Import unexported SpectroscopyTools names that QPSTools re-exports
+import SpectroscopyTools: n_exp, weights, anharmonicity, format_results
+
+# Re-export SpectroscopyTools public names
+# Types (from SpectroscopyTools)
+export AbstractSpectroscopyData
+export TATrace, TASpectrum, TAMatrix
 export PeakInfo, PeakFitResult, MultiPeakFitResult
-export ExpDecayFit, ExpDecayIRFFit, BiexpDecayFit, MultiexpDecayFit
-export GlobalFitResult, PumpProbeResult, TASpectrumFit
+export ExpDecayFit, MultiexpDecayFit
+export GlobalFitResult, TASpectrumFit
+# Types (defined in QPSTools)
+export AxisType, time_axis, wavelength_axis
+export PumpProbeData
 # Fitting
-export fit_exp_decay, fit_biexp_decay, fit_decay, fit_decay_irf
-export fit_decay_trace, fit_global, fit_global_decay
+export fit_exp_decay
+export fit_decay_irf
+export fit_global
 export fit_peaks, find_peaks, fit_ta_spectrum
 export predict, predict_peak, predict_baseline, residuals
-export report, format_results
+export report, format_results, n_exp, anharmonicity
 # CurveFit / CurveFitModels re-exports
 export NonlinearCurveFitProblem, solve, coef, stderror, confint
 export isconverged, mse, rss, nobs, weights
 export lorentzian, gaussian, pseudo_voigt, single_exponential
 # Baseline
 export als_baseline, arpls_baseline, snip_baseline
-export correct_baseline, linear_baseline_correction
+export correct_baseline
 # Spectroscopy utilities
-export normalize, smooth_data, savitzky_golay, calc_fwhm
+export normalize, smooth_data, calc_fwhm
 export transmittance_to_absorbance, absorbance_to_transmittance
-export subtract_spectrum, calc_ΔA
+export subtract_spectrum
 export time_index, peak_table
-export extract_tau, irf_fwhm, pulse_fwhm
+export irf_fwhm, pulse_fwhm
 # Data interface
 export xdata, ydata, zdata, xlabel, ylabel, zlabel
 export is_matrix, source_file, npoints, title
-export xaxis, xaxis_label, time_axis, wavelength_axis
+export xaxis, xaxis_label
 # Units
-export parse_concentration, parse_time
 export wavelength_to_wavenumber, wavenumber_to_wavelength
 export wavelength_to_energy, energy_to_wavelength, wavenumber_to_energy
 export decay_time_to_linewidth, linewidth_to_decay_time

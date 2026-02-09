@@ -1,8 +1,9 @@
 """
-eLabFTW integration for QPSTools.jl registry system.
+eLabFTW integration for QPSTools.jl.
 
-Provides read-only access to eLabFTW as a sample registry with local file caching.
-The local JSON registry remains the fallback for offline use.
+Provides full read/write access to eLabFTW for experiment logging, sample registry
+queries, and batch operations. The local JSON registry remains the fallback for
+offline use.
 
 # Configuration
 
@@ -18,11 +19,9 @@ configure_elabftw(
 
 # Usage
 
-Once configured, the same loading API works:
-
 ```julia
 spec = load_raman(material="MoS2")           # Queries eLabFTW
-specs = search_raman(material="ZIF-62")      # Multiple results
+log_to_elab(title="FTIR fit", body=format_results(result))  # Log results
 ```
 
 # Caching
@@ -285,12 +284,13 @@ function create_experiment(;
     payload = Dict{String, Any}("title" => title)
     if !isempty(body)
         payload["body"] = body
+        payload["content_type"] = 2  # Markdown rendering
     end
     if !isnothing(category)
-        payload["category_id"] = category
+        payload["category"] = category
     end
     if !isnothing(metadata)
-        payload["metadata"] = JSON.json(metadata)
+        payload["metadata"] = metadata
     end
 
     response = _elabftw_post(url, payload)
@@ -337,9 +337,10 @@ function update_experiment(id::Int;
     end
     if !isnothing(body)
         payload["body"] = body
+        payload["content_type"] = 2  # Markdown rendering
     end
     if !isnothing(metadata)
-        payload["metadata"] = JSON.json(metadata)
+        payload["metadata"] = metadata
     end
 
     if isempty(payload)
@@ -1038,11 +1039,12 @@ function _elabftw_upload(url::String, filepath::String; comment::String="")
     headers = [
         "Authorization" => _elabftw_config.api_key,
     ]
-    form = HTTP.Form(Dict(
-        "file" => open(filepath),
-        "comment" => comment
-    ))
+    io = open(filepath)
     try
+        form = HTTP.Form(Dict(
+            "file" => io,
+            "comment" => comment
+        ))
         response = HTTP.post(url, headers, form)
         return response
     catch e
@@ -1057,6 +1059,8 @@ function _elabftw_upload(url::String, filepath::String; comment::String="")
             end
         end
         rethrow(e)
+    finally
+        close(io)
     end
 end
 

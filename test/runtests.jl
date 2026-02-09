@@ -26,13 +26,14 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
     end
 
     @testset "SpectroscopyTools re-exports available" begin
-        # Types from SpectroscopyTools should be accessible via QPS
+        # Types from SpectroscopyTools should be accessible via QPSTools
         @test isdefined(QPSTools, :TATrace)
         @test isdefined(QPSTools, :TASpectrum)
         @test isdefined(QPSTools, :TAMatrix)
         @test isdefined(QPSTools, :PeakInfo)
         @test isdefined(QPSTools, :MultiPeakFitResult)
-        @test isdefined(QPSTools, :ExpDecayIRFFit)
+        @test isdefined(QPSTools, :ExpDecayFit)
+        @test isdefined(QPSTools, :MultiexpDecayFit)
         @test isdefined(QPSTools, :GlobalFitResult)
 
         # Functions from SpectroscopyTools
@@ -40,8 +41,11 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
         @test isdefined(QPSTools, :find_peaks)
         @test isdefined(QPSTools, :als_baseline)
         @test isdefined(QPSTools, :normalize)
-        @test isdefined(QPSTools, :parse_concentration)
         @test isdefined(QPSTools, :fit_exp_decay)
+
+        # Types defined in QPSTools
+        @test isdefined(QPSTools, :PumpProbeData)
+        @test isdefined(QPSTools, :AxisType)
 
         # Re-exports from CurveFit/CurveFitModels
         @test isdefined(QPSTools, :solve)
@@ -254,35 +258,36 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
         spec = load_ta_spectrum(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/spectra/bare_1M_1ps.lvm");
                                 mode=:OD, calibration=-19.0)
 
-        # Fit with region
+        # Fit with region (default: ESA + GSB peaks)
         result = fit_ta_spectrum(spec; region=(2000, 2100))
         @test result isa TASpectrumFit
+        @test length(result.peaks) == 2
+
+        # Access peaks by label
+        esa = first(p for p in result.peaks if p.label == :esa)
+        gsb = first(p for p in result.peaks if p.label == :gsb)
 
         # Check ESA < GSB (anharmonic shift)
-        @test result.esa_center < result.gsb_center
-        @test result.anharmonicity > 0
+        @test esa.center < gsb.center
+        @test anharmonicity(result) > 0
 
         # Check reasonable parameter ranges
-        @test result.esa_center > 2000 && result.esa_center < 2100
-        @test result.gsb_center > 2000 && result.gsb_center < 2100
-        @test result.esa_fwhm > 0
-        @test result.gsb_fwhm > 0
+        @test esa.center > 2000 && esa.center < 2100
+        @test gsb.center > 2000 && gsb.center < 2100
+        @test esa.width > 0
+        @test gsb.width > 0
         @test result.rsquared > 0.9
 
         # Test predict
         y_fit = predict(result, spec)
         @test length(y_fit) == length(spec.wavenumber)
-
-        # Test with fixed GSB FWHM
-        result_fixed = fit_ta_spectrum(spec; region=(2000, 2100), gsb_fwhm=20.0)
-        @test result_fixed.gsb_fwhm == 20.0
     end
 
     @testset "fit_exp_decay with IRF" begin
         trace = load_ta_trace(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/pp_kinetics_esa.lvm"); mode=:OD)
-        result = fit_exp_decay(trace)
+        result = fit_exp_decay(trace; irf=true)
 
-        @test result isa ExpDecayIRFFit
+        @test result isa ExpDecayFit
         @test result.tau > 0
         @test !isnan(result.sigma)  # IRF should be fitted
         @test result.rsquared > 0.9
@@ -293,7 +298,7 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
         trace = load_ta_trace(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/pp_kinetics_esa.lvm"); mode=:OD)
         result = fit_exp_decay(trace; irf=false)
 
-        @test result isa ExpDecayIRFFit
+        @test result isa ExpDecayFit
         @test result.tau > 0
         @test isnan(result.sigma)  # No IRF
         @test result.t0 == 0.0     # Default t_start
@@ -352,27 +357,27 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
         @test length(curves[2]) == length(trace_gsb.time)
     end
 
-    @testset "fit_biexp_decay" begin
+    @testset "Biexponential fitting (n_exp=2)" begin
         trace = load_ta_trace(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/pp_kinetics_esa.lvm"); mode=:OD)
 
-        # With IRF (default)
-        result_irf = fit_biexp_decay(trace)
-        @test result_irf isa BiexpDecayFit
-        @test result_irf.tau1 > 0
-        @test result_irf.tau2 > 0
-        @test result_irf.tau1 < result_irf.tau2  # Ordered: fast < slow
+        # With IRF
+        result_irf = fit_exp_decay(trace; n_exp=2, irf=true)
+        @test result_irf isa MultiexpDecayFit
+        @test length(result_irf.taus) == 2
+        @test all(result_irf.taus .> 0)
+        @test result_irf.taus[1] < result_irf.taus[2]  # Ordered: fast < slow
         @test !isnan(result_irf.sigma)  # IRF fitted
         @test result_irf.rsquared > 0.9
 
         # Without IRF
-        result_simple = fit_biexp_decay(trace; irf=false)
-        @test result_simple isa BiexpDecayFit
+        result_simple = fit_exp_decay(trace; n_exp=2, irf=false)
+        @test result_simple isa MultiexpDecayFit
         @test isnan(result_simple.sigma)  # No IRF
         @test result_simple.t0 == 0.0     # Default t_start
         @test result_simple.rsquared > 0.9
 
         # Custom t_start (only for non-IRF)
-        result_delayed = fit_biexp_decay(trace; irf=false, t_start=5.0)
+        result_delayed = fit_exp_decay(trace; n_exp=2, irf=false, t_start=5.0)
         @test result_delayed.t0 >= 5.0
 
         # predict should work for both
@@ -387,9 +392,9 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
     @testset "Multi-exponential fitting (n_exp parameter)" begin
         trace = load_ta_trace(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/pp_kinetics_esa.lvm"); mode=:OD)
 
-        # n_exp=1 should return ExpDecayIRFFit (backwards compatible)
+        # n_exp=1 should return ExpDecayFit
         result1 = fit_exp_decay(trace; n_exp=1)
-        @test result1 isa ExpDecayIRFFit
+        @test result1 isa ExpDecayFit
         @test result1.tau > 0
         @test result1.rsquared > 0.9
 
@@ -481,7 +486,7 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
         trace = matrix[λ=800]
         result = fit_exp_decay(trace; irf_width=0.15)
 
-        @test result isa ExpDecayIRFFit
+        @test result isa ExpDecayFit
         @test result.tau > 0
 
         # predict should work
@@ -634,7 +639,7 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
         @test md_pk isa String
         @test occursin("## Peak Fit", md_pk)
 
-        # ExpDecayIRFFit
+        # ExpDecayFit
         trace = load_ta_trace(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/pp_kinetics_esa.lvm"); mode=:OD)
         result_exp = fit_exp_decay(trace)
         md_exp = format_results(result_exp)
@@ -642,12 +647,11 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
         @test occursin("## Exponential Decay", md_exp)
         @test occursin("τ", md_exp)
 
-        # BiexpDecayFit
-        result_biexp = fit_biexp_decay(trace)
+        # MultiexpDecayFit (n_exp=2)
+        result_biexp = fit_exp_decay(trace; n_exp=2)
         md_biexp = format_results(result_biexp)
         @test md_biexp isa String
-        @test occursin("## Biexponential", md_biexp)
-        @test occursin("Fast", md_biexp) || occursin("τ", md_biexp)
+        @test occursin("τ", md_biexp)
 
         # GlobalFitResult
         trace_gsb = load_ta_trace(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/pp_kinetics_gsb.lvm"); mode=:OD)

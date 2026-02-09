@@ -4,10 +4,51 @@ QPS-specific data types.
 General-purpose types (AbstractSpectroscopyData, TATrace, TASpectrum, TAMatrix,
 fit result types, etc.) are provided by SpectroscopyTools.jl.
 
-This file defines only QPS-specific types:
+This file defines QPS-specific types:
+- `AxisType` — enum for raw LVM axis detection (time vs wavelength)
+- `PumpProbeData` — raw LabVIEW LVM pump-probe container
 - `AnnotatedSpectrum` — abstract type for JASCO spectra with registry metadata
 - `FTIRFitResult` — alias for `MultiPeakFitResult`
 """
+
+# =============================================================================
+# Raw pump-probe instrument data (LabVIEW LVM files)
+# =============================================================================
+
+"""Axis type for raw LVM data: `time_axis` or `wavelength_axis`."""
+@enum AxisType time_axis wavelength_axis
+
+"""
+    PumpProbeData
+
+Raw pump-probe data from the LabVIEW spectrometer (LVM files).
+
+This is an intermediate container used by `load_lvm`. Users typically don't
+interact with this directly — use `load_ta_trace` or `load_ta_spectrum` instead,
+which return `TATrace` / `TASpectrum`.
+
+# Fields
+- `time::Vector{Float64}` — Time axis (ps) or wavelength axis (nm)
+- `on::Matrix{Float64}` — Pump-ON signals (n_points × n_channels)
+- `off::Matrix{Float64}` — Pump-OFF signals (n_points × n_channels)
+- `diff::Matrix{Float64}` — Lock-in difference (n_points × n_channels)
+- `timestamp::String` — Acquisition timestamp from file header
+- `axis_type::AxisType` — Whether x-axis is time or wavelength
+"""
+struct PumpProbeData
+    time::Vector{Float64}
+    on::Matrix{Float64}
+    off::Matrix{Float64}
+    diff::Matrix{Float64}
+    timestamp::String
+    axis_type::AxisType
+end
+
+"""Return the x-axis data from raw pump-probe data."""
+xaxis(d::PumpProbeData) = d.time
+
+"""Return an appropriate x-axis label based on axis type."""
+xaxis_label(d::PumpProbeData) = d.axis_type == time_axis ? "Time (ps)" : "Wavelength (nm)"
 
 # =============================================================================
 # Abstract types for JASCO spectra

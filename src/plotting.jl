@@ -877,7 +877,7 @@ function plot_kinetics(time, signal; xlabel="Time (ps)", ylabel="ΔA", title="",
 end
 
 # Union type for all TA fit results
-const TAFitResult = Union{ExpDecayIRFFit,BiexpDecayFit,MultiexpDecayFit}
+const TAFitResult = Union{ExpDecayFit,MultiexpDecayFit}
 
 """
     plot_kinetics(trace::TATrace; fit=nothing, residuals=true, kwargs...)
@@ -889,7 +889,7 @@ and residuals below (can be disabled with `residuals=false`).
 
 # Arguments
 - `trace`: TATrace from `load_ta_trace`
-- `fit`: Optional fit result (`ExpDecayIRFFit`, `BiexpDecayFit`, or `MultiexpDecayFit`)
+- `fit`: Optional fit result (`ExpDecayFit`, `MultiexpDecayFit`, or `GlobalFitResult`)
 - `residuals`: Show residuals panel when fit provided (default: true)
 - `xlabel`, `ylabel`, `title`: Axis labels
 - `kwargs...`: Additional arguments passed to data `scatter!`
