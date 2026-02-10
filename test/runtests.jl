@@ -339,7 +339,7 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
         result = fit_global([trace_esa, trace_gsb]; labels=["ESA", "GSB"])
 
         @test result isa GlobalFitResult
-        @test result.tau > 0
+        @test all(result.taus .> 0)
         @test !isnan(result.sigma)
         @test result.rsquared > 0.9
         @test length(result.amplitudes) == 2
@@ -581,6 +581,34 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
         @test_throws ErrorException delete_experiments()
         @test_throws ErrorException tag_experiments("tag")
         @test_throws ErrorException update_experiments(new_body="test")
+    end
+
+    @testset "eLabFTW steps and links guards" begin
+        disable_elabftw()
+        @test_throws ErrorException test_connection()
+        @test_throws ErrorException add_step(1, "test")
+        @test_throws ErrorException list_steps(1)
+        @test_throws ErrorException finish_step(1, 1)
+        @test_throws ErrorException link_experiments(1, 2)
+        @test_throws ErrorException create_from_template(1)
+    end
+
+    @testset "print_experiments formatting" begin
+        buf = IOBuffer()
+        print_experiments(Dict[]; io=buf)
+        @test occursin("No experiments", String(take!(buf)))
+
+        experiments = [
+            Dict("id" => 42, "title" => "Test experiment",
+                 "date" => "2026-02-09T12:00:00",
+                 "tags" => [Dict("tag" => "ftir")])
+        ]
+        buf = IOBuffer()
+        print_experiments(experiments; io=buf)
+        output = String(take!(buf))
+        @test occursin("42", output)
+        @test occursin("Test experiment", output)
+        @test occursin("ftir", output)
     end
 
     @testset "tags_from_sample" begin

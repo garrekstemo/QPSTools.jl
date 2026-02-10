@@ -145,11 +145,14 @@ export set_registry_backend, get_registry_backend
 # eLabFTW integration (optional backend)
 include("elabftw.jl")
 export configure_elabftw, elabftw_enabled, disable_elabftw, enable_elabftw
+export test_connection
 export clear_elabftw_cache, elabftw_cache_info
-export create_experiment, update_experiment, upload_to_experiment
+export create_experiment, create_from_template
+export update_experiment, upload_to_experiment
 export tag_experiment, get_experiment, delete_experiment
-export list_experiments, search_experiments
+export list_experiments, search_experiments, print_experiments
 export delete_experiments, tag_experiments, update_experiments
+export add_step, list_steps, finish_step, link_experiments
 export log_to_elab, tags_from_sample
 
 # FTIR loading and analysis

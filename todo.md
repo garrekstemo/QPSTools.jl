@@ -7,16 +7,8 @@
 
 The fitting side (`fit_global(::TAMatrix; n_exp)`, multi-exp `GlobalFitResult`, DAS extraction) is a SpectroscopyTools task — see `SpectroscopyTools.jl/TODO.md` task 3.
 
-### eLabFTW Improvements
-Priority 1 bugs all fixed (category, metadata encoding, content_type, file handle).
-
-Remaining (from `notes/elabftw_review.md`):
-- [ ] `add_step()` / `list_steps()` — analysis procedure tracking
-- [ ] `link_experiments()` — connect related analyses
-- [ ] `create_from_template()` — standardized experiment creation
-- [ ] `print_experiments()` — clean table view for search results
-- [ ] `test_connection()` — verify eLabFTW config
-- [ ] Fix stale module docstring (says "read-only" but has full write API)
+### Housekeeping
+- [x] Fix `fit_global` test: `result.tau` → `result.taus` (field was renamed)
 
 ### Documentation
 - [ ] IRF convolution model and FWHM calculations (irf_fwhm, pulse_fwhm)
@@ -49,5 +41,6 @@ These items now live in `SpectroscopyTools.jl/TODO.md`:
 - [x] Broadband TA loading with CCD/wavelength auto-detection
 - [x] plot_chirp / plot_chirp! (Makie visualization for chirp calibration)
 - [x] eLabFTW critical bug fixes (category, metadata, content_type, file handle)
+- [x] eLabFTW workflow features (steps, links, templates, print_experiments, test_connection, docstring)
 - [x] UUID regeneration + publication_theme → print_theme rename
 - [x] 13 stale exports cleaned

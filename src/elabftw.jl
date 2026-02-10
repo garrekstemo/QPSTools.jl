@@ -2,8 +2,8 @@
 eLabFTW integration for QPSTools.jl.
 
 Provides full read/write access to eLabFTW for experiment logging, sample registry
-queries, and batch operations. The local JSON registry remains the fallback for
-offline use.
+queries, batch operations, analysis steps, and experiment linking. The local JSON
+registry remains the fallback for offline use.
 
 # Configuration
 
@@ -15,13 +15,31 @@ configure_elabftw(
     url = "https://your-instance.elabftw.net",
     api_key = ENV["ELABFTW_API_KEY"]
 )
+test_connection()  # Verify credentials
 ```
 
 # Usage
 
 ```julia
-spec = load_raman(material="MoS2")           # Queries eLabFTW
-log_to_elab(title="FTIR fit", body=format_results(result))  # Log results
+# Log analysis results
+spec = load_raman(material="MoS2")
+log_to_elab(title="FTIR fit", body=format_results(result))
+
+# Track analysis steps
+id = create_experiment(title="TA kinetics analysis")
+s1 = add_step(id, "Load and inspect raw data")
+s2 = add_step(id, "Fit single exponential with IRF")
+finish_step(id, s1)
+
+# Link related experiments
+link_experiments(id, previous_id)
+
+# Browse experiments
+exps = search_experiments(tags=["ftir"])
+print_experiments(exps)
+
+# Create from template
+id = create_from_template(42; title="New FTIR run", tags=["ftir"])
 ```
 
 # Caching
@@ -113,6 +131,32 @@ function enable_elabftw()
     end
     _elabftw_config.enabled = true
     @info "eLabFTW enabled"
+end
+
+"""
+    test_connection()
+
+Verify the eLabFTW connection by fetching the current user's profile.
+Prints the user's name and email on success.
+
+# Example
+```julia
+configure_elabftw(url="https://lab.elabftw.net", api_key=ENV["ELABFTW_API_KEY"])
+test_connection()
+# => "Connected to eLabFTW as Jane Doe (jane@lab.edu)"
+```
+"""
+function test_connection()
+    if !elabftw_enabled()
+        error("eLabFTW not enabled. Call configure_elabftw() first.")
+    end
+
+    url = "$(_elabftw_config.url)/api/v2/users/me"
+    response = _elabftw_request(url)
+    user = JSON.parse(String(response.body))
+    fullname = get(user, "fullname", "Unknown")
+    email = get(user, "email", "")
+    println("Connected to eLabFTW as $fullname ($email)")
 end
 
 # =============================================================================
@@ -303,6 +347,58 @@ function create_experiment(;
     # Location is like "/api/v2/experiments/123" or just the ID
     id_str = last(split(location, "/"))
     return parse(Int, id_str)
+end
+
+"""
+    create_from_template(template_id; title, body, tags) -> Int
+
+Create a new experiment from an eLabFTW experiment template. Returns the experiment ID.
+
+Optionally override the title and body from the template, and add tags.
+
+# Arguments
+- `template_id::Int` — Template ID in eLabFTW
+- `title::String` — Override template title (optional)
+- `body::String` — Override template body (optional)
+- `tags::Vector{String}` — Tags to add to the new experiment
+
+# Example
+```julia
+id = create_from_template(42; title="FTIR: NH4SCN run 3", tags=["ftir", "nh4scn"])
+```
+"""
+function create_from_template(template_id::Int;
+    title::Union{String, Nothing} = nothing,
+    body::Union{String, Nothing} = nothing,
+    tags::Vector{String} = String[]
+)
+    if !elabftw_enabled()
+        error("eLabFTW not enabled. Call configure_elabftw() first.")
+    end
+
+    url = "$(_elabftw_config.url)/api/v2/experiments"
+    payload = Dict{String, Any}("template" => template_id)
+    response = _elabftw_post(url, payload)
+
+    # Parse experiment ID from Location header
+    location = HTTP.header(response, "Location", "")
+    if isempty(location)
+        error("eLabFTW create_from_template: no Location header in response")
+    end
+    id_str = last(split(location, "/"))
+    id = parse(Int, id_str)
+
+    # Override title/body if provided
+    if !isnothing(title) || !isnothing(body)
+        update_experiment(id; title=title, body=body)
+    end
+
+    # Add tags
+    for tag in tags
+        tag_experiment(id, tag)
+    end
+
+    return id
 end
 
 """
@@ -552,6 +648,44 @@ function search_experiments(;
     return JSON.parse(String(response.body))
 end
 
+"""
+    print_experiments(experiments; io=stdout)
+
+Print a formatted table of experiments. Pure formatting function — no API calls.
+
+# Arguments
+- `experiments::Vector` — Vector of experiment dicts (from `list_experiments` or `search_experiments`)
+- `io::IO` — Output stream (default: stdout)
+
+# Example
+```julia
+exps = search_experiments(tags=["ftir"])
+print_experiments(exps)
+```
+"""
+function print_experiments(experiments::Vector; io::IO=stdout)
+    if isempty(experiments)
+        println(io, "No experiments found.")
+        return
+    end
+
+    # Header
+    println(io, rpad("ID", 8), rpad("Date", 12), rpad("Title", 52), "Tags")
+    println(io, repeat("-", 80))
+
+    for exp in experiments
+        id = string(get(exp, "id", ""))
+        raw_date = string(get(exp, "date", ""))
+        date = length(raw_date) >= 10 ? raw_date[1:10] : raw_date
+        raw_title = string(get(exp, "title", ""))
+        t = length(raw_title) > 50 ? raw_title[1:47] * "..." : raw_title
+        tags_list = get(exp, "tags", [])
+        tag_strs = [string(get(tag, "tag", tag)) for tag in tags_list]
+        tags_str = join(tag_strs, ", ")
+        println(io, rpad(id, 8), rpad(date, 12), rpad(t, 52), tags_str)
+    end
+end
+
 # =============================================================================
 # Batch Operations
 # =============================================================================
@@ -741,6 +875,112 @@ function update_experiments(;
 
     println("Done")
     return ids
+end
+
+# =============================================================================
+# Steps & Links
+# =============================================================================
+
+"""
+    add_step(id, body) -> Int
+
+Add an analysis step to an experiment. Returns the step ID.
+
+Steps track the procedure used in an analysis (e.g., "Load raw data",
+"Fit single exponential with IRF"). Use `finish_step` to mark completed.
+
+# Example
+```julia
+id = create_experiment(title="TA kinetics analysis")
+s1 = add_step(id, "Load and inspect raw data")
+s2 = add_step(id, "Fit single exponential with IRF")
+finish_step(id, s1)
+```
+"""
+function add_step(id::Int, body::String)
+    if !elabftw_enabled()
+        error("eLabFTW not enabled. Call configure_elabftw() first.")
+    end
+
+    url = "$(_elabftw_config.url)/api/v2/experiments/$id/steps"
+    response = _elabftw_post(url, Dict("body" => body))
+
+    # Parse step ID from Location header
+    location = HTTP.header(response, "Location", "")
+    if !isempty(location)
+        id_str = last(split(location, "/"))
+        return parse(Int, id_str)
+    end
+
+    # Fallback: try response body
+    resp_body = JSON.parse(String(response.body))
+    return get(resp_body, "id", -1)
+end
+
+"""
+    list_steps(id) -> Vector{Dict}
+
+List all steps for an experiment.
+
+# Example
+```julia
+steps = list_steps(42)
+for step in steps
+    status = get(step, "finished", false) ? "done" : "todo"
+    println("[", status, "] ", step["body"])
+end
+```
+"""
+function list_steps(id::Int)
+    if !elabftw_enabled()
+        error("eLabFTW not enabled. Call configure_elabftw() first.")
+    end
+
+    url = "$(_elabftw_config.url)/api/v2/experiments/$id/steps"
+    response = _elabftw_request(url)
+    return JSON.parse(String(response.body))
+end
+
+"""
+    finish_step(id, step_id)
+
+Mark a step as finished.
+
+# Example
+```julia
+finish_step(42, 1)
+```
+"""
+function finish_step(id::Int, step_id::Int)
+    if !elabftw_enabled()
+        error("eLabFTW not enabled. Call configure_elabftw() first.")
+    end
+
+    url = "$(_elabftw_config.url)/api/v2/experiments/$id/steps/$step_id"
+    _elabftw_patch(url, Dict("finished" => true))
+    return nothing
+end
+
+"""
+    link_experiments(id1, id2)
+
+Create a link between two experiments. The link appears on experiment `id1`
+pointing to experiment `id2`.
+
+# Example
+```julia
+link_experiments(42, 37)  # Link experiment 42 → 37
+```
+"""
+function link_experiments(id1::Int, id2::Int)
+    if !elabftw_enabled()
+        error("eLabFTW not enabled. Call configure_elabftw() first.")
+    end
+
+    url = "$(_elabftw_config.url)/api/v2/experiments/$id1/experiments_links/$id2"
+    _elabftw_post(url, Dict{String, Any}())
+    println("Linked experiment $id1 → $id2")
+    return nothing
 end
 
 """
