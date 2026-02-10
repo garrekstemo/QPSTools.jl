@@ -130,11 +130,11 @@ The tests only verify that functions error when eLabFTW is disabled. There are n
 
 ## 7. Prioritized Recommendations
 
-### Priority 1 — Fix bugs
-1. `"category_id"` -> `"category"` in `create_experiment`
-2. Remove `JSON.json()` wrapping of metadata (let it serialize as nested object)
-3. Set `"content_type" => 2` when body contains Markdown
-4. Close file handle properly in `_elabftw_upload`
+### Priority 1 — Fix bugs ✅ (All fixed 2026-02-09)
+1. ~~`"category_id"` -> `"category"` in `create_experiment`~~ ✅
+2. ~~Remove `JSON.json()` wrapping of metadata (let it serialize as nested object)~~ ✅
+3. ~~Set `"content_type" => 2` when body contains Markdown~~ ✅
+4. ~~Close file handle properly in `_elabftw_upload`~~ ✅
 
 ### Priority 2 — High-value missing features
 5. `add_step()` / `list_steps()` — analysis procedure tracking
