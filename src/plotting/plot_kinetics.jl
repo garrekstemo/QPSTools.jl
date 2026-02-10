@@ -134,11 +134,13 @@ save("ta_heatmap.pdf", fig)
 function plot_ta_heatmap(matrix::TAMatrix; colormap=:RdBu, colorrange=nothing,
     xlabel=nothing, ylabel=nothing, title="ΔA(t, λ)", kwargs...)
     with_theme(qps_theme()) do
-        fig = Figure(size=(800, 500))
+        fig = Figure(size=(900, 500))
 
-        # Convention: time on x-axis, wavelength on y-axis
-        xl = something(xlabel, QPSTools.ylabel(matrix))  # "Time (ps)"
-        yl = something(ylabel, QPSTools.xlabel(matrix))  # "Wavelength (nm)"
+        # Convention: wavelength on x-axis, time on y-axis (standard TA literature)
+        # data is (n_time, n_wavelength); transpose to (n_wavelength, n_time)
+        # interpolate=true prevents sub-pixel aliasing when n_wavelength >> pixel width
+        xl = something(xlabel, QPSTools.xlabel(matrix))  # "Wavelength (nm)"
+        yl = something(ylabel, QPSTools.ylabel(matrix))  # "Time (ps)"
 
         ax = Axis(fig[1, 1], xlabel=xl, ylabel=yl, title=title)
 
@@ -148,10 +150,8 @@ function plot_ta_heatmap(matrix::TAMatrix; colormap=:RdBu, colorrange=nothing,
             colorrange = (-max_abs, max_abs)
         end
 
-        # Heatmap expects z with shape (length(x), length(y))
-        # Our data is (n_time, n_wavelength) = (length(x), length(y)), no transpose needed
-        hm = heatmap!(ax, matrix.time, matrix.wavelength, matrix.data;
-            colormap=colormap, colorrange=colorrange, kwargs...)
+        hm = heatmap!(ax, matrix.wavelength, matrix.time, matrix.data';
+            colormap=colormap, colorrange=colorrange, interpolate=true, kwargs...)
 
         Colorbar(fig[1, 2], hm, label="ΔA")
 

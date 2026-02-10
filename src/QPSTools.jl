@@ -71,6 +71,9 @@ import SpectroscopyTools: ChirpCalibration, polynomial,
     detect_chirp, correct_chirp, subtract_background,
     save_chirp, load_chirp
 
+# Decay-associated spectra (from global TAMatrix fitting)
+import SpectroscopyTools: das
+
 # Re-export SpectroscopyTools public names
 # Types (from SpectroscopyTools)
 export AbstractSpectroscopyData
@@ -84,7 +87,7 @@ export PumpProbeData
 # Fitting
 export fit_exp_decay
 export fit_decay_irf
-export fit_global
+export fit_global, das
 export fit_peaks, find_peaks, fit_ta_spectrum
 export predict, predict_peak, predict_baseline, residuals
 export report, format_results, n_exp, anharmonicity
@@ -192,6 +195,7 @@ include("plotting/layers.jl")
 include("plotting/plot_spectrum.jl")
 include("plotting/plot_kinetics.jl")
 include("plotting/plot_chirp.jl")
+include("plotting/plot_das.jl")
 export qps_theme
 export print_theme, poster_theme
 export lab_colors, lab_linewidths
@@ -202,6 +206,7 @@ export plot_data  # Generic plotting via interface
 export plot_peak_decomposition!, plot_peaks!  # Layer functions for existing axes
 export plot_comparison, plot_waterfall  # Multi-spectrum views
 export plot_chirp, plot_chirp!  # Chirp diagnostic visualization
+export plot_das, plot_das!  # Decay-associated spectra
 
 # ============================================================================
 # Auto-configure eLabFTW from environment variables

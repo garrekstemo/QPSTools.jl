@@ -4,6 +4,7 @@
 # - Kinetic traces with single/multi-exponential fitting
 # - Global fitting with shared parameters
 # - Publication-quality composite figure
+# - eLabFTW logging (optional)
 
 using QPSTools
 using CairoMakie
@@ -140,7 +141,7 @@ axislegend(ax_c, position=:rt)
 
 # Panel (d): Global fit comparison (ESA and GSB)
 ax_d = Axis(fig[2, 2], xlabel="Time (ps)", ylabel="ΔA",
-            title="(d) Global Fit (τ = $(round(result_global.tau, digits=1)) ps)")
+            title="(d) Global Fit (τ = $(round(result_global.taus[1], digits=1)) ps)")
 global_curves = predict(result_global, [trace_esa, trace_gsb])
 scatter!(ax_d, trace_esa.time, trace_esa.signal, markersize=4, label="ESA")
 lines!(ax_d, trace_esa.time, global_curves[1], color=Makie.wong_colors()[1])
@@ -159,7 +160,7 @@ println("  - gsb_kinetics_fit.pdf      (GSB kinetics + fit + residuals)")
 println("  - mir_publication_figure.pdf (4-panel composite)")
 
 # ============================================================================
-# PART 6: LOG TO ELABFTW (optional)
+# PART 7: LOG TO ELABFTW (optional)
 # ============================================================================
 
 # Uncomment to log results to your lab notebook:

@@ -33,8 +33,8 @@ function plot_chirp(matrix::TAMatrix, cal::ChirpCalibration;
     with_theme(qps_theme()) do
         fig = Figure(size=(800, 500))
         ax = Axis(fig[1, 1],
-            xlabel=QPSTools.ylabel(matrix),  # "Time (ps)"
-            ylabel=QPSTools.xlabel(matrix),  # "Wavelength (nm)"
+            xlabel=QPSTools.xlabel(matrix),  # "Wavelength (nm)"
+            ylabel=QPSTools.ylabel(matrix),  # "Time (ps)"
             title=title)
 
         # Auto colorrange
@@ -43,9 +43,9 @@ function plot_chirp(matrix::TAMatrix, cal::ChirpCalibration;
             colorrange = (-max_abs, max_abs)
         end
 
-        # Heatmap (same orientation as plot_ta_heatmap: time on x, wavelength on y)
-        hm = heatmap!(ax, matrix.time, matrix.wavelength, matrix.data;
-            colormap=colormap, colorrange=colorrange)
+        # Heatmap: wavelength on x, time on y (standard TA convention)
+        hm = heatmap!(ax, matrix.wavelength, matrix.time, matrix.data';
+            colormap=colormap, colorrange=colorrange, interpolate=true)
         Colorbar(fig[1, 2], hm, label="ΔA")
 
         # Overlay chirp curve and points
@@ -61,7 +61,7 @@ end
 Overlay chirp curve and detected points on an existing axis.
 
 Adds the polynomial chirp curve and detected scatter points. The axis should
-have time on the x-axis and wavelength on the y-axis (matching `plot_ta_heatmap`).
+have wavelength on the x-axis and time on the y-axis (matching `plot_ta_heatmap`).
 
 # Example
 ```julia
@@ -78,11 +78,11 @@ function plot_chirp!(ax, cal::ChirpCalibration)
     λ_dense = range(λ_min, λ_max, length=200)
     t_curve = [poly(λ) for λ in λ_dense]
 
-    # Polynomial curve (time on x-axis, wavelength on y-axis)
-    lines!(ax, t_curve, collect(λ_dense); color=:black, linestyle=:dash)
+    # Polynomial curve (wavelength on x-axis, time on y-axis)
+    lines!(ax, collect(λ_dense), t_curve; color=:black, linestyle=:dash)
 
     # Detected points
-    scatter!(ax, cal.time_offset, cal.wavelength; color=:yellow, markersize=4)
+    scatter!(ax, cal.wavelength, cal.time_offset; color=:yellow, markersize=4)
 
     return nothing
 end

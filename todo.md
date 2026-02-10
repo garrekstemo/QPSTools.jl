@@ -3,7 +3,7 @@
 ## Active
 
 ### TA Phase 4: plot_das()
-- [ ] `plot_das(result::GlobalFitResult)` — decay-associated spectra visualization (Makie)
+- [x] `plot_das(result::GlobalFitResult)` — decay-associated spectra visualization (Makie)
 
 The fitting side (`fit_global(::TAMatrix; n_exp)`, multi-exp `GlobalFitResult`, DAS extraction) is a SpectroscopyTools task — see `SpectroscopyTools.jl/TODO.md` task 3.
 
@@ -11,8 +11,8 @@ The fitting side (`fit_global(::TAMatrix; n_exp)`, multi-exp `GlobalFitResult`, 
 - [x] Fix `fit_global` test: `result.tau` → `result.taus` (field was renamed)
 
 ### Documentation
-- [ ] IRF convolution model and FWHM calculations (irf_fwhm, pulse_fwhm)
-- [ ] Makie heatmap orientation gotcha (already in CLAUDE.md, could be a standalone doc)
+- [x] IRF convolution model and FWHM calculations → `notes/irf_convolution_model.md`
+- [x] Makie heatmap orientation gotcha → `notes/heatmap_orientation.md`
 
 ## Planned
 
@@ -21,12 +21,6 @@ The fitting side (`fit_global(::TAMatrix; n_exp)`, multi-exp `GlobalFitResult`, 
 - [ ] UV-vis module (`load_uvvis()`, `plot_uvvis()`)
 - [ ] Bootstrap error estimation (`errors=:bootstrap` for fitting functions)
 
-## Deferred to SpectroscopyTools.jl
-
-These items now live in `SpectroscopyTools.jl/TODO.md`:
-- Chirp detection R² tuning on real CCD data
-- SVD filter for TA matrix denoising (`svd_filter()`)
-- Multi-exponential global analysis (`fit_global(::TAMatrix; n_exp)`, DAS extraction)
 
 ## Completed
 

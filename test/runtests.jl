@@ -455,12 +455,12 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
         @test size(matrix.data) == (length(matrix.time), length(matrix.wavelength))
 
         # Extract TATrace at wavelength
-        trace = matrix[λ=800]
+        trace = matrix[λ=600]
         @test trace isa TATrace
         @test length(trace.time) == length(matrix.time)
         @test length(trace.signal) == length(trace.time)
         @test haskey(trace.metadata, :actual_wavelength)
-        @test abs(trace.wavelength - 800) < 10  # Within 10 nm of requested
+        @test abs(trace.wavelength - 600) < 10  # Within 10 nm of requested
 
         # Extract TASpectrum at time
         spec = matrix[t=1.0]
@@ -471,7 +471,7 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
 
         # Error cases
         @test_throws ErrorException matrix[]  # No index specified
-        @test_throws ErrorException matrix[λ=800, t=1.0]  # Both specified
+        @test_throws ErrorException matrix[λ=600, t=1.0]  # Both specified
     end
 
     @testset "TAMatrix fitting" begin
@@ -483,7 +483,7 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
             time_unit=:fs)
 
         # Extract and fit
-        trace = matrix[λ=800]
+        trace = matrix[λ=600]
         result = fit_exp_decay(trace; irf_width=0.15)
 
         @test result isa ExpDecayFit
@@ -647,6 +647,39 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
         tags_spec = tags_from_sample(spec)
         @test "NH4SCN" in tags_spec
         @test "DMF" in tags_spec
+    end
+
+    @testset "DAS and plot_das" begin
+        using Makie: Figure, Axis
+
+        data_dir = joinpath(PROJECT_ROOT, "data/CCD")
+        matrix = load_ta_matrix(data_dir;
+            time_file="time_axis.txt",
+            wavelength_file="wavelength_axis.txt",
+            data_file="ta_matrix.lvm",
+            time_unit=:fs)
+
+        # Global fit on subset of wavelengths (fast)
+        result = fit_global(matrix; n_exp=2, λ=[550, 600, 650])
+
+        # das accessor re-exported from SpectroscopyTools
+        d = das(result)
+        @test size(d, 1) == 2
+        @test size(d, 2) == 3
+
+        # plot_das returns (Figure, Axis)
+        fig, ax = plot_das(result)
+        @test fig isa Figure
+        @test ax isa Axis
+
+        # plot_das! works on existing axis
+        fig2 = Figure()
+        ax2 = Axis(fig2[1, 1])
+        plot_das!(ax2, result)
+
+        # Error without wavelengths (traces-only fit has no wavelength axis)
+        no_wl = fit_global([matrix[λ=600], matrix[λ=550]]; n_exp=1)
+        @test_throws ErrorException plot_das(no_wl)
     end
 
     include("test_chirp.jl")
