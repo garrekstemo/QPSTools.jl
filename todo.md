@@ -18,10 +18,6 @@ Remaining (from `notes/elabftw_review.md`):
 - [ ] `test_connection()` — verify eLabFTW config
 - [ ] Fix stale module docstring (says "read-only" but has full write API)
 
-### Testing
-- [ ] Test `subtract_spectrum` grid mismatch detection
-  - Mismatched lengths, misaligned x-values, matching grids, interpolation mode
-
 ### Documentation
 - [ ] IRF convolution model and FWHM calculations (irf_fwhm, pulse_fwhm)
 - [ ] Makie heatmap orientation gotcha (already in CLAUDE.md, could be a standalone doc)
