@@ -13,6 +13,7 @@ makedocs(
         "Tutorials" => [
             "Raman Analysis" => "tutorials/raman.md",
             "FTIR Analysis" => "tutorials/ftir.md",
+            "PL / Raman Mapping" => "tutorials/plmap.md",
         ],
         "How-To Guides" => [
             "Tune Peak Detection Sensitivity" => "howto/peak_detection_sensitivity.md",
@@ -27,6 +28,7 @@ makedocs(
             "Peak Fitting" => "reference/peak_fitting.md",
             "Baseline Correction" => "reference/baseline.md",
             "Preprocessing" => "reference/preprocessing.md",
+            "PL / Raman Mapping" => "reference/plmap.md",
         ],
         "Explanation" => [
             "Fitting Statistics" => "explanation/fitting_statistics.md",
