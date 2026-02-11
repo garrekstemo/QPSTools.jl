@@ -58,13 +58,17 @@ using SpectroscopyTools
 import SpectroscopyTools: find_peaks, fit_peaks
 import SpectroscopyTools: transmittance_to_absorbance, absorbance_to_transmittance
 import SpectroscopyTools: subtract_spectrum, correct_baseline
-import SpectroscopyTools: xdata, ydata, xlabel, ylabel, source_file
+import SpectroscopyTools: xdata, ydata, zdata, xlabel, ylabel, zlabel
+import SpectroscopyTools: source_file, npoints, title, is_matrix
 
 # Resolve name conflict: LinearAlgebra.normalize vs SpectroscopyTools.normalize
 import SpectroscopyTools: normalize
 
 # Import unexported SpectroscopyTools names that QPSTools re-exports
 import SpectroscopyTools: n_exp, weights, anharmonicity, format_results
+
+# Dielectric functions from CurveFitModels (via SpectroscopyTools)
+import SpectroscopyTools: dielectric_real, dielectric_imag
 
 # Chirp correction (moved to SpectroscopyTools)
 import SpectroscopyTools: ChirpCalibration, polynomial,
@@ -169,6 +173,20 @@ include("raman.jl")
 export RamanSpectrum
 export load_raman, search_raman, list_raman, plot_raman
 
+# Cavity spectroscopy analysis
+include("cavity.jl")
+export CavitySpectrum, CavityFitResult, DispersionFitResult
+export load_cavity, search_cavity, list_cavity, plot_cavity
+export fit_cavity_spectrum, fit_dispersion
+export compute_cavity_transmittance
+export cavity_mode_energy, polariton_branches, polariton_eigenvalues
+export hopfield_coefficients
+export refractive_index, extinction_coeff
+
+# PL mapping (CCD raster scans)
+include("plmap.jl")
+export PLMap
+export load_pl_map, extract_spectrum
 
 # ============================================================================
 # Lab-specific spectroscopy dispatches
@@ -196,6 +214,8 @@ include("plotting/plot_spectrum.jl")
 include("plotting/plot_kinetics.jl")
 include("plotting/plot_chirp.jl")
 include("plotting/plot_das.jl")
+include("plotting/plot_cavity.jl")
+include("plotting/plot_plmap.jl")
 export qps_theme
 export print_theme, poster_theme
 export lab_colors, lab_linewidths
@@ -207,6 +227,9 @@ export plot_peak_decomposition!, plot_peaks!  # Layer functions for existing axe
 export plot_comparison, plot_waterfall  # Multi-spectrum views
 export plot_chirp, plot_chirp!  # Chirp diagnostic visualization
 export plot_das, plot_das!  # Decay-associated spectra
+export plot_dispersion, plot_dispersion!  # Polariton dispersion
+export plot_hopfield, plot_hopfield!  # Hopfield coefficients
+export plot_pl_map, plot_pl_spectra  # PL spatial mapping
 
 # ============================================================================
 # Auto-configure eLabFTW from environment variables

@@ -683,6 +683,115 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
     end
 
     include("test_chirp.jl")
+    include("test_cavity.jl")
+
+    @testset "PLMap loading and interface" begin
+        plmap_file = joinpath(PROJECT_ROOT, "data/PLmap/CCDtmp_260129_111138.lvm")
+        m = load_pl_map(plmap_file; nx=51, ny=51, step_size=2.16)
+
+        @test m isa PLMap
+        @test PLMap <: AbstractSpectroscopyData
+
+        # Grid dimensions
+        @test length(m.x) == 51
+        @test length(m.y) == 51
+        @test size(m.spectra) == (51, 51, 2000)
+        @test size(m.intensity) == (51, 51)
+
+        # Spatial axes centered
+        @test m.x[1] < 0
+        @test m.x[end] > 0
+        @test abs(m.x[1] + m.x[end]) < 0.01  # Symmetric
+
+        # Interface
+        @test xdata(m) === m.x
+        @test ydata(m) === m.y
+        @test zdata(m) === m.intensity
+        @test xlabel(m) == "X (μm)"
+        @test ylabel(m) == "Y (μm)"
+        @test is_matrix(m) == true
+        @test npoints(m) == (51, 51)
+        @test source_file(m) == "CCDtmp_260129_111138.lvm"
+
+        # Show methods
+        buf = IOBuffer()
+        show(buf, m)
+        @test occursin("51×51", String(take!(buf)))
+
+        buf = IOBuffer()
+        show(buf, MIME("text/plain"), m)
+        @test occursin("Grid", String(take!(buf)))
+    end
+
+    @testset "PLMap auto grid inference" begin
+        plmap_file = joinpath(PROJECT_ROOT, "data/PLmap/CCDtmp_260129_111138.lvm")
+        m = load_pl_map(plmap_file; step_size=2.16)
+        @test length(m.x) == 51
+        @test length(m.y) == 51
+    end
+
+    @testset "PLMap extract_spectrum" begin
+        plmap_file = joinpath(PROJECT_ROOT, "data/PLmap/CCDtmp_260129_111138.lvm")
+        m = load_pl_map(plmap_file; nx=51, ny=51)
+
+        # Extract by index
+        spec = extract_spectrum(m, 26, 26)
+        @test length(spec.pixel) == 2000
+        @test length(spec.signal) == 2000
+        @test spec.x ≈ m.x[26]
+        @test spec.y ≈ m.y[26]
+
+        # Extract by position (nearest neighbor)
+        spec_pos = extract_spectrum(m; x=0.0, y=0.0)
+        @test length(spec_pos.signal) == 2000
+        @test haskey(spec_pos, :ix)
+        @test haskey(spec_pos, :iy)
+
+        # Out of bounds
+        @test_throws ErrorException extract_spectrum(m, 0, 1)
+        @test_throws ErrorException extract_spectrum(m, 1, 52)
+    end
+
+    @testset "PLMap normalize" begin
+        plmap_file = joinpath(PROJECT_ROOT, "data/PLmap/CCDtmp_260129_111138.lvm")
+        m = load_pl_map(plmap_file; nx=51, ny=51)
+
+        m_norm = normalize(m)
+        @test m_norm isa PLMap
+        @test minimum(m_norm.intensity) ≈ 0.0
+        @test maximum(m_norm.intensity) ≈ 1.0
+
+        # Spectra should be unchanged
+        @test m_norm.spectra === m.spectra
+    end
+
+    @testset "PLMap pixel_range integration" begin
+        plmap_file = joinpath(PROJECT_ROOT, "data/PLmap/CCDtmp_260129_111138.lvm")
+        m_full = load_pl_map(plmap_file; nx=51, ny=51)
+        m_range = load_pl_map(plmap_file; nx=51, ny=51, pixel_range=(500, 700))
+
+        # Partial integration should give different (smaller) intensity values
+        @test sum(m_range.intensity) < sum(m_full.intensity)
+        @test size(m_range.intensity) == size(m_full.intensity)
+    end
+
+    @testset "PLMap plotting" begin
+        using Makie: Figure, Axis
+
+        plmap_file = joinpath(PROJECT_ROOT, "data/PLmap/CCDtmp_260129_111138.lvm")
+        m = load_pl_map(plmap_file; nx=51, ny=51)
+        m_norm = normalize(m)
+
+        # plot_pl_map returns (Figure, Axis, Heatmap)
+        fig, ax, hm = plot_pl_map(m_norm)
+        @test fig isa Figure
+        @test ax isa Axis
+
+        # plot_pl_spectra returns (Figure, Axis)
+        fig2, ax2 = plot_pl_spectra(m, [(0.0, 0.0), (10.0, 10.0)])
+        @test fig2 isa Figure
+        @test ax2 isa Axis
+    end
 
     @testset "format_results" begin
         # Test format_results returns markdown strings for all fit types
