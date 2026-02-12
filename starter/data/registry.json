@@ -1,0 +1,23 @@
+{
+  "raman": {
+    "my_sample_1": {
+      "sample": "spot1",
+      "material": "MySample",
+      "laser_nm": 532.05,
+      "objective": "100x",
+      "path": "raman/my_sample_spot1.csv",
+      "date": "2026-01-01"
+    }
+  },
+  "ftir": {
+    "my_solution_1": {
+      "solute": "NH4SCN",
+      "solvent": "DMF",
+      "concentration": "1.0M",
+      "pathlength": 12.0,
+      "substrate": "CaF2",
+      "path": "ftir/my_solution.csv",
+      "date": "2026-01-01"
+    }
+  }
+}

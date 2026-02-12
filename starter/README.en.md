@@ -57,7 +57,8 @@ my-project/
 │   └── raman/                # Raw .csv files from JASCO
 ├── scratch/                  # Exploration — try things here freely
 ├── templates/                # Starting points — copy, don't edit
-│   └── raman_analysis.jl
+│   ├── raman_analysis.jl
+│   └── ftir_analysis.jl
 └── analyses/                 # Finished analyses go here
     └── MoSe2_A1g/
         ├── analysis.jl
