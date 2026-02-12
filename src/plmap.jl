@@ -47,6 +47,14 @@ npoints(m::PLMap) = (length(m.x), length(m.y))
 source_file(m::PLMap) = get(m.metadata, "source_file", "unknown")
 title(m::PLMap) = source_file(m)
 
+# Semantic accessor
+"""
+    intensity(m::PLMap) -> Matrix{Float64}
+
+Return the PL intensity matrix.
+"""
+intensity(m::PLMap) = m.intensity
+
 function Base.show(io::IO, m::PLMap)
     nx, ny = length(m.x), length(m.y)
     np = length(m.pixel)

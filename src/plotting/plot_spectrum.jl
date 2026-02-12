@@ -7,32 +7,45 @@
 # Title dispatch for AnnotatedSpectrum subtypes
 _annotated_title(spec::FTIRSpectrum) = _ftir_title(spec)
 _annotated_title(spec::RamanSpectrum) = _raman_title(spec)
+_annotated_title(spec::CavitySpectrum) = _cavity_title(spec)
 _annotated_title(::AnnotatedSpectrum) = nothing
 
 # Units dispatch for annotations
 _annotated_units(::FTIRSpectrum) = "cm⁻¹"
 _annotated_units(::RamanSpectrum) = "cm⁻¹"
+_annotated_units(::CavitySpectrum) = "cm⁻¹"
 _annotated_units(::AnnotatedSpectrum) = ""
 
 """
     _plot_spectrum_impl(x, y; xlabel, ylabel, title, xreversed,
-                        fit, peaks, labels, residuals, context,
+                        fit, peaks, residuals, context,
                         annotation_units, scatter_data, kwargs...)
 
 Central routing function for all `plot_spectrum` dispatch methods.
 Selects layout and fills with layer functions based on keyword arguments.
+
+# Layout selection priority
+1. `fit + context`  → three-panel (full spectrum, fit region, residuals)
+2. `fit + residuals` → stacked (fit region + residuals)
+3. `fit + peaks`     → full spectrum with fit overlaid in its region
+4. `fit` only        → zoomed to fit region (scatter + fit)
+5. no `fit`          → survey with optional peak markers
 """
 function _plot_spectrum_impl(x, y;
     xlabel::String="X", ylabel::String="Y", title::String="",
     xreversed::Bool=false,
-    fit::Union{MultiPeakFitResult,TASpectrumFit,Nothing}=nothing,
+    fit::Union{MultiPeakFitResult,TASpectrumFit,CavityFitResult,Nothing}=nothing,
     peaks::Union{Vector{PeakInfo},Nothing}=nothing,
-    labels::Bool=false,
     residuals::Bool=false,
     context::Union{Tuple,Nothing}=nothing,
     annotation_units::String="",
     scatter_data::Bool=false,
     kwargs...)
+
+    # Warn about ignored keyword combinations
+    if residuals && isnothing(fit)
+        @warn "`residuals=true` requires a `fit` result — ignoring. Pass `fit=result` to show residuals."
+    end
 
     with_theme(qps_theme()) do
         if !isnothing(fit) && !isnothing(context)
@@ -40,28 +53,31 @@ function _plot_spectrum_impl(x, y;
             return _spectrum_three_panel(x, y;
                 xlabel=xlabel, ylabel=ylabel, title=title, xreversed=xreversed,
                 fit=fit, context=context, annotation_units=annotation_units,
-                scatter_data=scatter_data, kwargs...)
+                scatter_data=scatter_data, peaks=peaks, kwargs...)
         elseif !isnothing(fit) && residuals
-            # Stacked: fit + residuals
+            # Stacked: fit + residuals (peaks filtered to fit region)
             return _spectrum_stacked(x, y;
                 xlabel=xlabel, ylabel=ylabel, title=title, xreversed=xreversed,
                 fit=fit, annotation_units=annotation_units,
-                scatter_data=scatter_data, kwargs...)
+                scatter_data=scatter_data, peaks=peaks, kwargs...)
+        elseif !isnothing(fit) && !isnothing(peaks)
+            # Full spectrum with fit overlaid + all peaks
+            return _spectrum_with_fit_overview(x, y;
+                xlabel=xlabel, ylabel=ylabel, title=title, xreversed=xreversed,
+                fit=fit, annotation_units=annotation_units,
+                peaks=peaks, kwargs...)
         elseif !isnothing(fit)
-            # Single panel with fit overlay
+            # Zoomed to fit region
             return _spectrum_with_fit(x, y;
                 xlabel=xlabel, ylabel=ylabel, title=title, xreversed=xreversed,
                 fit=fit, annotation_units=annotation_units,
                 scatter_data=scatter_data, kwargs...)
         else
-            # Single panel: survey or labeled
+            # Single panel: survey with optional peak markers
             fig, ax = _layout_single(; xlabel=xlabel, ylabel=ylabel, title=title, xreversed=xreversed)
             _draw_data!(ax, x, y; scatter=scatter_data, kwargs...)
 
-            if labels && isnothing(peaks)
-                detected = find_peaks(x, y)
-                plot_peaks!(ax, detected)
-            elseif !isnothing(peaks)
+            if !isnothing(peaks)
                 plot_peaks!(ax, peaks)
             end
 
@@ -74,7 +90,7 @@ end
 
 function _spectrum_three_panel(x, y;
     xlabel, ylabel, title, xreversed,
-    fit, context, annotation_units, scatter_data, kwargs...)
+    fit, context, annotation_units, scatter_data, peaks=nothing, kwargs...)
 
     # context = (full_x, full_y) or (full_x, full_y, region)
     full_x, full_y = context[1], context[2]
@@ -83,11 +99,14 @@ function _spectrum_three_panel(x, y;
     fig, ax_ctx, ax_fit, ax_res = _layout_three_panel(;
         xlabel=xlabel, ylabel=ylabel, title=title, xreversed=xreversed)
 
-    # Panel (a): Full spectrum with region indicator
+    # Panel (a): Full spectrum with region indicator and peaks
     _draw_data!(ax_ctx, full_x, full_y)
     if !isnothing(region)
         center = _fit_center(fit)
         _draw_region_indicator!(ax_ctx, region; center=center)
+    end
+    if !isnothing(peaks)
+        plot_peaks!(ax_ctx, peaks)
     end
 
     # Panel (b): Fit region
@@ -114,7 +133,7 @@ end
 
 function _spectrum_stacked(x, y;
     xlabel, ylabel, title, xreversed,
-    fit, annotation_units, scatter_data, kwargs...)
+    fit, annotation_units, scatter_data, peaks=nothing, kwargs...)
 
     fig, ax, ax_res = _layout_stacked(;
         xlabel=xlabel, ylabel=ylabel, title=title, xreversed=xreversed)
@@ -128,6 +147,10 @@ function _spectrum_stacked(x, y;
         plot_peak_decomposition!(ax, fit; show_composite=false)
         _draw_peak_annotation!(ax, fit; units=annotation_units)
     end
+    filtered = _filter_peaks(peaks, x)
+    if !isnothing(filtered) && !isempty(filtered)
+        plot_peaks!(ax, filtered)
+    end
     axislegend(ax, position=:rt)
 
     # Residuals panel
@@ -138,6 +161,34 @@ function _spectrum_stacked(x, y;
     end
 
     return fig, ax, ax_res
+end
+
+# -- Full spectrum overview with fit overlaid --
+
+function _spectrum_with_fit_overview(x, y;
+    xlabel, ylabel, title, xreversed,
+    fit, annotation_units, peaks, kwargs...)
+
+    fig, ax = _layout_single(; xlabel=xlabel, ylabel=ylabel, title=title, xreversed=xreversed)
+
+    # Full spectrum as lines
+    _draw_data!(ax, x, y; label="Data", kwargs...)
+
+    # Fit curve in its region
+    if fit isa MultiPeakFitResult
+        _draw_fit!(ax, fit._x, predict(fit))
+        plot_peak_decomposition!(ax, fit; show_composite=false)
+        _draw_peak_annotation!(ax, fit; units=annotation_units)
+    else
+        y_fit = _predict_fit(fit, x)
+        _draw_fit!(ax, x, y_fit)
+    end
+
+    # All peak markers (full range, no filtering)
+    plot_peaks!(ax, peaks)
+    axislegend(ax, position=:rt)
+
+    return fig, ax
 end
 
 # -- Single panel with fit helper --
@@ -163,11 +214,20 @@ end
 
 # -- Fit prediction helpers --
 
+"""Filter peaks to those within the x-data range (avoids axis distortion)."""
+function _filter_peaks(peaks::Vector{PeakInfo}, x)
+    lo, hi = extrema(x)
+    return filter(p -> lo <= p.position <= hi, peaks)
+end
+_filter_peaks(::Nothing, x) = nothing
+
 _predict_fit(fit::MultiPeakFitResult, x) = predict(fit)
 _predict_fit(fit::TASpectrumFit, x) = predict(fit, x)
+_predict_fit(fit::CavityFitResult, x) = predict(fit, x)
 
 _fit_center(fit::MultiPeakFitResult) = fit[1][:center].value
 _fit_center(::TASpectrumFit) = nothing
+_fit_center(::CavityFitResult) = nothing
 
 # ============================================================================
 # plot_spectrum dispatch methods
@@ -183,7 +243,6 @@ Plot a spectrum from raw x/y vectors.
 - `xreversed::Bool=false`: Reverse x-axis
 - `fit`: Optional fit result (MultiPeakFitResult or TASpectrumFit)
 - `peaks`: Pre-computed peaks from `find_peaks` to display
-- `labels::Bool=false`: Auto-detect and label peaks
 - `residuals::Bool=false`: Show residuals panel (requires `fit`)
 - `context`: Tuple `(full_x, full_y)` or `(full_x, full_y, region)` for three-panel view
 - `kwargs...`: Passed to data drawing function
@@ -196,11 +255,11 @@ Plot a spectrum from raw x/y vectors.
 function plot_spectrum(x::AbstractVector, y::AbstractVector;
     xlabel::String="Wavenumber (cm⁻¹)", ylabel::String="Absorbance",
     title::String="", xreversed::Bool=false,
-    fit=nothing, peaks=nothing, labels::Bool=false,
+    fit=nothing, peaks=nothing,
     residuals::Bool=false, context=nothing, kwargs...)
     return _plot_spectrum_impl(x, y;
         xlabel=xlabel, ylabel=ylabel, title=title, xreversed=xreversed,
-        fit=fit, peaks=peaks, labels=labels, residuals=residuals,
+        fit=fit, peaks=peaks, residuals=residuals,
         context=context, kwargs...)
 end
 
@@ -212,11 +271,17 @@ Plot an annotated spectrum (FTIR, Raman, etc.) with automatic axis labels and or
 # Keyword Arguments
 - `fit`: Optional `MultiPeakFitResult` from `fit_peaks`
 - `peaks`: Pre-computed peaks from `find_peaks`
-- `labels::Bool=false`: Auto-detect and label peaks
 - `residuals::Bool=false`: Show residuals panel (requires `fit`)
 - `context::Bool=false`: Three-panel view with full spectrum context
 - `title`: Override auto-generated title
 - `kwargs...`: Passed to data drawing function
+
+# Layout selection
+- `peaks` only → full spectrum + peak markers
+- `fit` only → zoomed to fit region (scatter + fit + decomposition)
+- `fit + peaks` → full spectrum with fit overlaid + all peaks
+- `fit + residuals` → fit region with residuals panel below
+- `fit + context` → three-panel (full spectrum, fit, residuals)
 
 # Examples
 ```julia
@@ -225,28 +290,27 @@ spec = load_ftir(solute="NH4SCN", concentration="1.0M")
 # Survey view
 fig, ax = plot_spectrum(spec)
 
-# With auto-detected peak labels
-fig, ax = plot_spectrum(spec; labels=true)
-
 # With pre-computed peaks
 peaks = find_peaks(spec)
 fig, ax = plot_spectrum(spec; peaks=peaks)
 
-# With fit overlay
+# With fit overlay (zoomed to fit region)
 result = fit_peaks(spec, (1950, 2150))
 fig, ax = plot_spectrum(spec; fit=result)
+
+# Fit + peaks (full spectrum with fit overlaid)
+fig, ax = plot_spectrum(spec; fit=result, peaks=peaks)
 
 # With fit and residuals
 fig, ax, ax_res = plot_spectrum(spec; fit=result, residuals=true)
 
 # Three-panel publication view
-fig, ax_ctx, ax_fit, ax_res = plot_spectrum(spec; fit=result, residuals=true, context=true)
+fig, ax_ctx, ax_fit, ax_res = plot_spectrum(spec; fit=result, context=true)
 ```
 """
 function plot_spectrum(spec::AnnotatedSpectrum;
-    fit::Union{MultiPeakFitResult,Nothing}=nothing,
+    fit::Union{MultiPeakFitResult,CavityFitResult,Nothing}=nothing,
     peaks::Union{Vector{PeakInfo},Nothing}=nothing,
-    labels::Bool=false,
     residuals::Bool=false,
     context::Bool=false,
     title::String="",
@@ -259,34 +323,44 @@ function plot_spectrum(spec::AnnotatedSpectrum;
     rev = xreversed(spec)
     units = _annotated_units(spec)
 
+    if context && isnothing(fit)
+        @warn "`context=true` requires a `fit` result — ignoring. Pass `fit=result` to use three-panel view."
+    end
+
     # Auto-title from metadata if not provided
     t = isempty(title) ? something(_annotated_title(spec), "") : title
 
     # Build context tuple for three-panel view
     ctx = nothing
     if context && !isnothing(fit) && fit isa MultiPeakFitResult
-        # Use fit region data for the zoomed panels, full data for context
         region = (minimum(fit._x), maximum(fit._x))
         ctx = (x, y, region)
-        # For the fit panels, use the fit's own x/y data
         return _plot_spectrum_impl(fit._x, fit._y;
             xlabel=xl, ylabel=yl, title=t, xreversed=rev,
-            fit=fit, peaks=peaks, labels=labels, residuals=true,
+            fit=fit, peaks=peaks, residuals=true,
             context=ctx, annotation_units=units,
             scatter_data=true, kwargs...)
     end
 
-    # For fit with scatter data (peak fit results have their own x/y)
+    # fit + peaks (no residuals): full spectrum with fit overlaid
+    if !isnothing(fit) && fit isa MultiPeakFitResult && !isnothing(peaks) && !residuals
+        return _plot_spectrum_impl(x, y;
+            xlabel=xl, ylabel=yl, title=t, xreversed=rev,
+            fit=fit, peaks=peaks,
+            annotation_units=units, kwargs...)
+    end
+
+    # fit region views: fit-only, fit+residuals, fit+peaks+residuals
     if !isnothing(fit) && fit isa MultiPeakFitResult
         return _plot_spectrum_impl(fit._x, fit._y;
             xlabel=xl, ylabel=yl, title=t, xreversed=rev,
-            fit=fit, peaks=peaks, labels=labels, residuals=residuals,
+            fit=fit, peaks=peaks, residuals=residuals,
             annotation_units=units, scatter_data=true, kwargs...)
     end
 
     return _plot_spectrum_impl(x, y;
         xlabel=xl, ylabel=yl, title=t, xreversed=rev,
-        fit=fit, peaks=peaks, labels=labels, residuals=residuals,
+        fit=fit, peaks=peaks, residuals=residuals,
         annotation_units=units, kwargs...)
 end
 

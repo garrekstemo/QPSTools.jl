@@ -114,7 +114,7 @@ println("Saved localized correction")
 result = fit_peaks(crystal, region)
 report(result)
 
-fig, ax, ax_res = plot_spectrum(crystal; fit=result, residuals=true)
+fig, ax, ax_res = plot_raman(crystal; fit=result, residuals=true)
 save(joinpath(FIGDIR, "corrected_peak_fit.png"), fig)
 println("Saved corrected peak fit")
 

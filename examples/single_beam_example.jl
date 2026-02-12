@@ -27,9 +27,9 @@ DATA_FILE = joinpath(PROJECT_ROOT, "data", "MIRpumpprobe", "single_beam_spectrum
 # Manual loading (until load_lvm supports single-beam mode)
 # ============================================================================
 
-println("=" ^ 60)
+println("="^60)
 println("Loading single-beam data...")
-println("=" ^ 60)
+println("="^60)
 
 lines = readlines(DATA_FILE)
 
@@ -81,9 +81,9 @@ end
 # Plot raw single-beam spectrum
 # ============================================================================
 
-println("\n" * "=" ^ 60)
+println("\n" * "="^60)
 println("Creating single-beam spectrum plot...")
-println("=" ^ 60)
+println("="^60)
 
 fig1 = Figure(size=(800, 500))
 ax1 = Axis(fig1[1, 1],
@@ -104,9 +104,9 @@ println("Saved: $figpath1")
 # Fit Gaussian to characterize beam
 # ============================================================================
 
-println("\n" * "=" ^ 60)
+println("\n" * "="^60)
 println("Fitting Gaussian to beam profile...")
-println("=" ^ 60)
+println("="^60)
 
 # Initial parameter estimates
 # Gaussian: p = [amplitude, center, fwhm, offset]
@@ -140,8 +140,8 @@ println("  Offset:    $(round(offset, sigdigits=4)) ± $(round(offset_err, sigdi
 
 # Compute R²
 y_fit = gaussian(coef(sol), wavenumber)
-ss_res = sum((signal .- y_fit).^2)
-ss_tot = sum((signal .- mean(signal)).^2)
+ss_res = sum((signal .- y_fit) .^ 2)
+ss_tot = sum((signal .- mean(signal)) .^ 2)
 rsquared = 1 - ss_res / ss_tot
 println("  R²:        $(round(rsquared, digits=5))")
 
@@ -149,9 +149,9 @@ println("  R²:        $(round(rsquared, digits=5))")
 # Plot with Gaussian fit
 # ============================================================================
 
-println("\n" * "=" ^ 60)
+println("\n" * "="^60)
 println("Creating fit comparison plot...")
-println("=" ^ 60)
+println("="^60)
 
 fig2 = Figure(size=(900, 400))
 
@@ -192,9 +192,9 @@ println("Saved: $figpath2")
 # Multi-channel comparison
 # ============================================================================
 
-println("\n" * "=" ^ 60)
+println("\n" * "="^60)
 println("Creating multi-channel comparison...")
-println("=" ^ 60)
+println("="^60)
 
 fig3 = Figure(size=(800, 500))
 ax3 = Axis(fig3[1, 1],
@@ -217,9 +217,9 @@ println("Saved: $figpath3")
 # Summary
 # ============================================================================
 
-println("\n" * "=" ^ 60)
+println("\n" * "="^60)
 println("Summary: Probe Beam Characteristics")
-println("=" ^ 60)
+println("="^60)
 println("""
   Center frequency:  $(round(center, digits=1)) cm⁻¹
   Bandwidth (FWHM):  $(round(abs(fwhm), digits=1)) cm⁻¹

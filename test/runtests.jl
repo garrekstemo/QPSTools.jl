@@ -120,7 +120,7 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
         @test xdata(spec) === spec.data.x
         @test ydata(spec) === spec.data.y
         @test xlabel(spec) == "Wavenumber (cm⁻¹)"
-        @test ylabel(spec) == "Absorbance"
+        @test ylabel(spec) == get(QPSTools._FTIR_YLABEL, spec.data.yunits, "Signal")
         @test is_matrix(spec) == false
         @test zdata(spec) === nothing
     end
@@ -140,6 +140,22 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
         @test ylabel(raman) == "Intensity"
         @test is_matrix(raman) == false
         @test zdata(raman) === nothing
+    end
+
+    @testset "Semantic accessors - FTIR" begin
+        spec = load_ftir(solute="NH4SCN", concentration="1.0M")
+        @test wavenumber(spec) === xdata(spec)
+        @test signal(spec) === ydata(spec)
+        @test ykind(spec) isa Symbol
+        # NH4SCN data is absorbance
+        @test ykind(spec) === :absorbance
+        @test absorbance(spec) === ydata(spec)
+    end
+
+    @testset "Semantic accessors - Raman" begin
+        raman = load_raman(phase="crystal", composition="Zn/Co")
+        @test shift(raman) === xdata(raman)
+        @test intensity(raman) === ydata(raman)
     end
 
     @testset "FTIR peak fitting (fit_peaks)" begin
@@ -721,6 +737,12 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
         buf = IOBuffer()
         show(buf, MIME("text/plain"), m)
         @test occursin("Grid", String(take!(buf)))
+    end
+
+    @testset "Semantic accessors - PLMap" begin
+        plmap_file = joinpath(PROJECT_ROOT, "data/PLmap/CCDtmp_260129_111138.lvm")
+        m = load_pl_map(plmap_file; nx=51, ny=51, step_size=2.16)
+        @test intensity(m) === m.intensity
     end
 
     @testset "PLMap auto grid inference" begin

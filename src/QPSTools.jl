@@ -60,6 +60,7 @@ import SpectroscopyTools: transmittance_to_absorbance, absorbance_to_transmittan
 import SpectroscopyTools: subtract_spectrum, correct_baseline
 import SpectroscopyTools: xdata, ydata, zdata, xlabel, ylabel, zlabel
 import SpectroscopyTools: source_file, npoints, title, is_matrix
+import SpectroscopyTools: wavenumber, signal, delay, wavelength
 
 # Resolve name conflict: LinearAlgebra.normalize vs SpectroscopyTools.normalize
 import SpectroscopyTools: normalize
@@ -112,6 +113,11 @@ export irf_fwhm, pulse_fwhm
 export xdata, ydata, zdata, xlabel, ylabel, zlabel
 export is_matrix, source_file, npoints, title
 export xaxis, xaxis_label
+# Semantic accessors (from SpectroscopyTools)
+export delay, signal, wavenumber, wavelength
+# Semantic accessors (QPSTools-specific)
+export shift, intensity
+export absorbance, transmittance, reflectance, ykind
 # Units
 export wavelength_to_wavenumber, wavenumber_to_wavelength
 export wavelength_to_energy, energy_to_wavelength, wavenumber_to_energy

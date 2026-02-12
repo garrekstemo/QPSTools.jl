@@ -1,7 +1,7 @@
 # Raman Analysis Example
 #
-# MoSe2 flake: peak detection, fitting, and publication figure
-# comparing spectra at two spatial positions.
+# MoSe2 flake: detect peaks, fit A₁g mode at two spatial positions,
+# and produce a publication figure comparing center vs. edge.
 
 using QPSTools
 using CairoMakie
@@ -13,33 +13,37 @@ mkpath(FIGDIR)
 set_data_dir(joinpath(PROJECT_ROOT, "data"))
 
 # =============================================================================
-# 1. Load spectra and label peaks
+# 1. Load spectra at two positions on the flake
 # =============================================================================
 
-center = load_raman(material="MoSe2", sample="center")
-right = load_raman(material="MoSe2", sample="right")
+spec_center = load_raman(sample="center", material="MoSe2")
+spec_edge = load_raman(sample="right", material="MoSe2")
 
-peaks = find_peaks(center)
-fig, ax = plot_spectrum(center; peaks=peaks)
-save(joinpath(FIGDIR, "mose2_peaks.png"), fig)
+# =============================================================================
+# 2. Peak detection — confirm material identity
+# =============================================================================
+
+peaks = find_peaks(spec_center)
 println(peak_table(peaks))
 
 # =============================================================================
-# 2. Fit the A₁g peak (~242 cm⁻¹) at both positions
+# 3. Fit the A₁g peak (~242 cm⁻¹) at both positions on the flake
 # =============================================================================
 
-result_center = fit_peaks(center, (225, 260))
-result_right = fit_peaks(right, (225, 260))
+fit_center = fit_peaks(spec_center, (225, 260))
+fit_edge = fit_peaks(spec_edge, (225, 260))
 
-println()
-report(result_center)
-report(result_right)
+report(fit_center)
+report(fit_edge)
 
-fig, ax, ax_res = plot_spectrum(center; fit=result_center, residuals=true)
+fig, ax = plot_raman(spec_center; peaks=peaks)
+save(joinpath(FIGDIR, "mose2_peaks.png"), fig)
+
+fig, ax, ax_res = plot_raman(spec_center; fit=fit_center, residuals=true)
 save(joinpath(FIGDIR, "mose2_a1g_fit.png"), fig)
 
 # =============================================================================
-# 3. Publication figure: microscopy + spectra + peak fits
+# 4. Publication figure
 # =============================================================================
 
 data_dir = get_data_dir()
@@ -49,56 +53,65 @@ img_right = load(joinpath(data_dir, "raman/MoSe2/MoSe2_x100_right.PNG"))
 set_theme!(print_theme())
 fig = Figure(size=(900, 800))
 
-# Microscopy images
+# Row 1: microscopy images
 ax1 = Axis(fig[1, 1], title="(a) Center", aspect=DataAspect())
 image!(ax1, rotr90(img_center))
 hidedecorations!(ax1)
 
-ax2 = Axis(fig[1, 2], title="(b) Right", aspect=DataAspect())
+ax2 = Axis(fig[1, 2], title="(b) Edge", aspect=DataAspect())
 image!(ax2, rotr90(img_right))
 hidedecorations!(ax2)
 
-# Spectra overlay
-ax3 = Axis(fig[2, 1:2], xlabel="Raman Shift (cm⁻¹)", ylabel="Intensity",
-    title="(c) MoSe₂ Raman spectra")
-lines!(ax3, xdata(center), ydata(center), label="Center")
-lines!(ax3, xdata(right), ydata(right), label="Right")
+# Row 2: spectra overlay with fit region highlighted
+ax3 = Axis(fig[2, 1:2],
+    xlabel="Raman Shift (cm⁻¹)", ylabel="Intensity",
+    title="(c) MoSe₂ Raman Spectra")
+lines!(ax3, shift(spec_center), intensity(spec_center), label="Center")
+lines!(ax3, shift(spec_edge), intensity(spec_edge), label="Edge")
 vspan!(ax3, 225, 260, color=(:gray, 0.15))
 axislegend(ax3, position=:rt)
 
-# A₁g peak fits
-ax4 = Axis(fig[3, 1:2], xlabel="Raman Shift (cm⁻¹)", ylabel="Intensity",
-    title="(d) A₁g peak fits")
-scatter!(ax4, result_center._x, result_center._y, label="Center")
-lines!(ax4, result_center._x, predict(result_center), color=:red, label="Fit")
-scatter!(ax4, result_right._x, result_right._y, label="Right")
-lines!(ax4, result_right._x, predict(result_right), color=:orange, label="Fit")
+# Row 3: A₁g peak fits + residuals
+ax4 = Axis(fig[3, 1:2], ylabel="Intensity", title="(d) A₁g Peak Fits")
+scatter!(ax4, xdata(fit_center), ydata(fit_center), label="Center")
+lines!(ax4, xdata(fit_center), predict(fit_center), color=:red, label="Fit")
+scatter!(ax4, xdata(fit_edge), ydata(fit_edge), label="Edge")
+lines!(ax4, xdata(fit_edge), predict(fit_edge), color=:orange, label="Fit")
 axislegend(ax4, position=:rt)
 
-save(joinpath(FIGDIR, "mose2_publication.png"), fig)
+ax5 = Axis(fig[4, 1:2], xlabel="Raman Shift (cm⁻¹)", ylabel="Residual")
+scatter!(ax5, xdata(fit_center), residuals(fit_center), label="Center")
+scatter!(ax5, xdata(fit_edge), residuals(fit_edge), label="Edge")
+hlines!(ax5, 0, color=:black, linestyle=:dash)
+linkxaxes!(ax4, ax5)
+hidexdecorations!(ax4, grid=false)
 
-println("\nFigures saved to $FIGDIR")
+figpath = joinpath(FIGDIR, "mose2_raman.png")
+save(figpath, fig)
+println("\nFigure saved to $FIGDIR")
 
 # =============================================================================
-# 4. Log to eLabFTW (optional)
+# 5. Log to eLabFTW
 # =============================================================================
+# Uncomment to upload results to the lab notebook.
+# Requires ELABFTW_URL and ELABFTW_API_KEY environment variables.
 
-# Uncomment to log results to your lab notebook:
-#
-# log_to_elab(
-#     title = "Raman: MoSe2 A₁g peak comparison",
-#     body = """
-# ## Sample
-# MoSe₂ flake, two positions (center and right edge)
-#
-# ## A₁g Peak Fits
-#
-# ### Center
-# $(format_results(result_center))
-#
-# ### Right
-# $(format_results(result_right))
-# """,
-#     attachments = [joinpath(FIGDIR, "mose2_publication.png")],
-#     tags = ["raman", "mose2", "tmdc", "a1g"]
-# )
+#=
+log_to_elab(
+    title = "Raman: MoSe2 A₁g peak comparison",
+    body = """
+## Sample
+MoSe₂ flake, two positions (center and right edge)
+
+## A₁g Peak Fits
+
+### Center
+$(format_results(fit_center))
+
+### Edge
+$(format_results(fit_edge))
+""",
+    attachments = [figpath],
+    tags = ["raman", "mose2", "tmdc", "a1g"]
+)
+=#

@@ -23,7 +23,7 @@ samples = [
 for s in samples
     spec_i = load_ftir(; s.kw...)
     peaks = find_peaks(spec_i)
-    fig, ax = plot_spectrum(spec_i; peaks=peaks)
+    fig, ax = plot_ftir(spec_i; peaks=peaks)
     save(joinpath(FIGDIR, "ftir_labeled_$(s.label).png"), fig)
     println("$(s.label): $(length(peaks)) peaks detected")
 end
@@ -42,8 +42,12 @@ pk = result[1]
 println()
 report(result)
 
-fig, ax, ax_res = plot_spectrum(spec; fit=result, residuals=true)
+fig, ax, ax_res = plot_ftir(spec; fit=result, residuals=true)
 save(joinpath(FIGDIR, "ftir_fit.png"), fig)
+
+peaks = find_peaks(spec)
+fig, ax_ctx, ax_fit, ax_res = plot_ftir(spec; fit=result, context=true, peaks=peaks)
+save(joinpath(FIGDIR, "ftir_context.png"), fig)
 
 # =============================================================================
 # 3. Background subtraction

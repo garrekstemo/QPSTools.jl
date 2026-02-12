@@ -11,6 +11,7 @@ makedocs(
     pages = [
         "Home" => "index.md",
         "Tutorials" => [
+            "Spectrum Plotting Views" => "tutorials/plot_spectrum_views.md",
             "Raman Analysis" => "tutorials/raman.md",
             "FTIR Analysis" => "tutorials/ftir.md",
             "PL / Raman Mapping" => "tutorials/plmap.md",

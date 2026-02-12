@@ -34,6 +34,21 @@ xlabel(::RamanSpectrum) = "Raman Shift (cm⁻¹)"
 ylabel(::RamanSpectrum) = "Intensity"
 source_file(s::RamanSpectrum) = basename(s.path)
 
+# Semantic accessors
+"""
+    shift(s::RamanSpectrum) -> Vector{Float64}
+
+Return the Raman shift axis (cm⁻¹).
+"""
+shift(s::RamanSpectrum) = xdata(s)
+
+"""
+    intensity(s::RamanSpectrum) -> Vector{Float64}
+
+Return the Raman intensity (counts).
+"""
+intensity(s::RamanSpectrum) = ydata(s)
+
 function Base.show(io::IO, spec::RamanSpectrum)
     id = get(spec.sample, "_id", "unknown")
     n = length(spec.data.x)
@@ -139,7 +154,9 @@ See `plot_spectrum(::AnnotatedSpectrum)` for full documentation.
 spec = load_raman(sample="C1")
 
 fig, ax = plot_raman(spec)
-fig, ax = plot_raman(spec; labels=true)
+
+peaks = find_peaks(spec)
+fig, ax = plot_raman(spec; peaks=peaks)
 
 result = fit_peaks(spec, (1000, 1200))
 fig, ax, ax_res = plot_raman(spec; fit=result, residuals=true)

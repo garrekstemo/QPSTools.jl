@@ -48,7 +48,7 @@ function _draw_peak_annotation!(ax, result::MultiPeakFitResult; units::String=""
     else
         annotation = "center = $(round(center_val, digits=1))\n$(width_param) = $(round(width_val, digits=1)) ± $(round(width_err, digits=1))"
     end
-    text!(ax, 0.95, 0.95, text=annotation, align=(:right, :top), space=:relative)
+    text!(ax, 0.95, 0.5, text=annotation, align=(:right, :center), space=:relative)
 end
 
 """

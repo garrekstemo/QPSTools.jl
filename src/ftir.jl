@@ -31,11 +31,96 @@ end
 xdata(s::FTIRSpectrum) = s.data.x
 ydata(s::FTIRSpectrum) = s.data.y
 xlabel(::FTIRSpectrum) = "Wavenumber (cm⁻¹)"
-ylabel(::FTIRSpectrum) = "Absorbance"
 source_file(s::FTIRSpectrum) = basename(s.path)
+
+# Dynamic ylabel from JASCO YUNITS field
+const _FTIR_YLABEL = Dict(
+    "ABSORBANCE" => "Absorbance",
+    "TRANSMITTANCE" => "Transmittance (%)",
+    "REFLECTANCE" => "Reflectance (%)",
+    "SB" => "Single Beam (arb. u.)",
+    "INTENSITY" => "Intensity (arb. u.)",
+    "Int." => "Interferogram",
+)
+
+ylabel(spec::FTIRSpectrum) = get(_FTIR_YLABEL, spec.data.yunits, "Signal")
 
 # FTIR convention: high wavenumber on left
 xreversed(::FTIRSpectrum) = true
+
+# Semantic accessors
+"""
+    wavenumber(s::FTIRSpectrum) -> Vector{Float64}
+
+Return the wavenumber axis (cm⁻¹).
+"""
+wavenumber(s::FTIRSpectrum) = xdata(s)
+
+"""
+    signal(s::FTIRSpectrum) -> Vector{Float64}
+
+Return the y-data regardless of measurement mode (absorbance, transmittance, etc.).
+"""
+signal(s::FTIRSpectrum) = ydata(s)
+
+"""
+    ykind(s::FTIRSpectrum) -> Symbol
+
+Return the kind of y-data as a Symbol (`:absorbance`, `:transmittance`,
+`:reflectance`, `:single_beam`, `:intensity`, `:interferogram`, or `:unknown`).
+"""
+const _FTIR_YKIND = Dict(
+    "ABSORBANCE" => :absorbance,
+    "TRANSMITTANCE" => :transmittance,
+    "REFLECTANCE" => :reflectance,
+    "SB" => :single_beam,
+    "INTENSITY" => :intensity,
+    "Int." => :interferogram,
+)
+
+ykind(spec::FTIRSpectrum) = get(_FTIR_YKIND, spec.data.yunits, :unknown)
+
+"""
+    absorbance(s::FTIRSpectrum) -> Vector{Float64}
+
+Return y-data, validating that the spectrum contains absorbance data.
+Errors if the JASCO YUNITS field indicates a different measurement mode.
+"""
+function absorbance(spec::FTIRSpectrum)
+    ykind(spec) === :absorbance || error(
+        "Spectrum contains $(spec.data.yunits) data, not absorbance. " *
+        "Use signal(spec) for generic access or transmittance_to_absorbance() to convert."
+    )
+    return ydata(spec)
+end
+
+"""
+    transmittance(s::FTIRSpectrum) -> Vector{Float64}
+
+Return y-data, validating that the spectrum contains transmittance data.
+Errors if the JASCO YUNITS field indicates a different measurement mode.
+"""
+function transmittance(spec::FTIRSpectrum)
+    ykind(spec) === :transmittance || error(
+        "Spectrum contains $(spec.data.yunits) data, not transmittance. " *
+        "Use signal(spec) for generic access or absorbance_to_transmittance() to convert."
+    )
+    return ydata(spec)
+end
+
+"""
+    reflectance(s::FTIRSpectrum) -> Vector{Float64}
+
+Return y-data, validating that the spectrum contains reflectance data.
+Errors if the JASCO YUNITS field indicates a different measurement mode.
+"""
+function reflectance(spec::FTIRSpectrum)
+    ykind(spec) === :reflectance || error(
+        "Spectrum contains $(spec.data.yunits) data, not reflectance. " *
+        "Use signal(spec) for generic access."
+    )
+    return ydata(spec)
+end
 
 function Base.show(io::IO, spec::FTIRSpectrum)
     id = get(spec.sample, "_id", "unknown")
@@ -141,7 +226,9 @@ See `plot_spectrum(::AnnotatedSpectrum)` for full documentation.
 spec = load_ftir(solute="NH4SCN", concentration="1.0M")
 
 fig, ax = plot_ftir(spec)
-fig, ax = plot_ftir(spec; labels=true)
+
+peaks = find_peaks(spec)
+fig, ax = plot_ftir(spec; peaks=peaks)
 
 result = fit_peaks(spec, (1950, 2150))
 fig, ax, ax_res = plot_ftir(spec; fit=result, residuals=true)
