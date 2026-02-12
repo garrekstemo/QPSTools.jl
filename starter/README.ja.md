@@ -6,12 +6,12 @@ QPSTools.jlを使った新しい解析プロジェクトのテンプレートで
 
 ## セットアップ
 
-1. この`starter/`フォルダを自分の場所にコピーしてリネームしてください：
+1. このフォルダを自分の場所にコピーしてリネームしてください：
    ```
    cp -r starter/ ~/Documents/projects/my-raman-project/
    ```
 
-2. 初回セットアップを実行してQPSToolsをリンクします（必要に応じて`setup.jl`内のパスを編集）：
+2. 初回セットアップを実行してパッケージをインストールします：
    ```
    cd ~/Documents/projects/my-raman-project/
    julia --project=. setup.jl
@@ -51,14 +51,15 @@ julia --project=../.. analyses/MoSe2_A1g/analysis.jl
 ```
 my-project/
 ├── Project.toml              # Julia環境（手動で編集しないこと）
-├── setup.jl                  # 初回セットアップ用（実行後は削除可）
+├── setup.jl                  # 初回セットアップ用（実行後は削除可能）
 ├── data/
 │   ├── registry.json         # サンプルのメタデータ — QPSToolsが参照します
 │   └── raman/                # JASCOの生データ（.csvファイル）
 ├── scratch/                  # 探索用 — 自由に使える作業スペース
 ├── templates/                # テンプレート — コピーして使う（直接編集しない）
 │   ├── raman_analysis.jl
-│   └── ftir_analysis.jl
+│   ├── ftir_analysis.jl
+│   └── plmap_analysis.jl
 └── analyses/                 # 完成した解析はここに保存
     └── MoSe2_A1g/
         ├── analysis.jl

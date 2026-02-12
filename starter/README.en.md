@@ -6,12 +6,12 @@ Template for new analysis projects using QPSTools.jl.
 
 ## Setup
 
-1. Copy this entire `starter/` folder to your own location and rename it:
+1. Copy this folder to your own location and rename it:
    ```
    cp -r starter/ ~/Documents/projects/my-raman-project/
    ```
 
-2. Run the one-time setup to link QPSTools (edit the path in `setup.jl` if needed):
+2. Run the one-time setup to install packages:
    ```
    cd ~/Documents/projects/my-raman-project/
    julia --project=. setup.jl
@@ -51,14 +51,15 @@ julia --project=../.. analyses/MoSe2_A1g/analysis.jl
 ```
 my-project/
 ├── Project.toml              # Julia environment (don't edit manually)
-├── setup.jl                  # One-time setup (delete after running)
+├── setup.jl                  # One-time setup (can delete after running)
 ├── data/
 │   ├── registry.json         # Sample metadata — QPSTools looks here
 │   └── raman/                # Raw .csv files from JASCO
 ├── scratch/                  # Exploration — try things here freely
 ├── templates/                # Starting points — copy, don't edit
 │   ├── raman_analysis.jl
-│   └── ftir_analysis.jl
+│   ├── ftir_analysis.jl
+│   └── plmap_analysis.jl
 └── analyses/                 # Finished analyses go here
     └── MoSe2_A1g/
         ├── analysis.jl
