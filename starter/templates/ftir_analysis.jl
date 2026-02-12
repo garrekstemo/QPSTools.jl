@@ -7,11 +7,11 @@ using CairoMakie
 
 FIGDIR = joinpath(@__DIR__, "figures")
 mkpath(FIGDIR)
-set_data_dir(joinpath(dirname(dirname(@__DIR__)), "data"))
 
 # 1. 読み込み / Load
-list_ftir()
-spec = load_ftir(solute="NH4SCN", concentration="1.0M")
+# パスとメタデータを自分のデータに合わせて変更
+# Change the path and metadata to match your data
+spec = load_ftir("data/ftir/my_solution.csv"; solute="NH4SCN", concentration="1.0M")
 
 # 2. 全体像 / Survey
 fig, ax = plot_ftir(spec)
@@ -25,6 +25,8 @@ fig, ax = plot_ftir(spec; peaks=peaks)
 save(joinpath(FIGDIR, "peaks.png"), fig)
 
 # 4. フィッティング / Peak fitting
+# peak_tableの出力からフィットしたいピークの範囲を読み取る
+# Read the peak_table output above to choose a region around your peak
 # 領域 (lo, hi) を自分のデータに合わせて変更
 # Change the region (lo, hi) to match your data
 result = fit_peaks(spec, (1950, 2150))
@@ -35,12 +37,16 @@ save(joinpath(FIGDIR, "fit.png"), fig)
 
 # 三面図（論文用） / Three-panel (publication)
 fig, ax_ctx, ax_fit, ax_res = plot_ftir(spec; fit=result, context=true, peaks=peaks)
-save(joinpath(FIGDIR, "context.png"), fig)
+save(joinpath(FIGDIR, "context.pdf"), fig)
 
 # 5. eLabFTWに記録 / Log to eLabFTW
-log_to_elab(
+# 環境変数の設定が必要 / Requires environment variables:
+#   export ELABFTW_URL="https://your-instance.elabftw.net"
+#   export ELABFTW_API_KEY="your-api-key"
+#= Uncomment when ready:
+log_to_elab(spec, result;
     title = "FTIR: NH4SCN CN stretch fit",
-    body = format_results(result),
-    attachments = [joinpath(FIGDIR, "context.png")],
-    tags = ["ftir", "nh4scn"]
+    attachments = [joinpath(FIGDIR, "context.pdf")],
+    extra_tags = ["peak_fit"]
 )
+=#

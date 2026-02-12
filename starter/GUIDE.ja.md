@@ -30,10 +30,10 @@ QPS研究室における分光解析の整理に関するベストプラクテ�
    前処理（ベースライン補正、バックグラウンド除去など）が必要な場合は、
    再現性のためにスクリプト内で行ってください。
 
-6. **レジストリはデータカタログ。**
-   すべてのデータファイルを`data/registry.json`に登録してください。
-   これにより、ファイルパスではなくメタデータでデータを読み込めます
-   （`load_raman(material="MoSe2")`）。スクリプトの可搬性と可読性が向上します。
+6. **eLabFTWはラボノートです。**
+   `log_to_elab()`で解析結果を記録します。タグはJASCOファイルヘッダと
+   `load_raman`/`load_ftir`に渡したメタデータから自動生成されます。
+   eLabFTWのエントリが正式な記録です。解析フォルダは作業スペースです。
 
 ## フォルダの命名規則
 
@@ -56,31 +56,6 @@ new_analysis/
 MoSe2_A1g_v2_final_FINAL/
 ```
 
-## レジストリの書き方
-
-各サンプルにユニークなIDとメタデータを設定します。
-`path`フィールドは`data/`からの相対パスです。
-
-```json
-{
-  "raman": {
-    "MoSe2_center": {
-      "sample": "center",
-      "material": "MoSe2",
-      "laser_nm": 532.05,
-      "objective": "100x",
-      "path": "raman/MoSe2_center.csv",
-      "date": "2026-01-20"
-    }
-  }
-}
-```
-
-ポイント：
-- エントリ間でフィールド名を統一する（`laser`と`laser_nm`を混在させない）
-- スペクトルに影響する測定パラメータを含める（レーザー出力、露光時間、グレーティングなど）
-- `date`フィールドはデータの取得日を記録する（解析日ではない）
-
 ## ワークフロー
 
 解析には探索と仕上げの2つのフェーズがあります。
@@ -93,9 +68,8 @@ MoSe2_A1g_v2_final_FINAL/
 ```julia
 # scratch/look_at_new_sample.jl
 using QPSTools, GLMakie
-set_data_dir(joinpath(dirname(@__DIR__), "data"))
 
-spec = load_raman(sample="spot1", material="MySample")
+spec = load_raman("data/raman/MoSe2_center.csv"; material="MoSe2")
 fig, ax = plot_raman(spec)
 
 peaks = find_peaks(spec)
@@ -114,7 +88,7 @@ VS Codeで1行ずつ実行します。`GLMakie`を使えばズームやパンが
 ```
 1. フォルダ作成       mkdir -p analyses/MoSe2_A1g
 2. テンプレートコピー  cp templates/raman_analysis.jl analyses/MoSe2_A1g/analysis.jl
-3. スクリプト編集     （サンプル名、フィット領域などを変更）
+3. スクリプト編集     （ファイルパス、メタデータ、フィット領域などを変更）
 4. 実行              julia --project=../.. analyses/MoSe2_A1g/analysis.jl
 5. 図の確認          （figures/を開いて出力を確認）
 6. 繰り返し          （パラメータ調整、再実行）
@@ -133,20 +107,98 @@ VS Codeで1行ずつ実行します。`GLMakie`を使えばズームやパンが
 - 2つの異なるサンプルを比較する
 - 根本的に異なる解析アプローチ（例：ベースライン補正の検討）
 
+## 過去の結果の検索
+
+eLabFTWは過去の解析を検索するためのクエリレイヤーです。
+タグはJASCOの種類と`load_raman`/`load_ftir`に渡したkwargsから自動生成されます：
+
+```julia
+# 全てのラマン解析を検索
+search_experiments(tags=["raman"])
+
+# MoSe2の全ての研究を検索
+search_experiments(tags=["MoSe2"])
+
+# タイトルと本文の全文検索
+search_experiments(query="A1g peak fit")
+
+# 最近の実験
+list_experiments(limit=10)
+```
+
 ## eLabFTWへの記録
 
 解析が完了したら、結果をeLabFTWに記録します。
-図が添付された検索可能な記録が作成されます。
-スクリプトの末尾に`log_to_elab`ブロックを追加してください：
+自動プロベナンス形式がJASCOヘッダからタグとソース情報を自動抽出します：
 
 ```julia
-log_to_elab(
+log_to_elab(spec, result;
     title = "Raman: MoSe2 A1g peak fit",
-    body = format_results(result),
     attachments = [joinpath(FIGDIR, "context.png")],
-    tags = ["raman", "mose2", "a1g"]
+    extra_tags = ["a1g"]
 )
 ```
 
-eLabFTWのエントリが正式な記録になります。解析フォルダは作業スペースです。
-論文で引用したり共同研究者と共有するのはノートのエントリです。
+スクリプトを再実行すると同じ実験が更新されます（`.elab_id`ファイルによる冪等性）。
+
+## 実用的なヒント
+
+### フィット領域の選び方
+
+まず`find_peaks`と`peak_table`を実行します。テーブルにピーク中心位置が表示されるので、
+フィットしたいピークを囲む範囲`(lo, hi)`を選びます。
+
+```julia
+peaks = find_peaks(spec)
+println(peak_table(peaks))
+# ピーク中心が表示される（例: 2054.3 cm⁻¹）
+# → そのピークを囲む (1950, 2150) を選ぶ
+result = fit_peaks(spec, (1950, 2150))
+```
+
+### `format_results`の出力
+
+`format_results(result)`はMarkdown文字列を返します：
+
+```
+Peak Fit Results
+| Parameter | Peak 1   |
+|-----------|----------|
+| center    | 2054.3   |
+| fwhm      | 22.1     |
+| amplitude | 0.83     |
+| R²        | 0.9987   |
+```
+
+この文字列が`log_to_elab`でeLabFTWに記録されます。
+
+### `--project=../..`の理由
+
+解析スクリプトはプロジェクトルートから2階層下にあります
+（`analyses/MoSe2_A1g/analysis.jl`）。`../..`でQPSToolsがインストールされている
+`Project.toml`の場所を指定しています。
+
+### `scratch/`の場合
+
+`scratch/`のスクリプトは1階層下なので、`--project=..`を使います。
+または対話的に実行できます：プロジェクトルートで`julia --project=.`を起動し、
+`include("scratch/my_script.jl")`で読み込みます。
+
+### プロット関数の戻り値
+
+プロット関数はレイアウトに応じて異なるタプルを返します：
+
+```julia
+fig, ax                          = plot_ftir(spec)                              # 全体像
+fig, ax, ax_res                  = plot_ftir(spec; fit=r, residuals=true)       # 二段
+fig, ax_ctx, ax_fit, ax_res      = plot_ftir(spec; fit=r, context=true)         # 三面図
+```
+
+分割代入で必要なものだけ受け取れます。図だけ欲しい場合は
+`fig, _ = plot_ftir(spec)`のように軸を無視できます。
+
+### PNGとPDF
+
+試行錯誤中はPNG（`.png`）を使います — 高速でプレビューしやすいです。
+論文用の図にはPDF（`.pdf`）に切り替えます — ベクター画像なので
+拡大してもピクセルが見えません。

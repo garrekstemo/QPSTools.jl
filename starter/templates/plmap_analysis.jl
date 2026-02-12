@@ -7,10 +7,9 @@ using CairoMakie
 
 FIGDIR = joinpath(@__DIR__, "figures")
 mkpath(FIGDIR)
-set_data_dir(joinpath(dirname(dirname(@__DIR__)), "data"))
 
 # 1. 読み込み・スペクトル確認 / Load and inspect spectra
-filepath = joinpath(data_dir(), "PLmap", "my_scan.lvm")
+filepath = "data/PLmap/my_scan.lvm"
 m_raw = load_pl_map(filepath; nx=51, ny=51, step_size=2.16)
 println(m_raw)
 
@@ -47,9 +46,13 @@ ax2 = Axis(fig[1, 2], xlabel="X (μm)", ylabel="Y (μm)",
 hm = heatmap!(ax2, xdata(m), ydata(m), intensity(m); colormap=:hot)
 Colorbar(fig[1, 3], hm, label="Normalized PL")
 
-save(joinpath(FIGDIR, "publication.png"), fig)
+save(joinpath(FIGDIR, "publication.pdf"), fig)
 
 # 5. eLabFTWに記録 / Log to eLabFTW
+# 環境変数の設定が必要 / Requires environment variables:
+#   export ELABFTW_URL="https://your-instance.elabftw.net"
+#   export ELABFTW_API_KEY="your-api-key"
+#= Uncomment when ready:
 log_to_elab(
     title = "PL Map: MySample",
     body = """
@@ -58,6 +61,7 @@ log_to_elab(
 - **PL pixel range**: 950-1100
 - **Background**: auto
 """,
-    attachments = [joinpath(FIGDIR, "publication.png")],
+    attachments = [joinpath(FIGDIR, "publication.pdf")],
     tags = ["pl-map"]
 )
+=#
