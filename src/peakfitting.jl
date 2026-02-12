@@ -17,7 +17,7 @@ function fit_peaks(spec::AnnotatedSpectrum, region::Tuple{Real,Real}; kwargs...)
     x_full = xdata(spec)
     y_full = ydata(spec)
 
-    mask = region[1] .< x_full .< region[2]
+    mask = region[1] .<= x_full .<= region[2]
     x = x_full[mask]
     y = y_full[mask]
 
