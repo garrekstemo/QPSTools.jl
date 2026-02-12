@@ -1,5 +1,5 @@
 """
-Cavity spectroscopy analysis: types, physics, fitting, and registry loading.
+Cavity spectroscopy analysis: types, physics, and fitting.
 
 Provides tools for fitting Fabry-Perot cavity transmission spectra with
 Lorentz oscillator models, extracting polariton peak positions, building
@@ -20,7 +20,7 @@ Physics chain:
 """
     CavitySpectrum <: AnnotatedSpectrum
 
-Cavity FTIR transmission spectrum with sample metadata from registry.
+Cavity FTIR transmission spectrum with sample metadata.
 
 # Fields
 - `data::JASCOSpectrum` - Raw spectrum from JASCOFiles.jl
@@ -64,16 +64,20 @@ Return the transmittance signal (%).
 transmittance(s::CavitySpectrum) = ydata(s)
 
 function Base.show(io::IO, spec::CavitySpectrum)
-    id = get(spec.sample, "_id", "unknown")
+    label = get(spec.sample, "_id", basename(spec.path))
     n = length(spec.data.x)
-    print(io, "CavitySpectrum(\"$id\", $n points)")
+    print(io, "CavitySpectrum(\"$label\", $n points)")
 end
 
 function Base.show(io::IO, ::MIME"text/plain", spec::CavitySpectrum)
     println(io, "CavitySpectrum:")
 
     id = get(spec.sample, "_id", nothing)
-    !isnothing(id) && println(io, "  id: $id")
+    if !isnothing(id)
+        println(io, "  id: $id")
+    else
+        println(io, "  file: $(basename(spec.path))")
+    end
 
     for key in ["sample", "mirror", "cavity_length", "angle", "solute", "concentration", "solvent"]
         val = get(spec.sample, key, nothing)
@@ -83,6 +87,7 @@ function Base.show(io::IO, ::MIME"text/plain", spec::CavitySpectrum)
     x = spec.data.x
     println(io, "  range: $(round(minimum(x), digits=1)) - $(round(maximum(x), digits=1)) $(spec.data.xunits)")
     println(io, "  points: $(length(x))")
+    !isempty(spec.data.spectrometer) && println(io, "  instrument: $(spec.data.spectrometer)")
     println(io, "  date: $(spec.data.date)")
 end
 
@@ -692,8 +697,8 @@ end
 """
     fit_cavity_spectrum(spec::CavitySpectrum; kwargs...)
 
-Fit a `CavitySpectrum` from registry. Extracts wavenumber/transmittance and
-cavity length from metadata.
+Fit a `CavitySpectrum`. Extracts wavenumber/transmittance and cavity length
+from metadata.
 
 Transmittance is normalized from percent (0-100) to fractional (0-1) automatically
 if the maximum value exceeds 1.5.
@@ -886,71 +891,22 @@ function fit_dispersion(results::Vector{CavityFitResult};
 end
 
 # =============================================================================
-# Registry loading
+# Loading
 # =============================================================================
 
 """
-    load_cavity(; kwargs...) -> CavitySpectrum
+    load_cavity(path::String; kwargs...) -> CavitySpectrum
 
-Load a single cavity spectrum by metadata query. Errors if not exactly one match.
-
-# Keyword Arguments
-Any field in the registry can be used as a filter:
-- `sample` - Sample description
-- `mirror` - Mirror type (e.g., "Au", "DBR")
-- `angle` - Incidence angle
-- `cavity_length` - Cavity length in cm
-- `solute`, `concentration`, `solvent` - Solution properties
+Load a cavity spectrum from a JASCO CSV file. Optional kwargs
+(e.g., `mirror="Au"`, `angle=10`) are stored as metadata for display and eLabFTW.
 
 # Examples
 ```julia
-spec = load_cavity(sample="NH4SCN 1.0M in DMF", angle=0)
+spec = load_cavity("data/cavity/Au_0deg.csv")
+spec = load_cavity("data/cavity/Au_0deg.csv"; mirror="Au", angle=0, cavity_length=12e-4)
 ```
 """
-function load_cavity(; kwargs...)
-    matches = query_registry(:cavity; kwargs...)
-
-    if isempty(matches)
-        _annotated_no_match_error(:cavity, kwargs)
-    elseif length(matches) > 1
-        _annotated_multiple_match_error(:cavity, matches, kwargs)
-    end
-
-    return _load_annotated_entry(matches[1], CavitySpectrum)
-end
-
-"""
-    search_cavity(; kwargs...) -> Vector{CavitySpectrum}
-
-Search for cavity spectra matching filters. Always returns a vector (possibly empty).
-
-# Examples
-```julia
-all_au = search_cavity(mirror="Au")
-angle_scan = search_cavity(sample="NH4SCN 1.0M in DMF")
-everything = search_cavity()
-```
-"""
-function search_cavity(; kwargs...)
-    matches = query_registry(:cavity; kwargs...)
-    return [_load_annotated_entry(m, CavitySpectrum) for m in matches]
-end
-
-"""
-    list_cavity(; field::Symbol=:angle) -> Vector
-
-List unique values for a given field in the cavity registry.
-
-# Examples
-```julia
-list_cavity()                   # Default: list angles
-list_cavity(field=:mirror)      # ["Au", "DBR", ...]
-list_cavity(field=:sample)      # Available samples
-```
-"""
-function list_cavity(; field::Symbol=:angle)
-    return list_registry(:cavity; field=field)
-end
+load_cavity(path::String; kwargs...) = _load_annotated_path(path, CavitySpectrum; kwargs...)
 
 # =============================================================================
 # Plotting alias

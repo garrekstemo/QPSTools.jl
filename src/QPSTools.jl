@@ -11,7 +11,7 @@ Standardized analysis tools for all lab members. This package provides:
 
 General-purpose spectroscopy functionality (types, fitting, baseline, units)
 is provided by SpectroscopyTools.jl. QPSTools.jl adds lab-specific loaders,
-registry, eLabFTW integration, and Makie plotting.
+eLabFTW integration, and Makie plotting.
 
 ## Transient Absorption Workflow
 ```julia
@@ -34,8 +34,8 @@ save("figures/kinetics.pdf", fig)
 ```julia
 using QPSTools
 
-# Load FTIR spectrum from registry
-spec = load_ftir(solute="NH4SCN", concentration="1.0M")
+# Load FTIR spectrum from file
+spec = load_ftir("data/ftir/1.0M_NH4SCN_DMF.csv"; solute="NH4SCN", concentration="1.0M")
 
 # Fit a peak
 result = fit_peaks(spec, (2000, 2100))
@@ -149,13 +149,7 @@ export find_peak_time                   # Time axis utility
 # Re-export JASCOFiles for raw spectrum data
 export JASCOSpectrum
 
-# Registry system
-include("registry.jl")
-export load_registry, query_registry, list_registry
-export set_data_dir, get_data_dir, reload_registry!
-export set_registry_backend, get_registry_backend
-
-# eLabFTW integration (optional backend)
+# eLabFTW integration
 include("elabftw.jl")
 export configure_elabftw, elabftw_enabled, disable_elabftw, enable_elabftw
 export test_connection
@@ -171,18 +165,18 @@ export log_to_elab, tags_from_sample
 # FTIR loading and analysis
 include("ftir.jl")
 export FTIRSpectrum, FTIRFitResult
-export load_ftir, search_ftir, list_ftir, plot_ftir
+export load_ftir, plot_ftir
 export xreversed
 
 # Raman loading and analysis
 include("raman.jl")
 export RamanSpectrum
-export load_raman, search_raman, list_raman, plot_raman
+export load_raman, plot_raman
 
 # Cavity spectroscopy analysis
 include("cavity.jl")
 export CavitySpectrum, CavityFitResult, DispersionFitResult
-export load_cavity, search_cavity, list_cavity, plot_cavity
+export load_cavity, plot_cavity
 export fit_cavity_spectrum, fit_dispersion
 export compute_cavity_transmittance
 export cavity_mode_energy, polariton_branches, polariton_eigenvalues

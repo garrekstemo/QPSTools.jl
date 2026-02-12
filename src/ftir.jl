@@ -1,18 +1,17 @@
 """
 FTIR spectrum loading and analysis.
 
-Provides `load_ftir()` and `search_ftir()` for registry-based loading,
-plus `plot_ftir()` for visualization.
+Provides `load_ftir()` for path-based loading and `plot_ftir()` for visualization.
 """
 
 """
     FTIRSpectrum <: AnnotatedSpectrum
 
-FTIR spectrum with sample metadata from registry.
+FTIR spectrum with sample metadata.
 
 # Fields
 - `data::JASCOSpectrum` — Raw spectrum from JASCOFiles.jl (includes instrument metadata)
-- `sample::Dict{String,Any}` — Sample metadata from registry (solute, concentration, etc.)
+- `sample::Dict{String,Any}` — Sample metadata (solute, concentration, etc.)
 - `path::String` — File path
 
 # Accessing data
@@ -123,16 +122,20 @@ function reflectance(spec::FTIRSpectrum)
 end
 
 function Base.show(io::IO, spec::FTIRSpectrum)
-    id = get(spec.sample, "_id", "unknown")
+    label = get(spec.sample, "_id", basename(spec.path))
     n = length(spec.data.x)
-    print(io, "FTIRSpectrum(\"$id\", $n points)")
+    print(io, "FTIRSpectrum(\"$label\", $n points)")
 end
 
 function Base.show(io::IO, ::MIME"text/plain", spec::FTIRSpectrum)
     println(io, "FTIRSpectrum:")
 
     id = get(spec.sample, "_id", nothing)
-    !isnothing(id) && println(io, "  id: $id")
+    if !isnothing(id)
+        println(io, "  id: $id")
+    else
+        println(io, "  file: $(basename(spec.path))")
+    end
 
     for key in ["solute", "solvent", "concentration", "material", "pathlength", "substrate"]
         val = get(spec.sample, key, nothing)
@@ -142,73 +145,23 @@ function Base.show(io::IO, ::MIME"text/plain", spec::FTIRSpectrum)
     x = spec.data.x
     println(io, "  range: $(round(minimum(x), digits=1)) - $(round(maximum(x), digits=1)) $(spec.data.xunits)")
     println(io, "  points: $(length(x))")
+    !isempty(spec.data.spectrometer) && println(io, "  instrument: $(spec.data.spectrometer)")
     println(io, "  date: $(spec.data.date)")
 end
 
 """
-    load_ftir(; kwargs...) -> FTIRSpectrum
+    load_ftir(path::String; kwargs...) -> FTIRSpectrum
 
-Load a single FTIR spectrum by metadata query. Errors if not exactly one match.
-
-# Keyword Arguments
-Any field in the registry can be used as a filter:
-- `solute` — Solute name (e.g., "NH4SCN")
-- `solvent` — Solvent name (e.g., "DMF")
-- `concentration` — Concentration string (e.g., "1.0M")
-- `material` — Material name (for references)
-- `pathlength` — Cell pathlength in μm
-- `substrate` — Window/substrate material
+Load an FTIR spectrum from a JASCO CSV file. Optional kwargs
+(e.g., `solute="NH4SCN"`) are stored as metadata for display and eLabFTW.
 
 # Examples
 ```julia
-spec = load_ftir(solute="NH4SCN", concentration="1.0M")
-ref = load_ftir(material="DMF", pathlength=12.0)
+spec = load_ftir("data/ftir/1.0M_NH4SCN_DMF.csv")
+spec = load_ftir("data/ftir/1.0M_NH4SCN_DMF.csv"; solute="NH4SCN", concentration="1.0M")
 ```
 """
-function load_ftir(; kwargs...)
-    matches = query_registry(:ftir; kwargs...)
-
-    if isempty(matches)
-        _annotated_no_match_error(:ftir, kwargs)
-    elseif length(matches) > 1
-        _annotated_multiple_match_error(:ftir, matches, kwargs)
-    end
-
-    return _load_annotated_entry(matches[1], FTIRSpectrum)
-end
-
-"""
-    search_ftir(; kwargs...) -> Vector{FTIRSpectrum}
-
-Search for FTIR spectra matching filters. Always returns a vector (possibly empty).
-
-# Examples
-```julia
-all_concs = search_ftir(solute="NH4SCN")   # All concentrations
-all_refs = search_ftir(material="DMF")      # All DMF references
-everything = search_ftir()                  # All FTIR entries
-```
-"""
-function search_ftir(; kwargs...)
-    matches = query_registry(:ftir; kwargs...)
-    return [_load_annotated_entry(m, FTIRSpectrum) for m in matches]
-end
-
-"""
-    list_ftir(; field::Symbol=:concentration) -> Vector
-
-List unique values for a given field in the FTIR registry.
-
-# Examples
-```julia
-list_ftir()                        # Default: list concentrations
-list_ftir(field=:solvent)          # ["DMF", "DMSO", ...]
-list_ftir(field=:solute)           # ["NH4SCN", "W(CO)6", ...]
-```
-"""
-function list_ftir(; field::Symbol=:concentration)
-    return list_registry(:ftir; field=field)
-end
+load_ftir(path::String; kwargs...) = _load_annotated_path(path, FTIRSpectrum; kwargs...)
 
 # =============================================================================
 # Plotting (thin wrapper around plot_spectrum)

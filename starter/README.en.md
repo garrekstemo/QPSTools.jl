@@ -17,7 +17,7 @@ Template for new analysis projects using QPSTools.jl.
    julia --project=. setup.jl
    ```
 
-3. Add your data files to `data/raman/` and register them in `data/registry.json`.
+3. Add your data files to `data/raman/` (or `data/ftir/`, etc.).
 
 ## Usage
 
@@ -40,7 +40,7 @@ mkdir -p analyses/MoSe2_A1g
 cp templates/raman_analysis.jl analyses/MoSe2_A1g/analysis.jl
 ```
 
-Then edit the script and run it:
+Then edit the script (change the file path and metadata) and run it:
 
 ```bash
 julia --project=../.. analyses/MoSe2_A1g/analysis.jl
@@ -53,8 +53,8 @@ my-project/
 ├── Project.toml              # Julia environment (don't edit manually)
 ├── setup.jl                  # One-time setup (can delete after running)
 ├── data/
-│   ├── registry.json         # Sample metadata — QPSTools looks here
-│   └── raman/                # Raw .csv files from JASCO
+│   ├── raman/                # Raw .csv files from JASCO
+│   └── ftir/                 # FTIR .csv files
 ├── scratch/                  # Exploration — try things here freely
 ├── templates/                # Starting points — copy, don't edit
 │   ├── raman_analysis.jl
@@ -63,31 +63,34 @@ my-project/
 └── analyses/                 # Finished analyses go here
     └── MoSe2_A1g/
         ├── analysis.jl
+        ├── .elab_id          # Auto-created by log_to_elab (gitignored)
         └── figures/
 ```
 
-## Registry
+## Loading Data
 
-QPSTools finds your data through `data/registry.json`. Each entry maps a sample ID
-to its metadata and file path:
-
-```json
-{
-  "raman": {
-    "my_sample_1": {
-      "sample": "spot1",
-      "material": "MySample",
-      "laser_nm": 532.05,
-      "path": "raman/my_sample_spot1.csv"
-    }
-  }
-}
-```
-
-Then load by metadata:
+QPSTools loads data by file path. Optional keyword arguments add metadata
+for display and eLabFTW tagging:
 
 ```julia
-spec = load_raman(sample="spot1", material="MySample")
+spec = load_raman("data/raman/MoSe2_center.csv"; material="MoSe2", sample="center")
+spec = load_ftir("data/ftir/1.0M_NH4SCN_DMF.csv"; solute="NH4SCN", concentration="1.0M")
+```
+
+## eLabFTW Setup
+
+To log results to your lab notebook, set environment variables (add to `~/.zshrc`):
+
+```bash
+export ELABFTW_URL="https://your-instance.elabftw.net"
+export ELABFTW_API_KEY="your-api-key"
+```
+
+Then verify the connection:
+
+```julia
+using QPSTools
+test_connection()
 ```
 
 See the QPSTools examples for more: `QPSTools.jl/examples/raman_analysis.jl`

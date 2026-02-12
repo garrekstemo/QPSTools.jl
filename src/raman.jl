@@ -1,18 +1,17 @@
 """
 Raman spectrum loading and analysis.
 
-Provides `load_raman()` and `search_raman()` for registry-based loading,
-plus `plot_raman()` for visualization.
+Provides `load_raman()` for path-based loading and `plot_raman()` for visualization.
 """
 
 """
     RamanSpectrum <: AnnotatedSpectrum
 
-Raman spectrum with sample metadata from registry.
+Raman spectrum with sample metadata.
 
 # Fields
 - `data::JASCOSpectrum` — Raw spectrum from JASCOFiles.jl (includes instrument metadata)
-- `sample::Dict{String,Any}` — Sample metadata from registry (laser, exposure, etc.)
+- `sample::Dict{String,Any}` — Sample metadata (material, laser, exposure, etc.)
 - `path::String` — File path
 
 # Accessing data
@@ -50,18 +49,22 @@ Return the Raman intensity (counts).
 intensity(s::RamanSpectrum) = ydata(s)
 
 function Base.show(io::IO, spec::RamanSpectrum)
-    id = get(spec.sample, "_id", "unknown")
+    label = get(spec.sample, "_id", basename(spec.path))
     n = length(spec.data.x)
-    print(io, "RamanSpectrum(\"$id\", $n points)")
+    print(io, "RamanSpectrum(\"$label\", $n points)")
 end
 
 function Base.show(io::IO, ::MIME"text/plain", spec::RamanSpectrum)
     println(io, "RamanSpectrum:")
 
     id = get(spec.sample, "_id", nothing)
-    !isnothing(id) && println(io, "  id: $id")
+    if !isnothing(id)
+        println(io, "  id: $id")
+    else
+        println(io, "  file: $(basename(spec.path))")
+    end
 
-    for key in ["sample", "laser_nm", "exposure_sec", "accumulations", "objective"]
+    for key in ["sample", "material", "laser_nm", "exposure_sec", "accumulations", "objective"]
         val = get(spec.sample, key, nothing)
         !isnothing(val) && println(io, "  $key: $val")
     end
@@ -69,6 +72,7 @@ function Base.show(io::IO, ::MIME"text/plain", spec::RamanSpectrum)
     x = spec.data.x
     println(io, "  range: $(round(minimum(x), digits=1)) - $(round(maximum(x), digits=1)) cm⁻¹")
     println(io, "  points: $(length(x))")
+    !isempty(spec.data.spectrometer) && println(io, "  instrument: $(spec.data.spectrometer)")
     println(io, "  date: $(spec.data.date)")
 end
 
@@ -77,66 +81,18 @@ end
 # =============================================================================
 
 """
-    load_raman(; kwargs...) -> RamanSpectrum
+    load_raman(path::String; kwargs...) -> RamanSpectrum
 
-Load a single Raman spectrum by metadata query. Errors if not exactly one match.
-
-# Keyword Arguments
-Any field in the registry can be used as a filter:
-- `sample` — Sample name
-- `laser_nm` — Laser wavelength in nm
-- `exposure_sec` — Exposure time in seconds
-- `objective` — Objective lens used
+Load a Raman spectrum from a JASCO CSV file. Optional kwargs
+(e.g., `material="MoSe2"`) are stored as metadata for display and eLabFTW.
 
 # Examples
 ```julia
-spec = load_raman(sample="C1")
-spec = load_raman(laser_nm=532.05)
+spec = load_raman("data/raman/MoSe2_center.csv")
+spec = load_raman("data/raman/MoSe2_center.csv"; material="MoSe2", sample="center")
 ```
 """
-function load_raman(; kwargs...)
-    matches = query_registry(:raman; kwargs...)
-
-    if isempty(matches)
-        _annotated_no_match_error(:raman, kwargs)
-    elseif length(matches) > 1
-        _annotated_multiple_match_error(:raman, matches, kwargs)
-    end
-
-    return _load_annotated_entry(matches[1], RamanSpectrum)
-end
-
-"""
-    search_raman(; kwargs...) -> Vector{RamanSpectrum}
-
-Search for Raman spectra matching filters. Always returns a vector (possibly empty).
-
-# Examples
-```julia
-all_spectra = search_raman()              # All Raman entries
-laser_532 = search_raman(laser_nm=532.05) # Specific laser
-```
-"""
-function search_raman(; kwargs...)
-    matches = query_registry(:raman; kwargs...)
-    return [_load_annotated_entry(m, RamanSpectrum) for m in matches]
-end
-
-"""
-    list_raman(; field::Symbol=:sample) -> Vector
-
-List unique values for a given field in the Raman registry.
-
-# Examples
-```julia
-list_raman()                    # Default: list samples
-list_raman(field=:laser_nm)     # [532.05, 785.0, ...]
-list_raman(field=:objective)    # ["100x", "50x", ...]
-```
-"""
-function list_raman(; field::Symbol=:sample)
-    return list_registry(:raman; field=field)
-end
+load_raman(path::String; kwargs...) = _load_annotated_path(path, RamanSpectrum; kwargs...)
 
 # =============================================================================
 # Plotting (thin wrapper around plot_spectrum)

@@ -1,9 +1,7 @@
 using Test
 using QPSTools
 
-# Set data directory to the project's data folder
 const PROJECT_ROOT = dirname(@__DIR__)
-set_data_dir(joinpath(PROJECT_ROOT, "data"))
 
 @testset "QPSTools.jl" begin
 
@@ -59,7 +57,7 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
     end
 
     @testset "Extended interface - FTIR source_file and npoints" begin
-        spec = load_ftir(solute="NH4SCN", concentration="1.0M")
+        spec = load_ftir(joinpath(PROJECT_ROOT, "data/ftir/1.0M_NH4SCN_DMF.csv"))
         @test source_file(spec) isa String
         @test !isempty(source_file(spec))
         @test npoints(spec) == length(spec.data.x)
@@ -67,7 +65,7 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
     end
 
     @testset "Extended interface - Raman source_file and npoints" begin
-        raman = load_raman(phase="crystal", composition="Zn/Co")
+        raman = load_raman(joinpath(PROJECT_ROOT, "data/raman/ZIF62_crystal_1.csv"))
         @test source_file(raman) isa String
         @test !isempty(source_file(raman))
         @test npoints(raman) == length(raman.data.x)
@@ -109,14 +107,25 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
     end
 
     @testset "FTIR loading" begin
-        spec = load_ftir(solute="NH4SCN", concentration="1.0M")
+        spec = load_ftir(joinpath(PROJECT_ROOT, "data/ftir/1.0M_NH4SCN_DMF.csv"))
         @test spec isa FTIRSpectrum
         @test length(spec.data.x) > 0
-        @test QPSTools.sample_id(spec) == "NH4SCN_DMF_1M"
+    end
+
+    @testset "FTIR loading with kwargs" begin
+        spec = load_ftir(joinpath(PROJECT_ROOT, "data/ftir/1.0M_NH4SCN_DMF.csv");
+                         solute="NH4SCN", concentration="1.0M")
+        @test spec isa FTIRSpectrum
+        @test spec.sample["solute"] == "NH4SCN"
+        @test spec.sample["concentration"] == "1.0M"
+    end
+
+    @testset "FTIR bad path" begin
+        @test_throws ErrorException load_ftir("/nonexistent/file.csv")
     end
 
     @testset "FTIR interface" begin
-        spec = load_ftir(solute="NH4SCN", concentration="1.0M")
+        spec = load_ftir(joinpath(PROJECT_ROOT, "data/ftir/1.0M_NH4SCN_DMF.csv"))
         @test xdata(spec) === spec.data.x
         @test ydata(spec) === spec.data.y
         @test xlabel(spec) == "Wavenumber (cm⁻¹)"
@@ -126,14 +135,25 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
     end
 
     @testset "Raman loading" begin
-        raman = load_raman(phase="crystal", composition="Zn/Co")
+        raman = load_raman(joinpath(PROJECT_ROOT, "data/raman/ZIF62_crystal_1.csv"))
         @test raman isa RamanSpectrum
         @test length(raman.data.x) > 0
-        @test QPSTools.sample_id(raman) == "ZIF62_crystal_1"
+    end
+
+    @testset "Raman loading with kwargs" begin
+        raman = load_raman(joinpath(PROJECT_ROOT, "data/raman/ZIF62_crystal_1.csv");
+                           material="ZIF-62", phase="crystal")
+        @test raman isa RamanSpectrum
+        @test raman.sample["material"] == "ZIF-62"
+        @test raman.sample["phase"] == "crystal"
+    end
+
+    @testset "Raman bad path" begin
+        @test_throws ErrorException load_raman("/nonexistent/file.csv")
     end
 
     @testset "Raman interface" begin
-        raman = load_raman(phase="crystal", composition="Zn/Co")
+        raman = load_raman(joinpath(PROJECT_ROOT, "data/raman/ZIF62_crystal_1.csv"))
         @test xdata(raman) === raman.data.x
         @test ydata(raman) === raman.data.y
         @test xlabel(raman) == "Raman Shift (cm⁻¹)"
@@ -143,7 +163,7 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
     end
 
     @testset "Semantic accessors - FTIR" begin
-        spec = load_ftir(solute="NH4SCN", concentration="1.0M")
+        spec = load_ftir(joinpath(PROJECT_ROOT, "data/ftir/1.0M_NH4SCN_DMF.csv"))
         @test wavenumber(spec) === xdata(spec)
         @test signal(spec) === ydata(spec)
         @test ykind(spec) isa Symbol
@@ -153,13 +173,13 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
     end
 
     @testset "Semantic accessors - Raman" begin
-        raman = load_raman(phase="crystal", composition="Zn/Co")
+        raman = load_raman(joinpath(PROJECT_ROOT, "data/raman/ZIF62_crystal_1.csv"))
         @test shift(raman) === xdata(raman)
         @test intensity(raman) === ydata(raman)
     end
 
     @testset "FTIR peak fitting (fit_peaks)" begin
-        spec = load_ftir(solute="NH4SCN", concentration="1.0M")
+        spec = load_ftir(joinpath(PROJECT_ROOT, "data/ftir/1.0M_NH4SCN_DMF.csv"))
         result = fit_peaks(spec, (2000, 2100))
 
         @test result isa MultiPeakFitResult
@@ -192,7 +212,7 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
     end
 
     @testset "Raman peak fitting (fit_peaks)" begin
-        raman = load_raman(phase="crystal", composition="Zn/Co")
+        raman = load_raman(joinpath(PROJECT_ROOT, "data/raman/ZIF62_crystal_1.csv"))
         result = fit_peaks(raman, (1250, 1300))
 
         @test result isa MultiPeakFitResult
@@ -203,8 +223,8 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
     end
 
     @testset "Spectrum subtraction" begin
-        spec = load_ftir(solute="NH4SCN", concentration="1.0M")
-        ref = load_ftir(material="DMF")
+        spec = load_ftir(joinpath(PROJECT_ROOT, "data/ftir/1.0M_NH4SCN_DMF.csv"))
+        ref = load_ftir(joinpath(PROJECT_ROOT, "data/ftir/DMF.csv"))
 
         corrected = subtract_spectrum(spec, ref)
         @test corrected isa FTIRSpectrum
@@ -659,10 +679,16 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
         @test length(tags_filtered) == 2
 
         # Test with AnnotatedSpectrum
-        spec = load_ftir(solute="NH4SCN", concentration="1.0M")
+        spec = load_ftir(joinpath(PROJECT_ROOT, "data/ftir/1.0M_NH4SCN_DMF.csv");
+                         solute="NH4SCN", solvent="DMF", concentration="1.0M")
         tags_spec = tags_from_sample(spec)
         @test "NH4SCN" in tags_spec
         @test "DMF" in tags_spec
+        @test "1.0M" in tags_spec
+
+        # Empty sample dict returns empty tags
+        spec_bare = load_ftir(joinpath(PROJECT_ROOT, "data/ftir/1.0M_NH4SCN_DMF.csv"))
+        @test isempty(tags_from_sample(spec_bare))
     end
 
     @testset "DAS and plot_das" begin
@@ -696,6 +722,28 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
         # Error without wavelengths (traces-only fit has no wavelength axis)
         no_wl = fit_global([matrix[λ=600], matrix[λ=550]]; n_exp=1)
         @test_throws ErrorException plot_das(no_wl)
+    end
+
+    @testset "plot_ta_heatmap" begin
+        using Makie: Figure, Axis
+
+        data_dir = joinpath(PROJECT_ROOT, "data/CCD")
+        matrix = load_ta_matrix(data_dir;
+            time_file="time_axis.txt",
+            wavelength_file="wavelength_axis.txt",
+            data_file="ta_matrix.lvm",
+            time_unit=:fs)
+
+        # Default call returns (Figure, Axis, Heatmap)
+        fig, ax, hm = plot_ta_heatmap(matrix)
+        @test fig isa Figure
+        @test ax isa Axis
+
+        # With optional kwargs
+        fig2, ax2, hm2 = plot_ta_heatmap(matrix;
+            colormap=:viridis, colorrange=(-0.01, 0.01), title="Test Heatmap")
+        @test fig2 isa Figure
+        @test ax2 isa Axis
     end
 
     include("test_chirp.jl")
@@ -787,6 +835,89 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
         @test m_norm.spectra === m.spectra
     end
 
+    @testset "PLMap subtract_background (explicit positions)" begin
+        plmap_file = joinpath(PROJECT_ROOT, "data/PLmap/CCDtmp_260129_111138.lvm")
+        m = load_pl_map(plmap_file; nx=51, ny=51, step_size=2.16)
+
+        # Pick corners as background positions (off-flake)
+        bg_positions = [
+            (m.x[1], m.y[1]),
+            (m.x[end], m.y[1]),
+            (m.x[1], m.y[end]),
+        ]
+        m_bg = subtract_background(m; positions=bg_positions)
+
+        @test m_bg isa PLMap
+        @test size(m_bg.spectra) == size(m.spectra)
+        @test size(m_bg.intensity) == size(m.intensity)
+
+        # Spatial axes and pixel axis unchanged
+        @test m_bg.x === m.x
+        @test m_bg.y === m.y
+        @test m_bg.pixel === m.pixel
+
+        # Background-subtracted spectra should differ from originals
+        @test m_bg.spectra != m.spectra
+
+        # Mean signal at a background position should be closer to zero after subtraction
+        bg_before = extract_spectrum(m; x=bg_positions[1][1], y=bg_positions[1][2])
+        bg_after = extract_spectrum(m_bg; x=bg_positions[1][1], y=bg_positions[1][2])
+        @test abs(sum(bg_after.signal)) < abs(sum(bg_before.signal))
+    end
+
+    @testset "PLMap subtract_background (auto mode)" begin
+        plmap_file = joinpath(PROJECT_ROOT, "data/PLmap/CCDtmp_260129_111138.lvm")
+        m = load_pl_map(plmap_file; nx=51, ny=51, step_size=2.16)
+
+        # Auto mode uses bottom corners with default margin=5
+        m_auto = subtract_background(m)
+
+        @test m_auto isa PLMap
+        @test size(m_auto.spectra) == size(m.spectra)
+        @test size(m_auto.intensity) == size(m.intensity)
+
+        # Spectra should be modified
+        @test m_auto.spectra != m.spectra
+
+        # Auto with custom margin
+        m_auto2 = subtract_background(m; margin=3)
+        @test m_auto2 isa PLMap
+        @test m_auto2.spectra != m.spectra
+        # Different margins should give slightly different results
+        @test m_auto2.spectra != m_auto.spectra
+    end
+
+    @testset "PLMap subtract_background preserves pixel_range" begin
+        plmap_file = joinpath(PROJECT_ROOT, "data/PLmap/CCDtmp_260129_111138.lvm")
+        m = load_pl_map(plmap_file; nx=51, ny=51, pixel_range=(500, 700))
+
+        m_bg = subtract_background(m)
+        @test m_bg isa PLMap
+
+        # Intensity should be recomputed from the same pixel_range
+        expected_intensity = dropdims(sum(m_bg.spectra[:, :, 500:700]; dims=3); dims=3)
+        @test m_bg.intensity ≈ expected_intensity
+    end
+
+    @testset "PLMap normalize after subtract_background" begin
+        plmap_file = joinpath(PROJECT_ROOT, "data/PLmap/CCDtmp_260129_111138.lvm")
+        m = load_pl_map(plmap_file; nx=51, ny=51, step_size=2.16)
+
+        m_bg = subtract_background(m)
+        m_norm = normalize(m_bg)
+
+        @test m_norm isa PLMap
+        @test minimum(m_norm.intensity) ≈ 0.0
+        @test maximum(m_norm.intensity) ≈ 1.0
+
+        # All values should be in [0, 1]
+        @test all(m_norm.intensity .>= 0.0)
+        @test all(m_norm.intensity .<= 1.0)
+
+        # Spectra should be the background-subtracted ones (not re-normalized)
+        @test m_norm.spectra === m_bg.spectra
+    end
+
     @testset "PLMap pixel_range integration" begin
         plmap_file = joinpath(PROJECT_ROOT, "data/PLmap/CCDtmp_260129_111138.lvm")
         m_full = load_pl_map(plmap_file; nx=51, ny=51)
@@ -815,11 +946,19 @@ set_data_dir(joinpath(PROJECT_ROOT, "data"))
         @test ax2 isa Axis
     end
 
+    @testset "JASCO technique tag" begin
+        spec = load_ftir(joinpath(PROJECT_ROOT, "data/ftir/1.0M_NH4SCN_DMF.csv"))
+        @test QPSTools._jasco_technique_tag(spec) == "ftir"
+
+        raman = load_raman(joinpath(PROJECT_ROOT, "data/raman/ZIF62_crystal_1.csv"))
+        @test QPSTools._jasco_technique_tag(raman) == "raman"
+    end
+
     @testset "format_results" begin
         # Test format_results returns markdown strings for all fit types
 
         # MultiPeakFitResult
-        spec = load_ftir(solute="NH4SCN", concentration="1.0M")
+        spec = load_ftir(joinpath(PROJECT_ROOT, "data/ftir/1.0M_NH4SCN_DMF.csv"))
         result = fit_peaks(spec, (2000, 2100))
         md = format_results(result)
         @test md isa String

@@ -17,7 +17,7 @@ QPSTools.jlを使った新しい解析プロジェクトのテンプレートで
    julia --project=. setup.jl
    ```
 
-3. データファイルを`data/raman/`に追加し、`data/registry.json`に登録してください。
+3. データファイルを`data/raman/`（または`data/ftir/`など）に追加してください。
 
 ## 使い方
 
@@ -40,7 +40,7 @@ mkdir -p analyses/MoSe2_A1g
 cp templates/raman_analysis.jl analyses/MoSe2_A1g/analysis.jl
 ```
 
-スクリプトを編集して実行します：
+スクリプトを編集（ファイルパスとメタデータを変更）して実行します：
 
 ```bash
 julia --project=../.. analyses/MoSe2_A1g/analysis.jl
@@ -53,8 +53,8 @@ my-project/
 ├── Project.toml              # Julia環境（手動で編集しないこと）
 ├── setup.jl                  # 初回セットアップ用（実行後は削除可能）
 ├── data/
-│   ├── registry.json         # サンプルのメタデータ — QPSToolsが参照します
-│   └── raman/                # JASCOの生データ（.csvファイル）
+│   ├── raman/                # JASCOの生データ（.csvファイル）
+│   └── ftir/                 # FTIRの.csvファイル
 ├── scratch/                  # 探索用 — 自由に使える作業スペース
 ├── templates/                # テンプレート — コピーして使う（直接編集しない）
 │   ├── raman_analysis.jl
@@ -63,31 +63,34 @@ my-project/
 └── analyses/                 # 完成した解析はここに保存
     └── MoSe2_A1g/
         ├── analysis.jl
+        ├── .elab_id          # log_to_elabが自動作成（gitignore対象）
         └── figures/
 ```
 
-## レジストリ
+## データの読み込み
 
-QPSToolsは`data/registry.json`を通してデータを検索します。
-各エントリはサンプルIDをメタデータとファイルパスに対応付けます：
-
-```json
-{
-  "raman": {
-    "my_sample_1": {
-      "sample": "spot1",
-      "material": "MySample",
-      "laser_nm": 532.05,
-      "path": "raman/my_sample_spot1.csv"
-    }
-  }
-}
-```
-
-メタデータで読み込みます：
+QPSToolsはファイルパスでデータを読み込みます。オプションのキーワード引数で
+表示やeLabFTWタグ付けに使うメタデータを追加できます：
 
 ```julia
-spec = load_raman(sample="spot1", material="MySample")
+spec = load_raman("data/raman/MoSe2_center.csv"; material="MoSe2", sample="center")
+spec = load_ftir("data/ftir/1.0M_NH4SCN_DMF.csv"; solute="NH4SCN", concentration="1.0M")
+```
+
+## eLabFTWのセットアップ
+
+結果をラボノートに記録するには、環境変数を設定してください（`~/.zshrc`に追加）：
+
+```bash
+export ELABFTW_URL="https://your-instance.elabftw.net"
+export ELABFTW_API_KEY="your-api-key"
+```
+
+接続を確認：
+
+```julia
+using QPSTools
+test_connection()
 ```
 
 詳しくはQPSToolsのサンプルを参照してください：`QPSTools.jl/examples/raman_analysis.jl`

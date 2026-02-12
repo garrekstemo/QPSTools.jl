@@ -60,6 +60,19 @@
         theta = deg2rad(10.0)
         E_10deg = cavity_mode_energy([E0, n_eff], [theta])
         @test E_10deg[1] > E0
+
+        # Energy increases monotonically with angle
+        angles = deg2rad.(collect(0.0:5.0:40.0))
+        E_sweep = cavity_mode_energy([E0, n_eff], angles)
+        for i in 2:length(E_sweep)
+            @test E_sweep[i] > E_sweep[i-1]
+        end
+
+        # Verify analytic formula: E(theta) = E0 / sqrt(1 - (sin(theta)/n_eff)^2)
+        theta_check = deg2rad(20.0)
+        E_analytic = E0 / sqrt(1 - (sin(theta_check) / n_eff)^2)
+        E_computed = cavity_mode_energy([E0, n_eff], [theta_check])[1]
+        @test E_computed ≈ E_analytic atol=1e-10
     end
 
     @testset "Physics: polariton_branches" begin
@@ -86,23 +99,92 @@
         @test all(LP_vec .< UP_vec)
     end
 
+    @testset "Physics: polariton_branches textbook values" begin
+        # Textbook scenario: cavity at 2000 cm^-1, Rabi splitting 100 cm^-1
+        E_vib = 2000.0
+        Omega = 100.0
+
+        # Zero detuning: splitting exactly equals Rabi splitting
+        LP_0, UP_0 = polariton_branches(E_vib, E_vib, Omega)
+        @test UP_0 - LP_0 ≈ Omega atol=1e-10
+
+        # Anti-crossing: minimum splitting occurs at zero detuning
+        # Sweep cavity energy across the molecular resonance
+        E_cav_sweep = collect(1800.0:5.0:2200.0)
+        LP_sweep, UP_sweep = polariton_branches(E_cav_sweep, E_vib, Omega)
+        splittings = UP_sweep .- LP_sweep
+
+        # Minimum splitting should be at zero detuning (E_cav = E_vib)
+        min_split_idx = argmin(splittings)
+        @test abs(E_cav_sweep[min_split_idx] - E_vib) < 10.0
+        @test splittings[min_split_idx] ≈ Omega atol=1.0
+
+        # LP is always below both bare energies, UP always above
+        for i in eachindex(E_cav_sweep)
+            @test LP_sweep[i] < min(E_cav_sweep[i], E_vib)
+            @test UP_sweep[i] > max(E_cav_sweep[i], E_vib)
+        end
+
+        # Verify analytic formula: E_pm = (E_c + E_v)/2 +/- sqrt(Omega^2 + delta^2)/2
+        E_cav_test = 1950.0
+        delta = E_cav_test - E_vib
+        E_avg = (E_cav_test + E_vib) / 2
+        half_split = sqrt(Omega^2 + delta^2) / 2
+        LP_expected = E_avg - half_split
+        UP_expected = E_avg + half_split
+
+        LP_test, UP_test = polariton_branches(E_cav_test, E_vib, Omega)
+        @test LP_test ≈ LP_expected atol=1e-10
+        @test UP_test ≈ UP_expected atol=1e-10
+
+        # At large detuning, branches approach bare energies
+        E_cav_far = E_vib + 1000.0  # Far positive detuning
+        LP_far, UP_far = polariton_branches(E_cav_far, E_vib, Omega)
+        @test LP_far ≈ E_vib atol=5.0   # LP approaches molecular mode
+        @test UP_far ≈ E_cav_far atol=5.0  # UP approaches cavity mode
+    end
+
     @testset "Physics: polariton_eigenvalues" begin
-        # 2-mode should reduce to standard 2-level formula
-        E_cav = 2050.0
-        E_vib = 2050.0
-        Omega = 20.0
+        # N=1 should exactly match polariton_branches (2-level coupled oscillator)
+        E_cav = 2000.0
+        E_vib = 2000.0
+        Omega = 100.0
 
         eigs = polariton_eigenvalues(E_cav, [E_vib], [Omega])
         LP, UP = polariton_branches(E_cav, E_vib, Omega)
 
         @test length(eigs) == 2
-        @test eigs[1] ≈ LP atol=0.1
-        @test eigs[2] ≈ UP atol=0.1
+        @test eigs[1] ≈ LP atol=1e-10
+        @test eigs[2] ≈ UP atol=1e-10
+
+        # N=1 with detuning should also match
+        E_cav_det = 1950.0
+        eigs_det = polariton_eigenvalues(E_cav_det, [E_vib], [Omega])
+        LP_det, UP_det = polariton_branches(E_cav_det, E_vib, Omega)
+        @test eigs_det[1] ≈ LP_det atol=1e-10
+        @test eigs_det[2] ≈ UP_det atol=1e-10
 
         # N-mode returns N+1 eigenvalues
         eigs3 = polariton_eigenvalues(E_cav, [2030.0, 2060.0, 2090.0], [15.0, 20.0, 10.0])
         @test length(eigs3) == 4
         @test issorted(eigs3)
+
+        # N=2: two identical modes should give sqrt(2) enhancement of splitting
+        # (collective coupling: Omega_eff = Omega * sqrt(N) for N identical modes)
+        E_mol = 2000.0
+        Omega_single = 100.0
+        eigs_2mode = polariton_eigenvalues(E_mol, [E_mol, E_mol], [Omega_single, Omega_single])
+        @test length(eigs_2mode) == 3
+
+        # LP and UP should have enhanced splitting: sqrt(2) * Omega
+        effective_splitting = eigs_2mode[end] - eigs_2mode[1]
+        @test effective_splitting ≈ sqrt(2) * Omega_single atol=1.0
+
+        # Middle eigenvalue should be at bare molecular energy (dark state)
+        @test eigs_2mode[2] ≈ E_mol atol=1e-10
+
+        # Mismatched vector lengths should error
+        @test_throws AssertionError polariton_eigenvalues(E_cav, [2000.0], [50.0, 60.0])
     end
 
     @testset "Physics: hopfield_coefficients" begin
@@ -130,11 +212,27 @@
         @test h_neg.matter_LP > 0.9
         @test h_neg.photon_UP > 0.9
 
-        # Vector dispatch
-        E_cav_vec = collect(2000.0:10.0:2100.0)
+        # Vector dispatch: fractions sum to 1 at every angle
+        E_cav_vec = collect(1800.0:10.0:2300.0)
         h_vec = hopfield_coefficients(E_cav_vec, E_vib, Omega)
         @test length(h_vec.photon_LP) == length(E_cav_vec)
         @test all(h_vec.photon_LP .+ h_vec.matter_LP .≈ 1.0)
+        @test all(h_vec.photon_UP .+ h_vec.matter_UP .≈ 1.0)
+
+        # All fractions are between 0 and 1
+        @test all(0.0 .<= h_vec.photon_LP .<= 1.0)
+        @test all(0.0 .<= h_vec.matter_LP .<= 1.0)
+        @test all(0.0 .<= h_vec.photon_UP .<= 1.0)
+        @test all(0.0 .<= h_vec.matter_UP .<= 1.0)
+
+        # Complementarity: LP photon fraction = UP matter fraction
+        @test all(h_vec.photon_LP .≈ h_vec.matter_UP)
+        @test all(h_vec.matter_LP .≈ h_vec.photon_UP)
+
+        # Monotonicity: as E_cav increases, LP becomes more photon-like
+        for i in 2:length(E_cav_vec)
+            @test h_vec.photon_LP[i] >= h_vec.photon_LP[i-1] - 1e-10
+        end
     end
 
     @testset "Fitting: synthetic cavity spectrum round-trip" begin
@@ -227,6 +325,69 @@
 
         # Hopfield at zero detuning should be ~50/50
         @test result.hopfield_zero.photon_LP ≈ 0.5 atol=0.05
+
+        # Stored data should match input
+        @test length(result.lp_angles) == length(angles)
+        @test length(result.up_angles) == length(angles)
+        @test result.lp_positions ≈ lp_noisy atol=1e-10
+        @test result.up_positions ≈ up_noisy atol=1e-10
+
+        # Uncertainties should be finite and positive
+        @test result.rabi_err > 0 && isfinite(result.rabi_err)
+        @test result.E0_err > 0 && isfinite(result.E0_err)
+        @test result.n_eff_err > 0 && isfinite(result.n_eff_err)
+    end
+
+    @testset "Fitting: dispersion textbook values (Omega=100)" begin
+        # Textbook: cavity at 2000 cm^-1, Rabi splitting 100 cm^-1
+        E_vib = 2000.0
+        Omega_true = 100.0
+        E0_true = 1950.0
+        n_eff_true = 1.5
+
+        angles = collect(0.0:2.0:40.0) .* (pi / 180)
+
+        E_cav = cavity_mode_energy([E0_true, n_eff_true], angles)
+        lp_true, up_true = polariton_branches(E_cav, E_vib, Omega_true)
+
+        # Noiseless round-trip: should recover exact parameters
+        result = fit_dispersion(angles, lp_true, up_true;
+            molecular_modes=E_vib,
+            E0_init=1940.0,
+            n_eff_init=1.4,
+            Omega_init=80.0)
+
+        @test result isa DispersionFitResult
+        @test result.rsquared > 0.999
+        @test isapprox(result.rabi_splitting, Omega_true, atol=0.5)
+        @test isapprox(result.E0, E0_true, atol=1.0)
+        @test isapprox(result.n_eff, n_eff_true, atol=0.01)
+    end
+
+    @testset "Fitting: dispersion with different LP/UP angles" begin
+        # In experiments, LP and UP may be measured at different angles
+        E_vib = 2000.0
+        Omega_true = 80.0
+        E0_true = 1970.0
+        n_eff_true = 1.5
+
+        lp_angles = collect(0.0:3.0:25.0) .* (pi / 180)
+        up_angles = collect(5.0:3.0:35.0) .* (pi / 180)
+
+        E_cav_lp = cavity_mode_energy([E0_true, n_eff_true], lp_angles)
+        E_cav_up = cavity_mode_energy([E0_true, n_eff_true], up_angles)
+        lp_true, _ = polariton_branches(E_cav_lp, E_vib, Omega_true)
+        _, up_true = polariton_branches(E_cav_up, E_vib, Omega_true)
+
+        result = fit_dispersion(lp_angles, lp_true, up_angles, up_true;
+            molecular_modes=E_vib,
+            Omega_init=60.0)
+
+        @test result isa DispersionFitResult
+        @test result.rsquared > 0.999
+        @test isapprox(result.rabi_splitting, Omega_true, atol=1.0)
+        @test length(result.lp_angles) == length(lp_angles)
+        @test length(result.up_angles) == length(up_angles)
     end
 
     @testset "Result: report and format_results" begin
@@ -266,17 +427,6 @@
         md_d = format_results(disp)
         @test md_d isa String
         @test occursin("## Dispersion Fit", md_d)
-    end
-
-    @testset "Registry: cavity category exists" begin
-        reg = load_registry()
-        @test haskey(reg, "cavity")
-    end
-
-    @testset "Registry: search_cavity with empty registry" begin
-        results = search_cavity()
-        @test results isa Vector{CavitySpectrum}
-        @test isempty(results)
     end
 
     @testset "Plotting: plot_spectrum smoke test" begin

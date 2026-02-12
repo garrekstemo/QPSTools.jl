@@ -7,7 +7,7 @@ fit result types, etc.) are provided by SpectroscopyTools.jl.
 This file defines QPS-specific types:
 - `AxisType` — enum for raw LVM axis detection (time vs wavelength)
 - `PumpProbeData` — raw LabVIEW LVM pump-probe container
-- `AnnotatedSpectrum` — abstract type for JASCO spectra with registry metadata
+- `AnnotatedSpectrum` — abstract type for JASCO spectra with sample metadata
 - `FTIRFitResult` — alias for `MultiPeakFitResult`
 """
 
@@ -57,11 +57,11 @@ xaxis_label(d::PumpProbeData) = d.axis_type == time_axis ? "Time (ps)" : "Wavele
 """
     AnnotatedSpectrum <: AbstractSpectroscopyData
 
-Abstract base type for spectra with attached sample metadata from the registry.
+Abstract base type for spectra with attached sample metadata.
 
 Subtypes share common structure:
 - `data::JASCOSpectrum` — Raw spectrum from JASCOFiles.jl
-- `sample::Dict{String,Any}` — Sample metadata from registry
+- `sample::Dict{String,Any}` — Sample metadata (kwargs from loader)
 - `path::String` — File path
 
 This enables shared fitting and analysis code while allowing
@@ -134,54 +134,29 @@ function correct_baseline(spec::AnnotatedSpectrum; method::Symbol=:arpls, kwargs
 end
 
 # =============================================================================
-# Shared registry loading helpers
+# Path-based loading helpers
 # =============================================================================
 
-"""Load a single registry entry into an AnnotatedSpectrum subtype."""
-function _load_annotated_entry(entry::Dict, ::Type{T}) where T<:AnnotatedSpectrum
-    data_dir = get_data_dir()
-    rel_path = entry["path"]
-    full_path = joinpath(data_dir, rel_path)
+"""
+    _load_annotated_path(path::String, ::Type{T}; kwargs...) where T<:AnnotatedSpectrum
 
-    if !isfile(full_path)
-        error("File not found: $full_path")
-    end
-
+Load a JASCO file from path into an AnnotatedSpectrum subtype.
+Any kwargs are stored in the sample dict for display and eLabFTW tagging.
+"""
+function _load_annotated_path(path::String, ::Type{T}; kwargs...) where T<:AnnotatedSpectrum
+    full_path = abspath(path)
+    isfile(full_path) || error("File not found: $full_path")
     spectrum = JASCOSpectrum(full_path)
-    return T(spectrum, entry, full_path)
+    sample = Dict{String, Any}(string(k) => v for (k, v) in kwargs)
+    return T(spectrum, sample, full_path)
 end
 
-"""Format and throw a 'no match' error for registry queries."""
-function _annotated_no_match_error(category::Symbol, kwargs)
-    println("\nNo $(category) entries match query:")
-    for (k, v) in kwargs
-        println("  $k = $v")
-    end
+# JASCO datatype → technique tag (used by eLabFTW auto-tagging)
+const _JASCO_TECHNIQUE_TAG = Dict(
+    "INFRARED SPECTRUM" => "ftir",
+    "RAMAN SPECTRUM"    => "raman",
+    "UV/VISIBLE SPECTRUM" => "uvvis",
+)
 
-    println("\nAvailable entries:")
-    all_entries = query_registry(category)
-    for entry in all_entries
-        id = entry["_id"]
-        detail = get(entry, "concentration", get(entry, "sample", get(entry, "material", "")))
-        println("  $id ($detail)")
-    end
-
-    error("No matching $(category) data found")
-end
-
-"""Format and throw a 'multiple matches' error for registry queries."""
-function _annotated_multiple_match_error(category::Symbol, matches, kwargs)
-    println("\nMultiple $(category) entries match query:")
-    for (k, v) in kwargs
-        println("  $k = $v")
-    end
-
-    println("\nMatches:")
-    for entry in matches
-        id = entry["_id"]
-        detail = get(entry, "concentration", get(entry, "sample", get(entry, "material", "")))
-        println("  $id ($detail)")
-    end
-
-    error("Multiple matches found ($(length(matches))). Add more filters.")
-end
+_jasco_technique_tag(spec::JASCOSpectrum) = get(_JASCO_TECHNIQUE_TAG, spec.datatype, "spectroscopy")
+_jasco_technique_tag(spec::AnnotatedSpectrum) = _jasco_technique_tag(spec.data)
