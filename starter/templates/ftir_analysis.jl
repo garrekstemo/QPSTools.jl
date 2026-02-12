@@ -36,3 +36,11 @@ save(joinpath(FIGDIR, "fit.png"), fig)
 # 三面図（論文用） / Three-panel (publication)
 fig, ax_ctx, ax_fit, ax_res = plot_ftir(spec; fit=result, context=true, peaks=peaks)
 save(joinpath(FIGDIR, "context.png"), fig)
+
+# 5. eLabFTWに記録 / Log to eLabFTW
+log_to_elab(
+    title = "FTIR: NH4SCN CN stretch fit",
+    body = format_results(result),
+    attachments = [joinpath(FIGDIR, "context.png")],
+    tags = ["ftir", "nh4scn"]
+)
