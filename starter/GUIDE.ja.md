@@ -71,13 +71,16 @@ using QPSTools, GLMakie
 
 spec = load_raman("data/raman/MoSe2_center.csv"; material="MoSe2")
 fig, ax = plot_raman(spec)
+DataInspector()  # プロット上にマウスを置くと値が表示される
 
 peaks = find_peaks(spec)
 println(peak_table(peaks))
 ```
 
 REPLで対話的に実行（`include("scratch/look_at_new_sample.jl")`）するか、
-VS Codeで1行ずつ実行します。`GLMakie`を使えばズームやパンができます。
+VS Codeで1行ずつ実行します。`GLMakie`を使えばズーム、パン、そして
+`DataInspector()`でマウスホバーによる値の読み取り（ピーク位置、強度、
+ピクセル番号など）ができます。
 
 `scratch/`内のファイルはいつでも削除して構いません。
 

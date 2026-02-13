@@ -71,13 +71,16 @@ using QPSTools, GLMakie
 
 spec = load_raman("data/raman/MoSe2_center.csv"; material="MoSe2")
 fig, ax = plot_raman(spec)
+DataInspector()  # hover over the plot to read values
 
 peaks = find_peaks(spec)
 println(peak_table(peaks))
 ```
 
 Run interactively in the REPL (`include("scratch/look_at_new_sample.jl")`) or
-line-by-line in VS Code. Use `GLMakie` for interactive plots you can zoom and pan.
+line-by-line in VS Code. Use `GLMakie` for interactive plots — you can zoom,
+pan, and hover to read exact values (peak positions, intensities, pixel numbers)
+with `DataInspector()`.
 
 Files in `scratch/` are disposable. Delete them whenever you want.
 
