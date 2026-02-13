@@ -38,6 +38,7 @@ for (i, pos) in enumerate(positions)
         strokecolor=:white, strokewidth=1)
 end
 Colorbar(fig[1, 3], hm, label="Counts")
+colgap!(fig.layout, 2, 5)
 
 display(fig)
 DataInspector()  # マウスホバーで値を読む / hover to read values
