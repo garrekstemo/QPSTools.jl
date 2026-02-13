@@ -2,8 +2,8 @@
 # 参考 / Ref:  QPSTools.jl/examples/raman_analysis.jl
 #
 # 実行方法 / How to run (from project root):
-#   ターミナル / Terminal:  julia --project=. analyses/MoSe2_A1g/analysis.jl
-#   REPL:                  include("analyses/MoSe2_A1g/analysis.jl")
+#   ターミナル / Terminal:  julia --project=. analysis/MoSe2_A1g/analysis.jl
+#   REPL:                  include("analysis/MoSe2_A1g/analysis.jl")
 
 using QPSTools
 using CairoMakie

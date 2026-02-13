@@ -215,7 +215,7 @@ exp["body"]
 # Create the experiment first
 id = create_experiment(title="FTIR: NH4SCN kinetics series")
 
-# Run multiple analyses, appending results
+# Run multiple analysis scripts, appending results
 for (i, trace) in enumerate(traces)
     result = fit_exp_decay(trace)
     fig = plot_kinetics(trace; fit=result)

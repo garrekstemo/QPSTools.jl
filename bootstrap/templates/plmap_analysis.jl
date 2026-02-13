@@ -2,8 +2,8 @@
 # 参考 / Ref:  QPSTools.jl/examples/plmap_analysis.jl
 #
 # 実行方法 / How to run (from project root):
-#   ターミナル / Terminal:  julia --project=. analyses/MoSe2_flake/analysis.jl
-#   REPL:                  include("analyses/MoSe2_flake/analysis.jl")
+#   ターミナル / Terminal:  julia --project=. analysis/MoSe2_flake/analysis.jl
+#   REPL:                  include("analysis/MoSe2_flake/analysis.jl")
 #
 # 探索テンプレートでPIXEL_RANGEを決めてからこのスクリプトに記入する。
 # Use explore_plmap.jl to find PIXEL_RANGE first, then fill it in here.

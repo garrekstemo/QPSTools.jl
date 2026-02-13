@@ -113,7 +113,7 @@ end
 println()
 println("4/4  Creating directories...")
 
-for d in ["explore", "analyses", "manuscript", "data"]
+for d in ["explore", "analysis", "manuscript", "data"]
     path = joinpath(PROJECT_ROOT, d)
     mkpath(path)
     println("  + $d/")
@@ -157,4 +157,4 @@ println("  julia --project=.")
 println("  julia> using Revise, QPSTools")
 println("  julia> using GLMakie")
 println()
-println("Templates are in templates/ — copy to explore/ or analyses/ to use.")
+println("Templates are in templates/ — copy to explore/ or analysis/ to use.")
