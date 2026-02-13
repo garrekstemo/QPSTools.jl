@@ -5,94 +5,39 @@
 #   ターミナル / Terminal:  julia --project=. analyses/MoSe2_flake/analysis.jl
 #   REPL:                  include("analyses/MoSe2_flake/analysis.jl")
 #
-# --- 概要 / What this does ---
-#
-# CCDラスタースキャンは各空間点でフルスペクトル（カウント vs ピクセル）を記録する。
-# スペクトルにはレーザー散乱、PL発光、ラマンピーク、検出器ノイズが全て含まれる。
-# PLマップを作るには、PLピークだけを取り出す必要がある：
-#
-# A CCD raster scan records a full spectrum (counts vs pixel) at every spatial
-# point. That spectrum contains everything: laser scatter, PL emission, Raman
-# peaks, and detector noise. To build a PL map, we isolate just the PL peak:
-#
-#   Step 1: スペクトルを見てPLピークの位置（ピクセル範囲）を特定する
-#           Inspect spectra to find which pixels contain the PL peak
-#   Step 2: フレーク外のスペクトルを差し引いてレーザーとノイズを除去する
-#           Subtract an off-flake spectrum to remove laser scatter and noise
-#   Step 3: PLピクセルのみを合計 → グリッド点ごとに1つの強度値 → マップ
-#           Sum only the PL pixels → one intensity value per grid point → map
-#
+# 探索テンプレートでPIXEL_RANGEを決めてからこのスクリプトに記入する。
+# Use explore_plmap.jl to find PIXEL_RANGE first, then fill it in here.
+
 using QPSTools
 using CairoMakie
 
 FIGDIR = joinpath(@__DIR__, "figures")
 mkpath(FIGDIR)
 
-# パスとstep_sizeを自分のデータに合わせて変更
-# Change the path and step_size to match your scan
-filepath = "data/PLmap/CCDtmp_260129_111138.lvm"
+# --- 設定 / Config (fill in from exploration) ---
+filepath = "data/PLmap/my_scan.lvm"
 STEP_SIZE = 2.16
-
-# spectra.pngを見てからPLピークのピクセル範囲を設定
-# After looking at spectra.png, set the pixel range that brackets your PL peak
 PIXEL_RANGE = (950, 1100)
+positions = [(0.0, 0.0), (10.0, 10.0), (-10.0, -10.0)]
 
 # =========================================================================
-# Step 1: スペクトル確認 / Inspect raw spectra
+# 1. データ処理 / Process data
 # =========================================================================
-# 代表的な位置でスペクトルをプロット。PLピークを探す。
-# レーザー散乱（鋭い）やラマンピーク（狭い）も見えるが、
-# PL発光は通常最も広いピーク。PLピークを囲むピクセル範囲をメモする。
-#
-# Plot spectra at a few positions across the scan. Look for the PL peak.
-# You'll also see laser scatter (sharp) and Raman peaks (narrow).
-# PL emission is usually the broadest feature. Note which pixel range
-# brackets the PL peak — that's what you'll set as PIXEL_RANGE.
 
 m_raw = load_pl_map(filepath; step_size=STEP_SIZE)
-println(m_raw)
-
-positions = [(0.0, 0.0), (10.0, 10.0), (-10.0, -10.0)]
-fig, ax = plot_pl_spectra(m_raw, positions)
-save(joinpath(FIGDIR, "spectra.png"), fig)
-
-# =========================================================================
-# Step 2: バックグラウンド除去 / Background subtraction
-# =========================================================================
-# フレーク外の領域（PLなし）から平均スペクトルを取り、全グリッド点から
-# 差し引く。これでレーザー散乱と検出器ノイズが除去され、PLピークだけが残る。
-#
-# Average the spectrum from off-flake regions (where there's no PL) and
-# subtract it from every grid point. This removes laser scatter and
-# detector noise, leaving only the PL contribution.
-
 m = load_pl_map(filepath; step_size=STEP_SIZE, pixel_range=PIXEL_RANGE)
 m = subtract_background(m)
-
-# 確認: 補正後のスペクトルでPLピークがフラットなベースライン上にあるか確認
-# Verify: the PL peak should now sit on a flat baseline
-fig_check, ax_check = plot_pl_spectra(m, positions)
-vspan!(ax_check, PIXEL_RANGE..., color=(:blue, 0.1))
-save(joinpath(FIGDIR, "spectra_corrected.png"), fig_check)
-
-# =========================================================================
-# Step 3: マップ作成 / Build the intensity map
-# =========================================================================
-# PIXEL_RANGE内のカウントを合計して各グリッド点のPL強度を計算する。
-# これは「スペクトル窓掛け」— PLピークだけを含む窓で積分している。
-# 他のピーク（レーザー、ラマン）は窓の外なので無視される。
-#
-# Sum the counts within PIXEL_RANGE at each grid point to get PL intensity.
-# This is "spectral windowing" — integrating only the window that contains
-# the PL peak. Anything outside the window (laser, Raman) is ignored.
-
 m = normalize(m)
+println(m)
+
+# =========================================================================
+# 2. 図の作成 / Build figure
+# =========================================================================
 
 set_theme!(print_theme())
 fig = Figure(size=(1000, 400))
 
-# (a) 生スペクトル + 積分窓（青帯）
-# (a) Raw spectra with integration window (blue band)
+# (a) スペクトル + 積分窓 / Spectra with integration window
 ax1 = Axis(fig[1, 1], xlabel="CCD Pixel", ylabel="Counts",
     title="(a) PL Spectra")
 for (i, pos) in enumerate(positions)
@@ -112,7 +57,7 @@ colsize!(fig.layout, 2, Aspect(1, 1.0))
 save(joinpath(FIGDIR, "pl_map.png"), fig)
 
 # =========================================================================
-# Step 4: eLabFTWに記録 / Log to eLabFTW
+# 3. eLabFTWに記録 / Log to eLabFTW
 # =========================================================================
 # 環境変数の設定が必要 / Requires environment variables:
 #   export ELABFTW_URL="https://your-instance.elabftw.net"
