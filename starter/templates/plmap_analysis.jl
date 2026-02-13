@@ -4,6 +4,12 @@
 # 実行方法 / How to run (from project root):
 #   ターミナル / Terminal:  julia --project=. analyses/MoSe2_flake/analysis.jl
 #   REPL:                  include("analyses/MoSe2_flake/analysis.jl")
+#
+# 使い方 / How to use:
+#   1回目: そのまま実行 → spectra.png が保存される
+#          Run as-is → saves spectra.png
+#   2回目: spectra.pngを見てPIXEL_RANGEを設定 → 再実行でマップ完成
+#          Set PIXEL_RANGE from spectra.png → rerun for final map
 
 using QPSTools
 using CairoMakie
@@ -11,30 +17,47 @@ using CairoMakie
 FIGDIR = joinpath(@__DIR__, "figures")
 mkpath(FIGDIR)
 
-# 1. 読み込み・スペクトル確認 / Load and inspect spectra
 # パスとstep_sizeを自分のデータに合わせて変更
 # Change the path and step_size to match your scan
 filepath = "data/PLmap/my_scan.lvm"
-m_raw = load_pl_map(filepath; step_size=2.16)
+STEP_SIZE = 2.16
+
+# spectra.pngを見てからPLピークのピクセル範囲を設定
+# After looking at spectra.png, set the pixel range that contains your PL peak
+PIXEL_RANGE = nothing  # → (950, 1100)
+
+# =========================================================================
+# Step 1: スペクトル確認 / Inspect spectra
+# =========================================================================
+
+m_raw = load_pl_map(filepath; step_size=STEP_SIZE)
 println(m_raw)
 
-# 位置を選んでスペクトルを確認 / Pick positions and check spectra
 positions = [(0.0, 0.0), (10.0, 10.0), (-10.0, -10.0)]
 fig, ax = plot_pl_spectra(m_raw, positions)
 save(joinpath(FIGDIR, "spectra.png"), fig)
 
-# 2. ピクセル範囲を決めて再読み込み / Choose pixel range and reload
-# spectra.pngを見てPLピークの範囲を決める
-# Look at spectra.png to find which pixels contain the PL peak
-m = load_pl_map(filepath; step_size=2.16, pixel_range=(950, 1100))
+if isnothing(PIXEL_RANGE)
+    println("\n--> spectra.png を確認して PIXEL_RANGE を設定してください")
+    println("--> Check spectra.png, then set PIXEL_RANGE above and rerun")
+    return
+end
+
+# =========================================================================
+# Step 2: マップ作成 / Build the map
+# =========================================================================
+
+m = load_pl_map(filepath; step_size=STEP_SIZE, pixel_range=PIXEL_RANGE)
 m = subtract_background(m)
 m = normalize(m)
 
-# 3. PLマップ / PL intensity map
 fig, ax = plot_pl_map(m)
 save(joinpath(FIGDIR, "pl_map.png"), fig)
 
-# 4. 論文用図 / Publication figure
+# =========================================================================
+# Step 3: 論文用図 / Publication figure
+# =========================================================================
+
 set_theme!(print_theme())
 fig = Figure(size=(1000, 400))
 
@@ -43,7 +66,7 @@ for (i, pos) in enumerate(positions)
     spec = extract_spectrum(m_raw; x=pos[1], y=pos[2])
     lines!(ax1, spec.pixel, spec.signal, label="($(pos[1]), $(pos[2])) μm")
 end
-vspan!(ax1, 950, 1100, color=(:blue, 0.1))
+vspan!(ax1, PIXEL_RANGE..., color=(:blue, 0.1))
 axislegend(ax1, position=:rt)
 
 ax2 = Axis(fig[1, 2], xlabel="X (μm)", ylabel="Y (μm)",
@@ -53,7 +76,9 @@ Colorbar(fig[1, 3], hm, label="Normalized PL")
 
 save(joinpath(FIGDIR, "publication.pdf"), fig)
 
-# 5. eLabFTWに記録 / Log to eLabFTW
+# =========================================================================
+# Step 4: eLabFTWに記録 / Log to eLabFTW
+# =========================================================================
 # 環境変数の設定が必要 / Requires environment variables:
 #   export ELABFTW_URL="https://your-instance.elabftw.net"
 #   export ELABFTW_API_KEY="your-api-key"
@@ -62,8 +87,8 @@ log_to_elab(
     title = "PL Map: MySample",
     body = """
 ## 測定条件 / Measurement
-- **Grid**: $(m_raw.metadata["nx"]) x $(m_raw.metadata["ny"]) ($(m_raw.metadata["step_size"]) μm step)
-- **PL pixel range**: 950-1100
+- **Grid**: $(m_raw.metadata["nx"]) x $(m_raw.metadata["ny"]) ($(STEP_SIZE) μm step)
+- **PL pixel range**: $(PIXEL_RANGE[1])-$(PIXEL_RANGE[2])
 - **Background**: auto
 """,
     attachments = [joinpath(FIGDIR, "publication.pdf")],
