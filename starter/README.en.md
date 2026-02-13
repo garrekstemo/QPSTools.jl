@@ -36,7 +36,7 @@ analyses/
 To explore new data interactively:
 
 ```bash
-cp templates/explore_raman.jl scratch/look_at_MoSe2.jl
+cp templates/explore_raman.jl explore/look_at_MoSe2.jl
 ```
 
 Edit the file path, then step through in the REPL with GLMakie + `DataInspector()`.
@@ -76,7 +76,7 @@ my-project/
 │   ├── raman/                # Raw .csv files from JASCO
 │   ├── ftir/                 # FTIR .csv files
 │   └── PLmap/                # CCD raster scan .lvm files
-├── scratch/                  # Exploration — try things here freely
+├── explore/                  # Exploration — try things here freely
 ├── manuscript/               # Composite figures for papers
 ├── templates/                # Starting points — copy, don't edit
 │   ├── explore_raman.jl      # GLMakie — interactive exploration

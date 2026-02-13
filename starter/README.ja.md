@@ -36,7 +36,7 @@ analyses/
 新しいデータを対話的に探索するには：
 
 ```bash
-cp templates/explore_raman.jl scratch/look_at_MoSe2.jl
+cp templates/explore_raman.jl explore/look_at_MoSe2.jl
 ```
 
 ファイルパスを編集し、REPLでGLMakie + `DataInspector()`を使って1行ずつ実行します。
@@ -76,7 +76,7 @@ my-project/
 │   ├── raman/                # JASCOの生データ（.csvファイル）
 │   ├── ftir/                 # FTIRの.csvファイル
 │   └── PLmap/                # CCDラスタースキャンの.lvmファイル
-├── scratch/                  # 探索用 — 自由に使える作業スペース
+├── explore/                  # 探索用 — 自由に使える作業スペース
 ├── manuscript/               # 論文用の複合図
 ├── templates/                # テンプレート — コピーして使う（直接編集しない）
 │   ├── explore_raman.jl      # GLMakie — 対話的な探索用

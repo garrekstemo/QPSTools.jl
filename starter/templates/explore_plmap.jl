@@ -1,9 +1,9 @@
 # PLマッピング探索 / PL Map Exploration
-# scratch/にコピーしてREPLで1行ずつ実行
-# Copy to scratch/ and step through in the REPL
+# explore/にコピーしてREPLで1行ずつ実行
+# Copy to explore/ and step through in the REPL
 #
 #   julia --project=.
-#   julia> include("scratch/explore_plmap.jl")
+#   julia> include("explore/explore_plmap.jl")
 #
 # スペクトルをホバーしてPLピークのピクセル範囲を特定 → PIXEL_RANGEを変更して再実行
 # Hover over spectra to find the PL peak pixel range → change PIXEL_RANGE and rerun

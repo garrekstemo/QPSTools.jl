@@ -60,26 +60,26 @@ MoSe2_A1g_v2_final_FINAL/
 
 解析には探索と仕上げの2つのフェーズがあります。
 
-### 探索（`scratch/`）
+### 探索（`explore/`）
 
-新しいデータを見るときは、探索テンプレートを`scratch/`にコピーします：
+新しいデータを見るときは、探索テンプレートを`explore/`にコピーします：
 
 ```bash
-cp templates/explore_raman.jl scratch/look_at_MoSe2.jl
+cp templates/explore_raman.jl explore/look_at_MoSe2.jl
 ```
 
 ファイルパスを編集し、REPLで1行ずつ実行します：
 
 ```julia
 julia --project=.
-julia> include("scratch/look_at_MoSe2.jl")
+julia> include("explore/look_at_MoSe2.jl")
 ```
 
 探索テンプレートはGLMakie + `DataInspector()`を使います — ズーム、パン、
 マウスホバーで値の読み取り（ピーク位置、強度、ピクセル番号）ができます。
 正式な解析を書く前に、フィット領域やピクセル範囲を特定するのに最適です。
 
-`scratch/`内のファイルはいつでも削除して構いません。
+`explore/`内のファイルはいつでも削除して構いません。
 
 ### 仕上げ（`analyses/`）
 
@@ -252,7 +252,7 @@ Peak Fit Results
 
 ```bash
 julia --project=. analyses/MoSe2_A1g/analysis.jl    # ターミナル
-julia --project=. scratch/quick_look.jl              # scratchスクリプトも同様
+julia --project=. explore/quick_look.jl              # 探索スクリプトも同様
 ```
 
 またはREPLを起動して`include()`でスクリプトを読み込みます：
@@ -260,7 +260,7 @@ julia --project=. scratch/quick_look.jl              # scratchスクリプトも
 ```julia
 julia --project=.
 julia> include("analyses/MoSe2_A1g/analysis.jl")
-julia> include("scratch/quick_look.jl")
+julia> include("explore/quick_look.jl")
 ```
 
 ### プロット関数の戻り値

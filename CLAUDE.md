@@ -279,7 +279,7 @@ QPSTools.jl/
 - Never save figures to project root or alongside scripts
 
 **Two template types: explore + analysis.**
-- `explore_*.jl` — GLMakie + `DataInspector()` for interactive REPL exploration. Copy to `scratch/`, step through line-by-line.
+- `explore_*.jl` — GLMakie + `DataInspector()` for interactive REPL exploration. Copy to `explore/`, step through line-by-line.
 - `*_analysis.jl` — CairoMakie for saved output. Copy to `analyses/`, run as a script.
 
 **PNG for saved output, PDF for publication.** Analysis templates use CairoMakie + `.png` — VS Code previews PNG natively. Switch to `.pdf` only for `manuscript/` figures (vector graphics for journals).

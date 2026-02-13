@@ -60,19 +60,19 @@ MoSe2_A1g_v2_final_FINAL/
 
 Analysis has two phases: exploration and finalization.
 
-### Exploration (`scratch/`)
+### Exploration (`explore/`)
 
-When you first look at new data, copy an explore template to `scratch/`:
+When you first look at new data, copy an explore template to `explore/`:
 
 ```bash
-cp templates/explore_raman.jl scratch/look_at_MoSe2.jl
+cp templates/explore_raman.jl explore/look_at_MoSe2.jl
 ```
 
 Edit the file path, then step through in the REPL:
 
 ```julia
 julia --project=.
-julia> include("scratch/look_at_MoSe2.jl")
+julia> include("explore/look_at_MoSe2.jl")
 ```
 
 Explore templates use GLMakie + `DataInspector()` — you can zoom, pan, and
@@ -80,7 +80,7 @@ hover to read exact values (peak positions, intensities, pixel numbers).
 This is the best way to identify fit regions and pixel ranges before
 writing a formal analysis.
 
-Files in `scratch/` are disposable. Delete them whenever you want.
+Files in `explore/` are disposable. Delete them whenever you want.
 
 ### Finalization (`analyses/`)
 
@@ -256,7 +256,7 @@ Use `--project=.` so Julia finds the installed packages:
 
 ```bash
 julia --project=. analyses/MoSe2_A1g/analysis.jl    # terminal
-julia --project=. scratch/quick_look.jl              # scratch scripts too
+julia --project=. explore/quick_look.jl              # explore scripts too
 ```
 
 Or start a REPL and `include()` scripts:
@@ -264,7 +264,7 @@ Or start a REPL and `include()` scripts:
 ```julia
 julia --project=.
 julia> include("analyses/MoSe2_A1g/analysis.jl")
-julia> include("scratch/quick_look.jl")
+julia> include("explore/quick_look.jl")
 ```
 
 ### Plot return values

@@ -1,9 +1,9 @@
 # FTIR探索 / FTIR Exploration
-# scratch/にコピーしてREPLで1行ずつ実行
-# Copy to scratch/ and step through in the REPL
+# explore/にコピーしてREPLで1行ずつ実行
+# Copy to explore/ and step through in the REPL
 #
 #   julia --project=.
-#   julia> include("scratch/explore_ftir.jl")
+#   julia> include("explore/explore_ftir.jl")
 
 using QPSTools, GLMakie
 set_theme!(qps_theme())
