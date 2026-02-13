@@ -172,7 +172,7 @@ Re-running the script updates the same experiment (idempotent via `.elab_id` fil
 
 ## Tips
 
-### Choosing a fit region
+### Choosing a fit region (Raman / FTIR)
 
 Run `find_peaks` and `peak_table` first. The table prints center positions —
 pick a range `(lo, hi)` that brackets the peak you want to fit.
@@ -184,6 +184,38 @@ println(peak_table(peaks))
 # → choose (1950, 2150) to bracket that peak
 result = fit_peaks(spec, (1950, 2150))
 ```
+
+### PL Mapping: choosing a pixel range
+
+A CCD raster scan records a full spectrum at every spatial point. That spectrum
+contains everything — laser scatter, PL emission, Raman peaks, and detector
+noise. To build a meaningful PL map, you need to isolate the PL peak using
+**spectral windowing**: integrating only the pixels that contain the PL signal.
+
+The template (`templates/plmap_analysis.jl`) uses a two-pass flow:
+
+**First run** — inspect the raw spectra to find the PL peak:
+```julia
+PIXEL_RANGE = nothing  # leave as nothing for the first run
+```
+This saves `spectra.pdf` showing the full CCD spectrum at a few positions.
+Look at the plot and identify the PL emission (usually the broadest peak).
+Note which pixel range brackets it.
+
+**Second run** — set the pixel range and build the map:
+```julia
+PIXEL_RANGE = (950, 1100)  # the pixels that contain your PL peak
+```
+The script then:
+1. **Subtracts background** — averages spectra from off-flake corners (no PL)
+   and subtracts from every grid point, removing laser scatter and noise
+2. **Integrates the pixel window** — sums counts within `PIXEL_RANGE` at
+   each grid point, giving one PL intensity value per point
+3. **Normalizes** to [0, 1]
+
+Anything outside the pixel window (laser lines, Raman peaks) is ignored.
+The output figure shows the spectra with the integration window highlighted
+alongside the spatial PL map.
 
 ### What `format_results` returns
 
