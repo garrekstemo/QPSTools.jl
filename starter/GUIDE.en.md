@@ -192,28 +192,27 @@ contains everything — laser scatter, PL emission, Raman peaks, and detector
 noise. To build a meaningful PL map, you need to isolate the PL peak using
 **spectral windowing**: integrating only the pixels that contain the PL signal.
 
-The template (`templates/plmap_analysis.jl`) uses a two-pass flow:
+The template (`templates/plmap_analysis.jl`) works like this:
 
-**First run** — inspect the raw spectra to find the PL peak:
-```julia
-PIXEL_RANGE = nothing  # leave as nothing for the first run
-```
-This saves `spectra.pdf` showing the full CCD spectrum at a few positions.
-Look at the plot and identify the PL emission (usually the broadest peak).
-Note which pixel range brackets it.
+1. **Inspect spectra** — the script plots raw CCD spectra at a few positions
+   (`spectra.pdf`). Look for the PL emission — it's usually the broadest peak.
+   Laser scatter is sharp, Raman peaks are narrow.
 
-**Second run** — set the pixel range and build the map:
-```julia
-PIXEL_RANGE = (950, 1100)  # the pixels that contain your PL peak
-```
-The script then:
-1. **Subtracts background** — averages spectra from off-flake corners (no PL)
-   and subtracts from every grid point, removing laser scatter and noise
-2. **Integrates the pixel window** — sums counts within `PIXEL_RANGE` at
-   each grid point, giving one PL intensity value per point
-3. **Normalizes** to [0, 1]
+2. **Set `PIXEL_RANGE`** — note which pixels bracket the PL peak and update
+   the variable at the top of the script:
+   ```julia
+   PIXEL_RANGE = (950, 1100)  # pixels that contain your PL peak
+   ```
 
-Anything outside the pixel window (laser lines, Raman peaks) is ignored.
+3. **Background subtraction** — the script averages spectra from off-flake
+   corners (no PL) and subtracts from every grid point, removing laser scatter
+   and detector noise. A verification plot (`spectra_corrected.pdf`) shows the
+   corrected spectra — the PL peak should sit on a flat baseline.
+
+4. **Spectral windowing** — sums counts within `PIXEL_RANGE` at each grid
+   point, giving one PL intensity value per point. Anything outside the window
+   (laser lines, Raman peaks) is ignored.
+
 The output figure shows the spectra with the integration window highlighted
 alongside the spatial PL map.
 

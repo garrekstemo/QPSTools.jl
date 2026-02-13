@@ -22,13 +22,6 @@
 #   Step 3: PLピクセルのみを合計 → グリッド点ごとに1つの強度値 → マップ
 #           Sum only the PL pixels → one intensity value per grid point → map
 #
-# --- 使い方 / How to use ---
-#
-#   1回目: そのまま実行 → spectra.pdf が保存される（PLピークを探す）
-#          Run as-is → saves spectra.pdf (find the PL peak)
-#   2回目: PIXEL_RANGEを設定 → 再実行でマップ完成
-#          Set PIXEL_RANGE → rerun for the final map
-
 using QPSTools
 using CairoMakie
 
@@ -37,12 +30,12 @@ mkpath(FIGDIR)
 
 # パスとstep_sizeを自分のデータに合わせて変更
 # Change the path and step_size to match your scan
-filepath = "data/PLmap/my_scan.lvm"
+filepath = "data/PLmap/CCDtmp_260129_111138.lvm"
 STEP_SIZE = 2.16
 
 # spectra.pdfを見てからPLピークのピクセル範囲を設定
 # After looking at spectra.pdf, set the pixel range that brackets your PL peak
-PIXEL_RANGE = nothing  # e.g. (950, 1100)
+PIXEL_RANGE = (950, 1100)
 
 # =========================================================================
 # Step 1: スペクトル確認 / Inspect raw spectra
@@ -62,13 +55,6 @@ println(m_raw)
 positions = [(0.0, 0.0), (10.0, 10.0), (-10.0, -10.0)]
 fig, ax = plot_pl_spectra(m_raw, positions)
 save(joinpath(FIGDIR, "spectra.pdf"), fig)
-
-if isnothing(PIXEL_RANGE)
-    println("\n--> spectra.pdf を見て、PLピークを囲むピクセル範囲を特定してください")
-    println("--> Check spectra.pdf. Find the PL peak and note its pixel range.")
-    println("--> Set PIXEL_RANGE above (e.g. PIXEL_RANGE = (950, 1100)) and rerun.")
-    return
-end
 
 # =========================================================================
 # Step 2: バックグラウンド除去 / Background subtraction
