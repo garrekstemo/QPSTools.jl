@@ -45,7 +45,7 @@ for (i, pos) in enumerate(positions)
         strokecolor=:white, strokewidth=1)
 end
 Colorbar(fig[1, 3], hm, label="Normalized PL")
-colgap!(fig.layout, 2, 5)
+colsize!(fig.layout, 2, Aspect(1, 1.0))
 
 display(fig)
 DataInspector()

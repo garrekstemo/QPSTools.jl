@@ -107,6 +107,7 @@ ax2 = Axis(fig[1, 2], xlabel="X (μm)", ylabel="Y (μm)",
     title="(b) PL Intensity", aspect=DataAspect())
 hm = heatmap!(ax2, xdata(m), ydata(m), intensity(m); colormap=:hot)
 Colorbar(fig[1, 3], hm, label="Normalized PL")
+colsize!(fig.layout, 2, Aspect(1, 1.0))
 
 save(joinpath(FIGDIR, "pl_map.png"), fig)
 
