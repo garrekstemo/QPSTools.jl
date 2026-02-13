@@ -5,7 +5,7 @@
 using QPSTools
 using CairoMakie
 
-PROJECT_ROOT = dirname(@__DIR__)
+PROJECT_ROOT = dirname(dirname(@__DIR__))
 FIGDIR = joinpath(PROJECT_ROOT, "figures", "EXAMPLES", "xrd")
 mkpath(FIGDIR)
 

@@ -1,9 +1,9 @@
 # PL Mapping Analysis
 #
-# CCD raster scan of a MoSe2 flake: inspect spectra to find the PL emission
-# pixel range, subtract background, and produce a publication-quality PL map.
+# Runnable version of starter/templates/plmap_analysis.jl with real data.
+# Produces a publication-quality 3-panel figure saved to figures/EXAMPLES/pl_map/.
 #
-# Data: 51x51 spatial grid, 2000 CCD pixels per point (Suruga stage, 2.16 um step).
+# Ref: starter/templates/plmap_analysis.jl
 
 using QPSTools
 using CairoMakie
@@ -37,37 +37,48 @@ save(joinpath(FIGDIR, "spectra_full.png"), fig_spec)
 
 m = load_pl_map(filepath; nx=51, ny=51, step_size=2.16, pixel_range=(950, 1100))
 m = subtract_background(m)
+centers = peak_centers(m)
 m = normalize(m)
+println(m)
 
 # =============================================================================
 # 3. Publication figure: representative spectra + PL intensity map
 # =============================================================================
 
-set_theme!(print_theme())
-fig = Figure(size=(1000, 400))
+set_theme!(qps_theme())
+fig = Figure(size=(1400, 400))
 
 # (a) PL spectra at selected positions
 ax1 = Axis(fig[1, 1], xlabel="CCD Pixel", ylabel="Counts",
     title="(a) PL Spectra")
 for (i, pos) in enumerate(positions)
     spec = extract_spectrum(m_raw; x=pos[1], y=pos[2])
-    lines!(ax1, spec.pixel, spec.signal, label="($(pos[1]), $(pos[2])) um")
+    lines!(ax1, spec.pixel, spec.signal, label="($(pos[1]), $(pos[2])) μm")
 end
 vspan!(ax1, 950, 1100, color=(:blue, 0.1))
 axislegend(ax1, position=:rt)
 
 # (b) Normalized PL intensity map
-ax2 = Axis(fig[1, 2], xlabel="X (um)", ylabel="Y (um)",
+ax2 = Axis(fig[1, 2], xlabel="X (μm)", ylabel="Y (μm)",
     title="(b) PL Intensity", aspect=DataAspect())
 hm = heatmap!(ax2, xdata(m), ydata(m), intensity(m); colormap=:hot)
 Colorbar(fig[1, 3], hm, label="Normalized PL")
+colsize!(fig.layout, 2, Aspect(1, 1.0))
+
+# (c) PL peak center map
+ax3 = Axis(fig[1, 4], xlabel="X (μm)", ylabel="Y (μm)",
+    title="(c) Peak Center", aspect=DataAspect())
+hm2 = heatmap!(ax3, xdata(m), ydata(m), centers'; colormap=:viridis,
+    nan_color=:transparent)
+Colorbar(fig[1, 5], hm2, label="Peak Center (pixel)")
+colsize!(fig.layout, 4, Aspect(1, 1.0))
 
 figpath = joinpath(FIGDIR, "pl_map.png")
 save(figpath, fig)
 println("\nFigure saved to $FIGDIR")
 
 # =============================================================================
-# 4. Log to eLabFTW
+# 4. Log to eLabFTW (optional)
 # =============================================================================
 # Uncomment to upload the figure and metadata to the lab notebook.
 # Requires ELABFTW_URL and ELABFTW_API_KEY environment variables.
@@ -78,7 +89,7 @@ log_to_elab(
     body = """
 ## Measurement
 - **Sample**: MoSe₂ on SiO₂/Si
-- **Grid**: 51 x 51 (2.16 um step)
+- **Grid**: 51 x 51 (2.16 μm step)
 - **PL pixel range**: 950-1100
 - **Background**: auto (bottom corners)
 """,

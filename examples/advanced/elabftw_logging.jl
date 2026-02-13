@@ -10,10 +10,9 @@
 using QPSTools
 using CairoMakie
 
-PROJECT_ROOT = dirname(@__DIR__)
+PROJECT_ROOT = dirname(dirname(@__DIR__))
 FIGDIR = joinpath(PROJECT_ROOT, "figures", "EXAMPLES", "elabftw")
 mkpath(FIGDIR)
-set_data_dir(joinpath(PROJECT_ROOT, "data"))
 
 # =============================================================================
 # 1. Configure eLabFTW
@@ -28,7 +27,8 @@ configure_elabftw(
 # 2. Load FTIR data and fit the CN stretch
 # =============================================================================
 
-spec = load_ftir(solute="NH4SCN", concentration="1.0M")
+spec = load_ftir(joinpath(PROJECT_ROOT, "data", "ftir", "1.0M_NH4SCN_DMF.csv");
+    solute="NH4SCN", concentration="1.0M")
 result = fit_peaks(spec, (2000, 2100))
 
 report(result)

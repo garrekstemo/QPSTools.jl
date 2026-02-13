@@ -18,7 +18,7 @@ using QPSTools
 using CairoMakie
 
 # Output directory
-outdir = joinpath(@__DIR__, "..", "figures", "EXAMPLES", "cavity")
+outdir = joinpath(@__DIR__, "..", "..", "figures", "EXAMPLES", "cavity")
 mkpath(outdir)
 
 # =============================================================================

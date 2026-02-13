@@ -6,13 +6,13 @@
 using QPSTools
 using CairoMakie
 
-PROJECT_ROOT = dirname(@__DIR__)
+PROJECT_ROOT = dirname(dirname(@__DIR__))
 FIGDIR = joinpath(PROJECT_ROOT, "figures", "EXAMPLES", "views")
 mkpath(FIGDIR)
-set_data_dir(joinpath(PROJECT_ROOT, "data"))
 
 # Load data and prepare all ingredients
-spec = load_raman(sample="center", material="MoSe2")
+spec = load_raman(joinpath(PROJECT_ROOT, "data", "raman", "MoSe2", "MoSe2-center.csv");
+    material="MoSe2", sample="center")
 peaks = find_peaks(spec)
 fit = fit_peaks(spec, (225, 260))
 

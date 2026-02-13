@@ -13,7 +13,7 @@ using CurveFit
 using CurveFitModels
 using Statistics: mean
 
-PROJECT_ROOT = dirname(@__DIR__)
+PROJECT_ROOT = dirname(dirname(@__DIR__))
 FIGDIR = joinpath(PROJECT_ROOT, "figures", "EXAMPLES", "single_beam")
 mkpath(FIGDIR)
 

@@ -7,16 +7,16 @@
 using QPSTools
 using CairoMakie
 
-PROJECT_ROOT = dirname(@__DIR__)
+PROJECT_ROOT = dirname(dirname(@__DIR__))
 FIGDIR = joinpath(PROJECT_ROOT, "figures", "EXAMPLES", "baseline")
 mkpath(FIGDIR)
-set_data_dir(joinpath(PROJECT_ROOT, "data"))
 
 # =============================================================================
 # 1. Full-spectrum baseline correction (glass — curved background)
 # =============================================================================
 
-glass = load_raman(material="ZIF-62", phase="glass", sample="glass_2a")
+glass = load_raman(joinpath(PROJECT_ROOT, "data", "raman", "ZIF62_glass_2a.csv");
+    material="ZIF-62", phase="glass", sample="glass_2a")
 println("Loaded: ", glass)
 
 # Correct with default method (ARPLS)
@@ -69,7 +69,8 @@ println("Saved method comparison")
 # 3. Localized correction + peak fitting (crystal — sloped background)
 # =============================================================================
 
-crystal = load_raman(material="ZIF-62", phase="crystal", composition="Co")
+crystal = load_raman(joinpath(PROJECT_ROOT, "data", "raman", "ZIF62_crystal_1.csv");
+    material="ZIF-62", phase="crystal", composition="Co")
 println("\nLoaded: ", crystal)
 
 # Detect peaks to find interesting regions
