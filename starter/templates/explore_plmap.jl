@@ -13,7 +13,32 @@ using QPSTools, GLMakie
 m = load_pl_map("data/PLmap/my_scan.lvm"; step_size=2.16)
 println(m)
 
-# 代表的な位置でスペクトルを確認 / Check spectra at representative positions
+# スペクトル + 生マップを並べて表示
+# Show spectra alongside the raw intensity map
 positions = [(0.0, 0.0), (10.0, 10.0), (-10.0, -10.0)]
-fig, ax = plot_pl_spectra(m, positions)
-DataInspector()  # マウスホバーでピクセル番号と強度を読む / hover to read pixel numbers
+
+fig = Figure(size=(1000, 400))
+
+# (a) スペクトル / Spectra — ピクセル番号をホバーで読む / hover to read pixel numbers
+ax1 = Axis(fig[1, 1], xlabel="CCD Pixel", ylabel="Counts", title="Spectra")
+for (i, pos) in enumerate(positions)
+    spec = extract_spectrum(m; x=pos[1], y=pos[2])
+    lines!(ax1, spec.pixel, spec.signal, label="($(pos[1]), $(pos[2])) μm")
+end
+axislegend(ax1, position=:rt)
+
+# (b) 生マップ / Raw intensity map
+ax2 = Axis(fig[1, 2], xlabel="X (μm)", ylabel="Y (μm)",
+    title="Raw PL Map", aspect=DataAspect())
+hm = heatmap!(ax2, xdata(m), ydata(m), intensity(m); colormap=:hot)
+Colorbar(fig[1, 3], hm, label="Counts")
+
+DataInspector()  # マウスホバーで値を読む / hover to read values
+
+# --- ここから調整 / Tweak from here ---
+# PIXEL_RANGEを変えて再読み込み → マップの改善を確認
+# Change PIXEL_RANGE and re-load to see the map improve
+#
+# m = load_pl_map("data/PLmap/my_scan.lvm"; step_size=2.16, pixel_range=(950, 1100))
+# m = subtract_background(m)
+# m = normalize(m)
