@@ -68,7 +68,7 @@ colsize!(fig.layout, 2, Aspect(1, 1.0))
 # (c) PL peak center map
 ax3 = Axis(fig[1, 4], xlabel="X (μm)", ylabel="Y (μm)",
     title="(c) Peak Center", aspect=DataAspect())
-hm2 = heatmap!(ax3, xdata(m), ydata(m), centers'; colormap=:viridis,
+hm2 = heatmap!(ax3, xdata(m), ydata(m), centers; colormap=:viridis,
     nan_color=:transparent)
 Colorbar(fig[1, 5], hm2, label="Peak Center (pixel)")
 colsize!(fig.layout, 4, Aspect(1, 1.0))

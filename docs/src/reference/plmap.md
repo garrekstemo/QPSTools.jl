@@ -26,6 +26,12 @@ extract_spectrum
 subtract_background
 ```
 
+## Peak Centers
+
+```@docs
+peak_centers
+```
+
 ## Plotting
 
 ```@docs

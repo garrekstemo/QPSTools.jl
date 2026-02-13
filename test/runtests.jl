@@ -946,6 +946,41 @@ const PROJECT_ROOT = dirname(@__DIR__)
         @test ax2 isa Axis
     end
 
+    @testset "PLMap peak_centers" begin
+        plmap_file = joinpath(PROJECT_ROOT, "data/PLmap/CCDtmp_260129_111138.lvm")
+        m = load_pl_map(plmap_file; nx=51, ny=51, step_size=2.16, pixel_range=(950, 1100))
+
+        centers = peak_centers(m)
+        @test size(centers) == (51, 51)
+        @test eltype(centers) == Float64
+
+        # All valid centroids within pixel_range
+        valid = filter(!isnan, centers)
+        @test !isempty(valid)
+        @test all(c -> 950 <= c <= 1100, valid)
+
+        # After background subtraction — masking uses m.intensity,
+        # so off-flake regions (low PL) become NaN
+        m_bg = subtract_background(m)
+        centers_bg = peak_centers(m_bg)
+        @test size(centers_bg) == (51, 51)
+        @test count(isnan, centers_bg) > count(isnan, centers)
+
+        # Without pixel_range: uses all pixels
+        m_full = load_pl_map(plmap_file; nx=51, ny=51)
+        centers_full = peak_centers(m_full)
+        @test size(centers_full) == (51, 51)
+
+        # Explicit pixel_range kwarg overrides metadata
+        centers_custom = peak_centers(m; pixel_range=(960, 1050))
+        valid_custom = filter(!isnan, centers_custom)
+        @test all(c -> 960 <= c <= 1050, valid_custom)
+
+        # threshold=0 disables masking (intensity cutoff = 0)
+        centers_no_mask = peak_centers(m_bg; threshold=0)
+        @test count(isnan, centers_no_mask) <= count(isnan, centers_bg)
+    end
+
     @testset "JASCO technique tag" begin
         spec = load_ftir(joinpath(PROJECT_ROOT, "data/ftir/1.0M_NH4SCN_DMF.csv"))
         @test QPSTools._jasco_technique_tag(spec) == "ftir"

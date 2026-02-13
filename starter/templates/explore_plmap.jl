@@ -21,10 +21,11 @@ positions = [(0.0, 0.0), (10.0, 10.0), (-10.0, -10.0)]
 m_raw = load_pl_map(filepath; step_size=STEP_SIZE)
 m = load_pl_map(filepath; step_size=STEP_SIZE, pixel_range=PIXEL_RANGE)
 m = subtract_background(m)
+centers = peak_centers(m)
 m = normalize(m)
 
 # --- 表示 / Display ---
-fig = Figure(size=(1000, 400))
+fig = Figure(size=(1400, 400))
 
 # (a) スペクトル + 積分窓 / Spectra with integration window
 ax1 = Axis(fig[1, 1], xlabel="CCD Pixel", ylabel="Counts", title="Spectra")
@@ -46,6 +47,14 @@ for (i, pos) in enumerate(positions)
 end
 Colorbar(fig[1, 3], hm, label="Normalized PL")
 colsize!(fig.layout, 2, Aspect(1, 1.0))
+
+# (c) ピーク中心マップ / PL peak center map
+ax3 = Axis(fig[1, 4], xlabel="X (μm)", ylabel="Y (μm)",
+    title="Peak Center", aspect=DataAspect())
+hm2 = heatmap!(ax3, xdata(m), ydata(m), centers; colormap=:viridis,
+    nan_color=:transparent)
+Colorbar(fig[1, 5], hm2, label="Peak Center (pixel)")
+colsize!(fig.layout, 4, Aspect(1, 1.0))
 
 display(fig)
 DataInspector()

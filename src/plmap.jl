@@ -307,3 +307,69 @@ function normalize(m::PLMap)
     end
     return PLMap(norm_intensity, m.spectra, m.x, m.y, m.pixel, m.metadata)
 end
+
+# =============================================================================
+# Peak center (centroid) map
+# =============================================================================
+
+"""
+    peak_centers(m::PLMap; pixel_range=nothing, threshold=0.05) -> Matrix{Float64}
+
+Compute the centroid (intensity-weighted average pixel) at each grid point.
+
+Returns a `(nx, ny)` matrix of peak center positions in pixel units. Grid points
+where the PL intensity (`m.intensity`) is below `threshold` × the map maximum
+are set to `NaN` (renders as transparent in heatmaps with `nan_color=:transparent`).
+
+Masking uses the PLMap's intensity field — the integrated PL signal already stored
+in the map. This produces clean masks that match the intensity heatmap: off-flake
+regions (low PL signal) are transparent, on-flake regions show centroid positions.
+
+# Arguments
+- `pixel_range`: `(start, stop)` pixel range to compute the centroid over.
+  Falls back to the `pixel_range` stored in metadata, or all pixels if unset.
+- `threshold`: Fraction of the maximum PL intensity below which a grid point is
+  masked as `NaN`. Default `0.05` (5%). Set to `0` to disable masking.
+
+# Example
+```julia
+m = load_pl_map("scan.lvm"; nx=51, ny=51, pixel_range=(950, 1100))
+m = subtract_background(m)
+centers = peak_centers(m)
+heatmap(m.x, m.y, centers'; colormap=:viridis, nan_color=:transparent)
+```
+"""
+function peak_centers(m::PLMap; pixel_range::Union{Tuple{Int,Int},Nothing}=nothing,
+                      threshold::Real=0.05)
+    pr = !isnothing(pixel_range) ? pixel_range : get(m.metadata, "pixel_range", nothing)
+
+    if !isnothing(pr)
+        p1 = max(1, pr[1])
+        p2 = min(length(m.pixel), pr[2])
+        pixels = m.pixel[p1:p2]
+        spectra_slice = @view m.spectra[:, :, p1:p2]
+    else
+        pixels = m.pixel
+        spectra_slice = m.spectra
+    end
+
+    nx, ny = length(m.x), length(m.y)
+
+    # Mask against the PL intensity map (integrated signal already in m.intensity)
+    max_intensity = maximum(m.intensity)
+    cutoff = max_intensity > 0 ? max_intensity * threshold : zero(max_intensity)
+
+    centers = Matrix{Float64}(undef, nx, ny)
+    for iy in 1:ny
+        for ix in 1:nx
+            if m.intensity[ix, iy] <= cutoff
+                centers[ix, iy] = NaN
+            else
+                sig = @view spectra_slice[ix, iy, :]
+                total = sum(sig)
+                centers[ix, iy] = sum(pixels[k] * sig[k] for k in eachindex(sig)) / total
+            end
+        end
+    end
+    return centers
+end

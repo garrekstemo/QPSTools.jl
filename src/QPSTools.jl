@@ -186,7 +186,7 @@ export refractive_index, extinction_coeff
 # PL mapping (CCD raster scans)
 include("plmap.jl")
 export PLMap
-export load_pl_map, extract_spectrum
+export load_pl_map, extract_spectrum, peak_centers
 
 # ============================================================================
 # Lab-specific spectroscopy dispatches

@@ -13,12 +13,12 @@ set_theme!(qps_theme())
 
 # Config
 filepath = joinpath(PROJECT_ROOT, "data", "PLmap", "CCDtmp_260129_111138.lvm")
-STEP_SIZE = 2.16
-PIXEL_RANGE = (950, 1100)
-positions = [(0.0, 0.0), (10.0, 10.0), (-10.0, -10.0)]
+STEP_SIZE = 5.0
+PIXEL_RANGE = (850, 1200)
+positions = [(0.0, 0.0), (10.0, 10.0), (-10.0, -10.0), (-10.0, 10.0)]
 
 # Load + process
-m_raw = load_pl_map(filepath; nx=51, ny=51, step_size=STEP_SIZE)
+# m_raw = load_pl_map(filepath; nx=51, ny=51, step_size=STEP_SIZE)
 m = load_pl_map(filepath; nx=51, ny=51, step_size=STEP_SIZE, pixel_range=PIXEL_RANGE)
 m = subtract_background(m)
 centers = peak_centers(m)
@@ -51,7 +51,7 @@ colsize!(fig.layout, 2, Aspect(1, 1.0))
 # (c) PL peak center map
 ax3 = Axis(fig[1, 4], xlabel="X (μm)", ylabel="Y (μm)",
     title="Peak Center", aspect=DataAspect())
-hm2 = heatmap!(ax3, xdata(m), ydata(m), centers'; colormap=:viridis,
+hm2 = heatmap!(ax3, xdata(m), ydata(m), centers; colormap=:viridis,
     nan_color=:transparent)
 Colorbar(fig[1, 5], hm2, label="Peak Center (pixel)")
 colsize!(fig.layout, 4, Aspect(1, 1.0))

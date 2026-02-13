@@ -186,6 +186,48 @@ Colorbar(fig[1, 4], hm3, label="Normalized PL")
 save("figures/pl_comparison.pdf", fig)
 ```
 
+## 6. Peak Center Map
+
+The PL intensity map tells you *where* emission is strong; a peak center map tells you *what wavelength* (pixel position) the emission peaks at. Spatial variation in the peak center reveals strain, composition gradients, or charge transfer across the flake.
+
+`peak_centers()` computes the intensity-weighted centroid pixel at each grid point. Points with PL intensity below a threshold fraction of the map maximum are masked as `NaN` so only the flake is visible.
+
+```julia
+m_bg = subtract_background(m_pr)
+centers = peak_centers(m_bg)
+```
+
+The masking uses the PLMap's intensity field — the same integrated PL signal shown in the intensity heatmap. This means the peak center map automatically matches the shape of the flake in the intensity map. The default threshold is 5%; adjust it if your flake has weak edges:
+
+```julia
+# More aggressive masking (10%) — only brightest regions
+centers_strict = peak_centers(m_bg; threshold=0.10)
+
+# No masking — show centroids everywhere (noisy off-flake)
+centers_all = peak_centers(m_bg; threshold=0)
+```
+
+Plot the peak center map alongside the intensity map for comparison:
+
+```julia
+fig = Figure(size=(1000, 450))
+
+ax1 = Axis(fig[1, 1], xlabel="X (μm)", ylabel="Y (μm)",
+           title="PL Intensity", aspect=DataAspect())
+hm1 = heatmap!(ax1, m_bg.x, m_bg.y, normalize(m_bg).intensity'; colormap=:hot)
+Colorbar(fig[1, 2], hm1, label="Normalized PL")
+
+ax2 = Axis(fig[1, 3], xlabel="X (μm)", ylabel="Y (μm)",
+           title="Peak Center", aspect=DataAspect())
+hm2 = heatmap!(ax2, m_bg.x, m_bg.y, centers'; colormap=:viridis,
+               nan_color=:transparent)
+Colorbar(fig[1, 4], hm2, label="Peak Position (pixel)")
+
+save("figures/peak_centers.png", fig)
+```
+
+The `:viridis` colormap with `nan_color=:transparent` is the standard convention for peak center maps — viridis gives good perceptual uniformity for small variations, and transparent NaN values let the white background show through for off-flake regions.
+
 ## Summary
 
 | Step | Function | What it does |
@@ -196,6 +238,7 @@ save("figures/pl_comparison.pdf", fig)
 | Pixel range | `load_pl_map(...; pixel_range=(lo, hi))` | Integrate only PL emission pixels |
 | Background | `subtract_background(m)` | Remove per-pixel CCD baseline |
 | Normalize | `normalize(m)` | Scale intensity to [0, 1] |
+| Peak centers | `peak_centers(m)` | Centroid peak position at each grid point |
 | Plot | `plot_pl_map(m)` | Spatial heatmap with colorbar |
 
 ## Next Steps
