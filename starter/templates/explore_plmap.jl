@@ -43,10 +43,18 @@ colgap!(fig.layout, 2, 5)
 display(fig)
 DataInspector()  # マウスホバーで値を読む / hover to read values
 
-# --- ここから調整 / Tweak from here ---
-# PIXEL_RANGEを変えて再読み込み → マップの改善を確認
-# Change PIXEL_RANGE and re-load to see the map improve
-#
-# m = load_pl_map("data/PLmap/my_scan.lvm"; step_size=2.16, pixel_range=(950, 1100))
-# m = subtract_background(m)
-# m = normalize(m)
+# --- ピクセル範囲を選んでマップを更新 / Set pixel range and update the map ---
+# スペクトルをホバーしてPLピークのピクセル範囲を読み取り、下の値を変更して実行
+# Hover over the spectra to read the PL peak pixel range, update the value below, and run
+
+PIXEL_RANGE = (950, 1100)
+
+m2 = load_pl_map("data/PLmap/my_scan.lvm"; step_size=2.16, pixel_range=PIXEL_RANGE)
+m2 = subtract_background(m2)
+m2 = normalize(m2)
+
+# スペクトルに積分窓を表示、マップを更新
+# Show integration window on spectra, update the map
+vspan!(ax1, PIXEL_RANGE..., color=(:blue, 0.1))
+hm[3] = intensity(m2)
+display(fig)
