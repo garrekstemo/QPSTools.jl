@@ -205,10 +205,26 @@ The template (`templates/plmap_analysis.jl`) works like this:
    PIXEL_RANGE = (950, 1100)  # pixels that contain your PL peak
    ```
 
-3. **Background subtraction** — the script averages spectra from off-flake
-   corners (no PL) and subtracts from every grid point, removing laser scatter
-   and detector noise. A verification plot (`spectra_corrected.pdf`) shows the
-   corrected spectra — the PL peak should sit on a flat baseline.
+3. **Background subtraction** — every CCD spectrum contains a baseline from
+   laser scatter, detector dark current, and stray light. `subtract_background`
+   estimates this baseline by averaging spectra from regions with no PL signal,
+   then subtracts it from every grid point. After subtraction, only the PL
+   contribution remains.
+
+   Two modes:
+   - **Auto** (default): averages spectra from the bottom corners of the grid.
+     This assumes the scan edges are off the flake (bare substrate).
+     ```julia
+     m = subtract_background(m)
+     ```
+   - **Explicit**: pass spatial coordinates of known off-flake positions.
+     Use this if the flake extends to the grid edges.
+     ```julia
+     m = subtract_background(m; positions=[(-40, -40), (40, -40)])
+     ```
+
+   The analysis template saves a verification plot (`spectra_corrected.png`)
+   so you can confirm the PL peak now sits on a flat baseline.
 
 4. **Spectral windowing** — sums counts within `PIXEL_RANGE` at each grid
    point, giving one PL intensity value per point. Anything outside the window
