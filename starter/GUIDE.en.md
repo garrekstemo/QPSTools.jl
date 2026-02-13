@@ -62,25 +62,23 @@ Analysis has two phases: exploration and finalization.
 
 ### Exploration (`scratch/`)
 
-When you first look at new data, use `scratch/` for quick throwaway scripts.
-No rules, no structure — just load data and see what's there.
+When you first look at new data, copy an explore template to `scratch/`:
 
-```julia
-# scratch/look_at_new_sample.jl
-using QPSTools, GLMakie
-
-spec = load_raman("data/raman/MoSe2_center.csv"; material="MoSe2")
-fig, ax = plot_raman(spec)
-DataInspector()  # hover over the plot to read values
-
-peaks = find_peaks(spec)
-println(peak_table(peaks))
+```bash
+cp templates/explore_raman.jl scratch/look_at_MoSe2.jl
 ```
 
-Run interactively in the REPL (`include("scratch/look_at_new_sample.jl")`) or
-line-by-line in VS Code. Use `GLMakie` for interactive plots — you can zoom,
-pan, and hover to read exact values (peak positions, intensities, pixel numbers)
-with `DataInspector()`.
+Edit the file path, then step through in the REPL:
+
+```julia
+julia --project=.
+julia> include("scratch/look_at_MoSe2.jl")
+```
+
+Explore templates use GLMakie + `DataInspector()` — you can zoom, pan, and
+hover to read exact values (peak positions, intensities, pixel numbers).
+This is the best way to identify fit regions and pixel ranges before
+writing a formal analysis.
 
 Files in `scratch/` are disposable. Delete them whenever you want.
 

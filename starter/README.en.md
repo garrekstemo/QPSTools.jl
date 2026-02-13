@@ -33,14 +33,22 @@ analyses/
     figures/
 ```
 
-To start a new analysis:
+To explore new data interactively:
+
+```bash
+cp templates/explore_raman.jl scratch/look_at_MoSe2.jl
+```
+
+Edit the file path, then step through in the REPL with GLMakie + `DataInspector()`.
+
+Once you know what you want to analyze, create a proper analysis folder:
 
 ```bash
 mkdir -p analyses/MoSe2_A1g
 cp templates/raman_analysis.jl analyses/MoSe2_A1g/analysis.jl
 ```
 
-Then edit the script (change the file path and metadata) and run it.
+Edit the script (fill in file path, fit region, metadata) and run it.
 
 **From the terminal** (run from the project root):
 
@@ -71,7 +79,10 @@ my-project/
 ├── scratch/                  # Exploration — try things here freely
 ├── manuscript/               # Composite figures for papers
 ├── templates/                # Starting points — copy, don't edit
-│   ├── raman_analysis.jl
+│   ├── explore_raman.jl      # GLMakie — interactive exploration
+│   ├── explore_ftir.jl
+│   ├── explore_plmap.jl
+│   ├── raman_analysis.jl     # CairoMakie — saves figures
 │   ├── ftir_analysis.jl
 │   └── plmap_analysis.jl
 └── analyses/                 # Finished analyses go here

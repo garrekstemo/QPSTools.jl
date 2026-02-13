@@ -6,7 +6,7 @@
 #   REPL:                  include("analyses/MoSe2_A1g/analysis.jl")
 
 using QPSTools
-using GLMakie
+using CairoMakie
 
 FIGDIR = joinpath(@__DIR__, "figures")
 mkpath(FIGDIR)
@@ -18,7 +18,6 @@ spec = load_raman("data/raman/my_sample.csv"; material="MySample")
 
 # 2. 全体像 / Survey
 fig, ax = plot_raman(spec)
-DataInspector()
 save(joinpath(FIGDIR, "survey.png"), fig)
 
 # 3. ピーク検出 / Peak detection

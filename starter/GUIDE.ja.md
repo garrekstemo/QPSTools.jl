@@ -62,25 +62,22 @@ MoSe2_A1g_v2_final_FINAL/
 
 ### 探索（`scratch/`）
 
-新しいデータを見るときは、`scratch/`で使い捨てのスクリプトを書きましょう。
-ルールも構成もなし — データを読み込んで中身を確認するだけです。
+新しいデータを見るときは、探索テンプレートを`scratch/`にコピーします：
 
-```julia
-# scratch/look_at_new_sample.jl
-using QPSTools, GLMakie
-
-spec = load_raman("data/raman/MoSe2_center.csv"; material="MoSe2")
-fig, ax = plot_raman(spec)
-DataInspector()  # プロット上にマウスを置くと値が表示される
-
-peaks = find_peaks(spec)
-println(peak_table(peaks))
+```bash
+cp templates/explore_raman.jl scratch/look_at_MoSe2.jl
 ```
 
-REPLで対話的に実行（`include("scratch/look_at_new_sample.jl")`）するか、
-VS Codeで1行ずつ実行します。`GLMakie`を使えばズーム、パン、そして
-`DataInspector()`でマウスホバーによる値の読み取り（ピーク位置、強度、
-ピクセル番号など）ができます。
+ファイルパスを編集し、REPLで1行ずつ実行します：
+
+```julia
+julia --project=.
+julia> include("scratch/look_at_MoSe2.jl")
+```
+
+探索テンプレートはGLMakie + `DataInspector()`を使います — ズーム、パン、
+マウスホバーで値の読み取り（ピーク位置、強度、ピクセル番号）ができます。
+正式な解析を書く前に、フィット領域やピクセル範囲を特定するのに最適です。
 
 `scratch/`内のファイルはいつでも削除して構いません。
 

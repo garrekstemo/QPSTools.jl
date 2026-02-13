@@ -33,14 +33,22 @@ analyses/
     figures/
 ```
 
-新しい解析を始めるには：
+新しいデータを対話的に探索するには：
+
+```bash
+cp templates/explore_raman.jl scratch/look_at_MoSe2.jl
+```
+
+ファイルパスを編集し、REPLでGLMakie + `DataInspector()`を使って1行ずつ実行します。
+
+解析対象が決まったら、解析フォルダを作ります：
 
 ```bash
 mkdir -p analyses/MoSe2_A1g
 cp templates/raman_analysis.jl analyses/MoSe2_A1g/analysis.jl
 ```
 
-スクリプトを編集（ファイルパスとメタデータを変更）して実行します。
+スクリプトを編集（ファイルパス、フィット領域、メタデータを入力）して実行します。
 
 **ターミナルから**（プロジェクトルートで実行）：
 
@@ -71,7 +79,10 @@ my-project/
 ├── scratch/                  # 探索用 — 自由に使える作業スペース
 ├── manuscript/               # 論文用の複合図
 ├── templates/                # テンプレート — コピーして使う（直接編集しない）
-│   ├── raman_analysis.jl
+│   ├── explore_raman.jl      # GLMakie — 対話的な探索用
+│   ├── explore_ftir.jl
+│   ├── explore_plmap.jl
+│   ├── raman_analysis.jl     # CairoMakie — 図を保存
 │   ├── ftir_analysis.jl
 │   └── plmap_analysis.jl
 └── analyses/                 # 完成した解析はここに保存
