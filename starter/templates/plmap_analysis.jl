@@ -34,7 +34,7 @@ println(m)
 # 2. 図の作成 / Build figure
 # =========================================================================
 
-set_theme!(print_theme())
+set_theme!(qps_theme())
 fig = Figure(size=(1000, 400))
 
 # (a) スペクトル + 積分窓 / Spectra with integration window
