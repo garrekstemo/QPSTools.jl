@@ -9,6 +9,7 @@
 # Inspect spectra to find the PL peak pixel range
 
 using QPSTools, GLMakie
+set_theme!(qps_theme())
 
 m = load_pl_map("data/PLmap/my_scan.lvm"; step_size=2.16)
 println(m)

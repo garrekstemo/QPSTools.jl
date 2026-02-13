@@ -6,6 +6,7 @@
 #   julia> include("scratch/explore_ftir.jl")
 
 using QPSTools, GLMakie
+set_theme!(qps_theme())
 
 spec = load_ftir("data/ftir/my_solution.csv"; solute="NH4SCN", concentration="1.0M")
 

@@ -6,6 +6,7 @@
 #   julia> include("scratch/explore_raman.jl")
 
 using QPSTools, GLMakie
+set_theme!(qps_theme())
 
 spec = load_raman("data/raman/my_sample.csv"; material="MySample")
 
