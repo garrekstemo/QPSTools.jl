@@ -17,7 +17,7 @@ QPSTools.jlを使った新しい解析プロジェクトのテンプレートで
    julia --project=. setup.jl
    ```
 
-3. データファイルを`data/raman/`（または`data/ftir/`など）に追加してください。
+3. データファイルを`data/raman/`（または`data/ftir/`、`data/PLmap/`など）に追加してください。
 
 ## 使い方
 
@@ -40,10 +40,22 @@ mkdir -p analyses/MoSe2_A1g
 cp templates/raman_analysis.jl analyses/MoSe2_A1g/analysis.jl
 ```
 
-スクリプトを編集（ファイルパスとメタデータを変更）して実行します：
+スクリプトを編集（ファイルパスとメタデータを変更）して実行します。
+
+**ターミナルから**（プロジェクトルートで実行）：
 
 ```bash
-julia --project=../.. analyses/MoSe2_A1g/analysis.jl
+julia --project=. analyses/MoSe2_A1g/analysis.jl
+```
+
+**Julia REPLから**（プロジェクトルートでJuliaを起動）：
+
+```bash
+julia --project=.
+```
+
+```julia
+julia> include("analyses/MoSe2_A1g/analysis.jl")
 ```
 
 ## フォルダ構成
@@ -54,7 +66,8 @@ my-project/
 ├── setup.jl                  # 初回セットアップ用（実行後は削除可能）
 ├── data/
 │   ├── raman/                # JASCOの生データ（.csvファイル）
-│   └── ftir/                 # FTIRの.csvファイル
+│   ├── ftir/                 # FTIRの.csvファイル
+│   └── PLmap/                # CCDラスタースキャンの.lvmファイル
 ├── scratch/                  # 探索用 — 自由に使える作業スペース
 ├── templates/                # テンプレート — コピーして使う（直接編集しない）
 │   ├── raman_analysis.jl
@@ -75,6 +88,7 @@ QPSToolsはファイルパスでデータを読み込みます。オプション
 ```julia
 spec = load_raman("data/raman/MoSe2_center.csv"; material="MoSe2", sample="center")
 spec = load_ftir("data/ftir/1.0M_NH4SCN_DMF.csv"; solute="NH4SCN", concentration="1.0M")
+m = load_pl_map("data/PLmap/my_scan.lvm"; step_size=2.16)
 ```
 
 ## eLabFTWのセットアップ
@@ -93,4 +107,4 @@ using QPSTools
 test_connection()
 ```
 
-詳しくはQPSToolsのサンプルを参照してください：`QPSTools.jl/examples/raman_analysis.jl`
+詳しくはQPSToolsのサンプルを参照してください：`QPSTools.jl/examples/`

@@ -17,7 +17,7 @@ Template for new analysis projects using QPSTools.jl.
    julia --project=. setup.jl
    ```
 
-3. Add your data files to `data/raman/` (or `data/ftir/`, etc.).
+3. Add your data files to `data/raman/` (or `data/ftir/`, `data/PLmap/`, etc.).
 
 ## Usage
 
@@ -40,10 +40,22 @@ mkdir -p analyses/MoSe2_A1g
 cp templates/raman_analysis.jl analyses/MoSe2_A1g/analysis.jl
 ```
 
-Then edit the script (change the file path and metadata) and run it:
+Then edit the script (change the file path and metadata) and run it.
+
+**From the terminal** (run from the project root):
 
 ```bash
-julia --project=../.. analyses/MoSe2_A1g/analysis.jl
+julia --project=. analyses/MoSe2_A1g/analysis.jl
+```
+
+**From the Julia REPL** (start Julia at the project root):
+
+```bash
+julia --project=.
+```
+
+```julia
+julia> include("analyses/MoSe2_A1g/analysis.jl")
 ```
 
 ## Folder Structure
@@ -54,7 +66,8 @@ my-project/
 ├── setup.jl                  # One-time setup (can delete after running)
 ├── data/
 │   ├── raman/                # Raw .csv files from JASCO
-│   └── ftir/                 # FTIR .csv files
+│   ├── ftir/                 # FTIR .csv files
+│   └── PLmap/                # CCD raster scan .lvm files
 ├── scratch/                  # Exploration — try things here freely
 ├── templates/                # Starting points — copy, don't edit
 │   ├── raman_analysis.jl
@@ -75,6 +88,7 @@ for display and eLabFTW tagging:
 ```julia
 spec = load_raman("data/raman/MoSe2_center.csv"; material="MoSe2", sample="center")
 spec = load_ftir("data/ftir/1.0M_NH4SCN_DMF.csv"; solute="NH4SCN", concentration="1.0M")
+m = load_pl_map("data/PLmap/my_scan.lvm"; step_size=2.16)
 ```
 
 ## eLabFTW Setup
@@ -93,4 +107,4 @@ using QPSTools
 test_connection()
 ```
 
-See the QPSTools examples for more: `QPSTools.jl/examples/raman_analysis.jl`
+See the QPSTools examples for more: `QPSTools.jl/examples/`

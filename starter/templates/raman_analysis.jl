@@ -1,6 +1,9 @@
 # ラマン分析 / Raman Analysis
-# 実行 / Run:  julia --project=../.. analyses/MoSe2_A1g/analysis.jl
 # 参考 / Ref:  QPSTools.jl/examples/raman_analysis.jl
+#
+# 実行方法 / How to run (from project root):
+#   ターミナル / Terminal:  julia --project=. analyses/MoSe2_A1g/analysis.jl
+#   REPL:                  include("analyses/MoSe2_A1g/analysis.jl")
 
 using QPSTools
 using CairoMakie

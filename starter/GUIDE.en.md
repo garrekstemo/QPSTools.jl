@@ -89,10 +89,17 @@ Once you know what you want to analyze, create a proper analysis folder:
 1. Create folder       mkdir -p analyses/MoSe2_A1g
 2. Copy template       cp templates/raman_analysis.jl analyses/MoSe2_A1g/analysis.jl
 3. Edit the script     (change file path, metadata, fit region, etc.)
-4. Run it              julia --project=../.. analyses/MoSe2_A1g/analysis.jl
+4. Run it              julia --project=. analyses/MoSe2_A1g/analysis.jl
 5. Check figures       (open figures/ and inspect the output)
 6. Iterate             (adjust parameters, re-run)
 7. Log to eLabFTW      (uncomment the log_to_elab block when satisfied)
+```
+
+Or from the REPL (useful for interactive exploration with GLMakie):
+
+```julia
+julia --project=.
+julia> include("analyses/MoSe2_A1g/analysis.jl")
 ```
 
 ## When to Make a New Folder vs. Edit in Place
@@ -172,17 +179,23 @@ Peak Fit Results
 
 This is the string logged to eLabFTW by `log_to_elab`.
 
-### Why `--project=../..`
+### Always run from the project root
 
-Analysis scripts live two directories below the project root
-(`analyses/MoSe2_A1g/analysis.jl`), so `../..` points Julia to the
-`Project.toml` that has QPSTools installed.
+All commands assume you are in the project root (where `Project.toml` lives).
+Use `--project=.` so Julia finds the installed packages:
 
-### `scratch/` is different
+```bash
+julia --project=. analyses/MoSe2_A1g/analysis.jl    # terminal
+julia --project=. scratch/quick_look.jl              # scratch scripts too
+```
 
-`scratch/` scripts are one directory deep, so use `--project=..` instead.
-Or just run them interactively: `include("scratch/my_script.jl")` from
-a REPL started with `julia --project=.` at the project root.
+Or start a REPL and `include()` scripts:
+
+```julia
+julia --project=.
+julia> include("analyses/MoSe2_A1g/analysis.jl")
+julia> include("scratch/quick_look.jl")
+```
 
 ### Plot return values
 

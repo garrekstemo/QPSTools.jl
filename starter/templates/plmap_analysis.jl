@@ -1,6 +1,9 @@
 # PLマッピング分析 / PL Mapping Analysis
-# 実行 / Run:  julia --project=../.. analyses/MoSe2_flake/analysis.jl
 # 参考 / Ref:  QPSTools.jl/examples/pl_map_example.jl
+#
+# 実行方法 / How to run (from project root):
+#   ターミナル / Terminal:  julia --project=. analyses/MoSe2_flake/analysis.jl
+#   REPL:                  include("analyses/MoSe2_flake/analysis.jl")
 
 using QPSTools
 using CairoMakie
@@ -9,8 +12,10 @@ FIGDIR = joinpath(@__DIR__, "figures")
 mkpath(FIGDIR)
 
 # 1. 読み込み・スペクトル確認 / Load and inspect spectra
+# パスとstep_sizeを自分のデータに合わせて変更
+# Change the path and step_size to match your scan
 filepath = "data/PLmap/my_scan.lvm"
-m_raw = load_pl_map(filepath; nx=51, ny=51, step_size=2.16)
+m_raw = load_pl_map(filepath; step_size=2.16)
 println(m_raw)
 
 # 位置を選んでスペクトルを確認 / Pick positions and check spectra
@@ -19,9 +24,9 @@ fig, ax = plot_pl_spectra(m_raw, positions)
 save(joinpath(FIGDIR, "spectra.png"), fig)
 
 # 2. ピクセル範囲を決めて再読み込み / Choose pixel range and reload
-# スペクトルを見てPLピークの範囲を決める
-# Inspect spectra above to find PL peak pixel range
-m = load_pl_map(filepath; nx=51, ny=51, step_size=2.16, pixel_range=(950, 1100))
+# spectra.pngを見てPLピークの範囲を決める
+# Look at spectra.png to find which pixels contain the PL peak
+m = load_pl_map(filepath; step_size=2.16, pixel_range=(950, 1100))
 m = subtract_background(m)
 m = normalize(m)
 
@@ -57,7 +62,7 @@ log_to_elab(
     title = "PL Map: MySample",
     body = """
 ## 測定条件 / Measurement
-- **Grid**: 51 x 51 (2.16 μm step)
+- **Grid**: $(m_raw.metadata["nx"]) x $(m_raw.metadata["ny"]) ($(m_raw.metadata["step_size"]) μm step)
 - **PL pixel range**: 950-1100
 - **Background**: auto
 """,

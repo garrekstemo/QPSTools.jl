@@ -1,6 +1,9 @@
 # FTIR分析 / FTIR Analysis
-# 実行 / Run:  julia --project=../.. analyses/NH4SCN_CN_stretch/analysis.jl
 # 参考 / Ref:  QPSTools.jl/examples/ftir_analysis.jl
+#
+# 実行方法 / How to run (from project root):
+#   ターミナル / Terminal:  julia --project=. analyses/NH4SCN_CN_stretch/analysis.jl
+#   REPL:                  include("analyses/NH4SCN_CN_stretch/analysis.jl")
 
 using QPSTools
 using CairoMakie

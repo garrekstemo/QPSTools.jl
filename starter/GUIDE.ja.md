@@ -89,10 +89,17 @@ VS Codeで1行ずつ実行します。`GLMakie`を使えばズームやパンが
 1. フォルダ作成       mkdir -p analyses/MoSe2_A1g
 2. テンプレートコピー  cp templates/raman_analysis.jl analyses/MoSe2_A1g/analysis.jl
 3. スクリプト編集     （ファイルパス、メタデータ、フィット領域などを変更）
-4. 実行              julia --project=../.. analyses/MoSe2_A1g/analysis.jl
+4. 実行              julia --project=. analyses/MoSe2_A1g/analysis.jl
 5. 図の確認          （figures/を開いて出力を確認）
 6. 繰り返し          （パラメータ調整、再実行）
 7. eLabFTWに記録     （満足したらlog_to_elabブロックのコメントを外す）
+```
+
+またはREPLから（GLMakieで対話的に確認したいとき）：
+
+```julia
+julia --project=.
+julia> include("analyses/MoSe2_A1g/analysis.jl")
 ```
 
 ## 新しいフォルダを作るか、その場で編集するか
@@ -172,17 +179,23 @@ Peak Fit Results
 
 この文字列が`log_to_elab`でeLabFTWに記録されます。
 
-### `--project=../..`の理由
+### 常にプロジェクトルートから実行する
 
-解析スクリプトはプロジェクトルートから2階層下にあります
-（`analyses/MoSe2_A1g/analysis.jl`）。`../..`でQPSToolsがインストールされている
-`Project.toml`の場所を指定しています。
+全てのコマンドはプロジェクトルート（`Project.toml`がある場所）にいることを前提としています。
+`--project=.`でJuliaがインストール済みパッケージを見つけます：
 
-### `scratch/`の場合
+```bash
+julia --project=. analyses/MoSe2_A1g/analysis.jl    # ターミナル
+julia --project=. scratch/quick_look.jl              # scratchスクリプトも同様
+```
 
-`scratch/`のスクリプトは1階層下なので、`--project=..`を使います。
-または対話的に実行できます：プロジェクトルートで`julia --project=.`を起動し、
-`include("scratch/my_script.jl")`で読み込みます。
+またはREPLを起動して`include()`でスクリプトを読み込みます：
+
+```julia
+julia --project=.
+julia> include("analyses/MoSe2_A1g/analysis.jl")
+julia> include("scratch/quick_look.jl")
+```
 
 ### プロット関数の戻り値
 
