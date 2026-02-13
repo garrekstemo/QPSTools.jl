@@ -28,10 +28,15 @@ for (i, pos) in enumerate(positions)
 end
 axislegend(ax1, position=:rt)
 
-# (b) 生マップ / Raw intensity map
+# (b) 生マップ + スペクトル位置 / Raw intensity map with spectrum positions marked
 ax2 = Axis(fig[1, 2], xlabel="X (μm)", ylabel="Y (μm)",
     title="Raw PL Map", aspect=DataAspect())
 hm = heatmap!(ax2, xdata(m), ydata(m), intensity(m); colormap=:hot)
+colors = Makie.wong_colors()
+for (i, pos) in enumerate(positions)
+    scatter!(ax2, [pos[1]], [pos[2]], color=colors[i], markersize=10,
+        strokecolor=:white, strokewidth=1)
+end
 Colorbar(fig[1, 3], hm, label="Counts")
 
 display(fig)
