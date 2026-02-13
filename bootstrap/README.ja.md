@@ -60,7 +60,7 @@ my-project/
 │   └── PLmap/
 ├── explore/             # 一時的な探索スクリプト（自由に作成）
 ├── templates/           # 出発点（コピーして使う、直接編集しない）
-├── analyses/            # 完成した再現可能な解析
+├── analysis/            # 完成した再現可能な解析
 │   └── MoSe2_A1g/
 │       ├── analysis.jl
 │       └── figures/
@@ -93,13 +93,13 @@ my-project/
   ┌─────────────────────────────────────────────────────────────────┐
   │                       解析                                       │
   │                                                                 │
-  │  解析テンプレートを analyses/<テーマ>/ にコピーする。                 │
+  │  解析テンプレートを analysis/<テーマ>/ にコピーする。                 │
   │  CairoMakie使用 -- 出版品質のPNG/PDFを保存。                       │
   │  これらのスクリプトは永続的：きれいで、文書化され、再現可能。           │
   │  研究室の誰でも再実行して同じ結果を得られるように。                    │
   │                                                                 │
-  │  mkdir -p analyses/MoSe2_A1g                                     │
-  │  cp templates/raman_analysis.jl analyses/MoSe2_A1g/analysis.jl   │
+  │  mkdir -p analysis/MoSe2_A1g                                     │
+  │  cp templates/raman_analysis.jl analysis/MoSe2_A1g/analysis.jl   │
   └───────────────────────────┬─────────────────────────────────────┘
                               │
                      論文を書く準備ができた？
@@ -145,10 +145,10 @@ my-project/
 解析スクリプトは**研究室全体**のためのものです。数ヶ月後に別の学生が
 理解して再実行できるくらいきれいに書きましょう。
 
-- テンプレートをコピー：`cp templates/raman_analysis.jl analyses/MoSe2_A1g/analysis.jl`
+- テンプレートをコピー：`cp templates/raman_analysis.jl analysis/MoSe2_A1g/analysis.jl`
 - データパスと解析パラメータを編集
-- スクリプト全体を実行：`julia --project=. analyses/MoSe2_A1g/analysis.jl`
-- 図は `analyses/MoSe2_A1g/figures/` に保存される
+- スクリプト全体を実行：`julia --project=. analysis/MoSe2_A1g/analysis.jl`
+- 図は `analysis/MoSe2_A1g/figures/` に保存される
 - gitにコミットして解析を保存
 
 **自分の解析スクリプトをどんどん書いてください。** データを探索して

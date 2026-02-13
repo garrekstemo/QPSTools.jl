@@ -60,7 +60,7 @@ my-project/
 │   └── PLmap/
 ├── explore/             # Ephemeral exploration scripts (yours to create)
 ├── templates/           # Starting points (copy, don't edit directly)
-├── analyses/            # Finished, reproducible analyses
+├── analysis/            # Finished, reproducible analyses
 │   └── MoSe2_A1g/
 │       ├── analysis.jl
 │       └── figures/
@@ -93,13 +93,13 @@ my-project/
   ┌─────────────────────────────────────────────────────────────────┐
   │                      ANALYZE                                    │
   │                                                                 │
-  │  Copy an analysis template to analyses/<topic>/.                │
+  │  Copy an analysis template to analysis/<topic>/.                │
   │  Uses CairoMakie -- saves publication-quality PNG/PDF.          │
   │  These scripts are permanent: clean, documented, reproducible.  │
   │  Anyone in the lab can re-run them and get the same results.    │
   │                                                                 │
-  │  mkdir -p analyses/MoSe2_A1g                                    │
-  │  cp templates/raman_analysis.jl analyses/MoSe2_A1g/analysis.jl │
+  │  mkdir -p analysis/MoSe2_A1g                                    │
+  │  cp templates/raman_analysis.jl analysis/MoSe2_A1g/analysis.jl │
   └───────────────────────────┬─────────────────────────────────────┘
                               │
                     Ready to write up?
@@ -108,7 +108,7 @@ my-project/
   ┌─────────────────────────────────────────────────────────────────┐
   │                     MANUSCRIPT                                  │
   │                                                                 │
-  │  Combine panels from multiple analyses into composite figures.  │
+  │  Combine panels from multiple analysis scripts into composite figures.  │
   │  CairoMakie + PDF output for vector graphics in papers.         │
   │  These scripts produce the exact figures in your publication.   │
   └───────────────────────────┬─────────────────────────────────────┘
@@ -147,10 +147,10 @@ a baseline, or overlay a fit on the data -- write a quick script in
 Analysis scripts are for **the lab**. They should be clean enough that
 another student can understand and re-run them months later.
 
-- Copy a template: `cp templates/raman_analysis.jl analyses/MoSe2_A1g/analysis.jl`
+- Copy a template: `cp templates/raman_analysis.jl analysis/MoSe2_A1g/analysis.jl`
 - Edit the data path and analysis parameters
-- Run the whole script: `julia --project=. analyses/MoSe2_A1g/analysis.jl`
-- Figures are saved to `analyses/MoSe2_A1g/figures/`
+- Run the whole script: `julia --project=. analysis/MoSe2_A1g/analysis.jl`
+- Figures are saved to `analysis/MoSe2_A1g/figures/`
 - Commit to git so the analysis is preserved
 
 **You are encouraged to write your own analysis scripts.** Once you've
