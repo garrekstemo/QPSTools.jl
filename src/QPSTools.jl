@@ -79,10 +79,14 @@ import SpectroscopyTools: ChirpCalibration, polynomial,
 # Decay-associated spectra (from global TAMatrix fitting)
 import SpectroscopyTools: das
 
+# PLMap type and analysis (moved to SpectroscopyTools)
+import SpectroscopyTools: extract_spectrum, peak_centers, intensity
+
 # Re-export SpectroscopyTools public names
 # Types (from SpectroscopyTools)
 export AbstractSpectroscopyData
 export TATrace, TASpectrum, TAMatrix
+export PLMap
 export PeakInfo, PeakFitResult, MultiPeakFitResult
 export ExpDecayFit, MultiexpDecayFit
 export GlobalFitResult, TASpectrumFit
@@ -116,7 +120,7 @@ export xaxis, xaxis_label
 # Semantic accessors (from SpectroscopyTools)
 export delay, signal, wavenumber, wavelength
 # Semantic accessors (QPSTools-specific)
-export shift, intensity
+export shift
 export absorbance, transmittance, reflectance, ykind
 # Units
 export wavelength_to_wavenumber, wavenumber_to_wavelength
@@ -183,10 +187,9 @@ export cavity_mode_energy, polariton_branches, polariton_eigenvalues
 export hopfield_coefficients
 export refractive_index, extinction_coeff
 
-# PL mapping (CCD raster scans)
+# PL mapping (CCD raster scans — loader only, type lives in SpectroscopyTools)
 include("plmap.jl")
-export PLMap
-export load_pl_map, extract_spectrum, peak_centers
+export load_pl_map, extract_spectrum, peak_centers, intensity
 
 # ============================================================================
 # Lab-specific spectroscopy dispatches
