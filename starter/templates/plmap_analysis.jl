@@ -23,7 +23,7 @@
 #           Sum only the PL pixels → one intensity value per grid point → map
 #
 using QPSTools
-using CairoMakie
+using GLMakie
 
 FIGDIR = joinpath(@__DIR__, "figures")
 mkpath(FIGDIR)

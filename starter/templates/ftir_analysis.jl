@@ -6,7 +6,7 @@
 #   REPL:                  include("analyses/NH4SCN_CN_stretch/analysis.jl")
 
 using QPSTools
-using CairoMakie
+using GLMakie
 
 FIGDIR = joinpath(@__DIR__, "figures")
 mkpath(FIGDIR)
@@ -18,6 +18,7 @@ spec = load_ftir("data/ftir/my_solution.csv"; solute="NH4SCN", concentration="1.
 
 # 2. 全体像 / Survey
 fig, ax = plot_ftir(spec)
+DataInspector()
 save(joinpath(FIGDIR, "survey.png"), fig)
 
 # 3. ピーク検出 / Peak detection

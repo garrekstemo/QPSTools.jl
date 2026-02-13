@@ -1,5 +1,6 @@
 [deps]
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
 JASCOFiles = "8f461479-960a-4355-a802-16cf8971498c"
 QPSTools = "91240044-bfa4-4bca-8577-4d123ebe80d7"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"

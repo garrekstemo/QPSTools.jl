@@ -278,9 +278,9 @@ QPSTools.jl/
 - `figures/<project>/` — Project-specific figures (e.g., `figures/VSC-paper/`)
 - Never save figures to project root or alongside scripts
 
-**GLMakie + DataInspector for exploration.** In the REPL, use GLMakie for interactive plots — `DataInspector()` lets students hover to read values (peak positions, pixel ranges, etc.). This is the recommended workflow for `scratch/` scripts and interactive exploration.
+**GLMakie is the default.** All templates and analysis scripts use GLMakie — students get interactive plots (zoom, pan) and `DataInspector()` for hovering to read values. CairoMakie is only for `manuscript/` figures where PDF/vector output is needed.
 
-**PNG for saved output, PDF for publication.** Templates and analysis scripts use CairoMakie with `.png` — VS Code previews PNG natively but not PDF. Switch to `.pdf` only for final manuscript figures (vector graphics for journals).
+**PNG for saved output, PDF for publication.** Use `.png` in templates and analysis scripts — VS Code previews PNG natively. Switch to CairoMakie + `.pdf` only for final manuscript figures (vector graphics for journals).
 
 ### Contributing New Analysis Types
 
