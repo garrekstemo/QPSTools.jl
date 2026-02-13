@@ -51,7 +51,27 @@ m = load_pl_map(filepath; step_size=STEP_SIZE, pixel_range=PIXEL_RANGE)
 m = subtract_background(m)
 m = normalize(m)
 
-fig, ax = plot_pl_map(m)
+# 二面図: スペクトル（積分範囲をハイライト） + PLマップ
+# Two-panel: spectra with integration range highlighted + PL map
+set_theme!(print_theme())
+fig = Figure(size=(1000, 400))
+
+# (a) PLスペクトル / PL spectra with pixel range highlighted
+ax1 = Axis(fig[1, 1], xlabel="CCD Pixel", ylabel="Counts",
+    title="(a) PL Spectra")
+for (i, pos) in enumerate(positions)
+    spec = extract_spectrum(m_raw; x=pos[1], y=pos[2])
+    lines!(ax1, spec.pixel, spec.signal, label="($(pos[1]), $(pos[2])) μm")
+end
+vspan!(ax1, PIXEL_RANGE..., color=(:blue, 0.1))
+axislegend(ax1, position=:rt)
+
+# (b) PLマップ / Normalized PL intensity map
+ax2 = Axis(fig[1, 2], xlabel="X (μm)", ylabel="Y (μm)",
+    title="(b) PL Intensity", aspect=DataAspect())
+hm = heatmap!(ax2, xdata(m), ydata(m), intensity(m); colormap=:hot)
+Colorbar(fig[1, 3], hm, label="Normalized PL")
+
 save(joinpath(FIGDIR, "pl_map.pdf"), fig)
 
 # =========================================================================
