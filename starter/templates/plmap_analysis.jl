@@ -33,8 +33,8 @@ mkpath(FIGDIR)
 filepath = "data/PLmap/CCDtmp_260129_111138.lvm"
 STEP_SIZE = 2.16
 
-# spectra.pdfを見てからPLピークのピクセル範囲を設定
-# After looking at spectra.pdf, set the pixel range that brackets your PL peak
+# spectra.pngを見てからPLピークのピクセル範囲を設定
+# After looking at spectra.png, set the pixel range that brackets your PL peak
 PIXEL_RANGE = (950, 1100)
 
 # =========================================================================
@@ -54,7 +54,7 @@ println(m_raw)
 
 positions = [(0.0, 0.0), (10.0, 10.0), (-10.0, -10.0)]
 fig, ax = plot_pl_spectra(m_raw, positions)
-save(joinpath(FIGDIR, "spectra.pdf"), fig)
+save(joinpath(FIGDIR, "spectra.png"), fig)
 
 # =========================================================================
 # Step 2: バックグラウンド除去 / Background subtraction
@@ -73,7 +73,7 @@ m = subtract_background(m)
 # Verify: the PL peak should now sit on a flat baseline
 fig_check, ax_check = plot_pl_spectra(m, positions)
 vspan!(ax_check, PIXEL_RANGE..., color=(:blue, 0.1))
-save(joinpath(FIGDIR, "spectra_corrected.pdf"), fig_check)
+save(joinpath(FIGDIR, "spectra_corrected.png"), fig_check)
 
 # =========================================================================
 # Step 3: マップ作成 / Build the intensity map
@@ -108,7 +108,7 @@ ax2 = Axis(fig[1, 2], xlabel="X (μm)", ylabel="Y (μm)",
 hm = heatmap!(ax2, xdata(m), ydata(m), intensity(m); colormap=:hot)
 Colorbar(fig[1, 3], hm, label="Normalized PL")
 
-save(joinpath(FIGDIR, "pl_map.pdf"), fig)
+save(joinpath(FIGDIR, "pl_map.png"), fig)
 
 # =========================================================================
 # Step 4: eLabFTWに記録 / Log to eLabFTW
@@ -125,7 +125,7 @@ log_to_elab(
 - **PL pixel range**: $(PIXEL_RANGE[1])-$(PIXEL_RANGE[2])
 - **Background**: auto (off-flake corners)
 """,
-    attachments = [joinpath(FIGDIR, "pl_map.pdf")],
+    attachments = [joinpath(FIGDIR, "pl_map.png")],
     tags = ["pl-map"]
 )
 =#

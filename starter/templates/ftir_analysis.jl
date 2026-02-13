@@ -40,7 +40,7 @@ save(joinpath(FIGDIR, "fit.png"), fig)
 
 # 三面図 / Three-panel (full spectrum + fit + residuals)
 fig, ax_ctx, ax_fit, ax_res = plot_ftir(spec; fit=result, context=true, peaks=peaks)
-save(joinpath(FIGDIR, "context.pdf"), fig)
+save(joinpath(FIGDIR, "context.png"), fig)
 
 # 5. eLabFTWに記録 / Log to eLabFTW
 # 環境変数の設定が必要 / Requires environment variables:
@@ -49,7 +49,7 @@ save(joinpath(FIGDIR, "context.pdf"), fig)
 #= Uncomment when ready:
 log_to_elab(spec, result;
     title = "FTIR: NH4SCN CN stretch fit",
-    attachments = [joinpath(FIGDIR, "context.pdf")],
+    attachments = [joinpath(FIGDIR, "context.png")],
     extra_tags = ["peak_fit"]
 )
 =#
