@@ -102,6 +102,28 @@ julia --project=.
 julia> include("analyses/MoSe2_A1g/analysis.jl")
 ```
 
+### Manuscript figures (`manuscript/`)
+
+When it's time to assemble figures for a paper, use `manuscript/`. This is where
+you combine individual analysis outputs into composite multi-panel figures.
+
+```julia
+# manuscript/figure1.jl
+using QPSTools, CairoMakie
+
+set_theme!(print_theme())
+fig = Figure(size=(1200, 400))
+
+# (a) PL map — load the saved result
+# (b) Raman spectrum — load from a different analysis
+# (c) Some other panel
+
+save("manuscript/figure1.pdf", fig)
+```
+
+Each analysis folder produces its own publication-ready figures. The `manuscript/`
+folder is only for stitching those together into composite layouts for the paper.
+
 ## When to Make a New Folder vs. Edit in Place
 
 **Edit in place** when you're refining the same analysis:

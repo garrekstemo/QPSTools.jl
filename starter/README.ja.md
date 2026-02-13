@@ -69,6 +69,7 @@ my-project/
 │   ├── ftir/                 # FTIRの.csvファイル
 │   └── PLmap/                # CCDラスタースキャンの.lvmファイル
 ├── scratch/                  # 探索用 — 自由に使える作業スペース
+├── manuscript/               # 論文用の複合図
 ├── templates/                # テンプレート — コピーして使う（直接編集しない）
 │   ├── raman_analysis.jl
 │   ├── ftir_analysis.jl

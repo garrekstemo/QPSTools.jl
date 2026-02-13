@@ -69,6 +69,7 @@ my-project/
 │   ├── ftir/                 # FTIR .csv files
 │   └── PLmap/                # CCD raster scan .lvm files
 ├── scratch/                  # Exploration — try things here freely
+├── manuscript/               # Composite figures for papers
 ├── templates/                # Starting points — copy, don't edit
 │   ├── raman_analysis.jl
 │   ├── ftir_analysis.jl

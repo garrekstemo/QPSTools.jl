@@ -35,11 +35,11 @@ println(m_raw)
 
 positions = [(0.0, 0.0), (10.0, 10.0), (-10.0, -10.0)]
 fig, ax = plot_pl_spectra(m_raw, positions)
-save(joinpath(FIGDIR, "spectra.png"), fig)
+save(joinpath(FIGDIR, "spectra.pdf"), fig)
 
 if isnothing(PIXEL_RANGE)
-    println("\n--> spectra.png を確認して PIXEL_RANGE を設定してください")
-    println("--> Check spectra.png, then set PIXEL_RANGE above and rerun")
+    println("\n--> spectra.pdf を確認して PIXEL_RANGE を設定してください")
+    println("--> Check spectra.pdf, then set PIXEL_RANGE above and rerun")
     return
 end
 
@@ -52,32 +52,10 @@ m = subtract_background(m)
 m = normalize(m)
 
 fig, ax = plot_pl_map(m)
-save(joinpath(FIGDIR, "pl_map.png"), fig)
+save(joinpath(FIGDIR, "pl_map.pdf"), fig)
 
 # =========================================================================
-# Step 3: 論文用図 / Publication figure
-# =========================================================================
-
-set_theme!(print_theme())
-fig = Figure(size=(1000, 400))
-
-ax1 = Axis(fig[1, 1], xlabel="CCD Pixel", ylabel="Counts", title="(a)")
-for (i, pos) in enumerate(positions)
-    spec = extract_spectrum(m_raw; x=pos[1], y=pos[2])
-    lines!(ax1, spec.pixel, spec.signal, label="($(pos[1]), $(pos[2])) μm")
-end
-vspan!(ax1, PIXEL_RANGE..., color=(:blue, 0.1))
-axislegend(ax1, position=:rt)
-
-ax2 = Axis(fig[1, 2], xlabel="X (μm)", ylabel="Y (μm)",
-    title="(b)", aspect=DataAspect())
-hm = heatmap!(ax2, xdata(m), ydata(m), intensity(m); colormap=:hot)
-Colorbar(fig[1, 3], hm, label="Normalized PL")
-
-save(joinpath(FIGDIR, "publication.pdf"), fig)
-
-# =========================================================================
-# Step 4: eLabFTWに記録 / Log to eLabFTW
+# Step 3: eLabFTWに記録 / Log to eLabFTW
 # =========================================================================
 # 環境変数の設定が必要 / Requires environment variables:
 #   export ELABFTW_URL="https://your-instance.elabftw.net"
@@ -91,7 +69,7 @@ log_to_elab(
 - **PL pixel range**: $(PIXEL_RANGE[1])-$(PIXEL_RANGE[2])
 - **Background**: auto
 """,
-    attachments = [joinpath(FIGDIR, "publication.pdf")],
+    attachments = [joinpath(FIGDIR, "pl_map.pdf")],
     tags = ["pl-map"]
 )
 =#

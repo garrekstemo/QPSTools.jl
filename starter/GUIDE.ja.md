@@ -102,6 +102,28 @@ julia --project=.
 julia> include("analyses/MoSe2_A1g/analysis.jl")
 ```
 
+### 論文用図（`manuscript/`）
+
+論文の図を組み立てるときは`manuscript/`を使います。個々の解析出力を
+複合マルチパネル図にまとめる場所です。
+
+```julia
+# manuscript/figure1.jl
+using QPSTools, CairoMakie
+
+set_theme!(print_theme())
+fig = Figure(size=(1200, 400))
+
+# (a) PLマップ — 解析の結果を読み込む
+# (b) ラマンスペクトル — 別の解析から読み込む
+# (c) 別のパネル
+
+save("manuscript/figure1.pdf", fig)
+```
+
+各解析フォルダがそれぞれ論文品質の図を出力します。`manuscript/`は
+それらを論文用の複合レイアウトにまとめるためだけのフォルダです。
+
 ## 新しいフォルダを作るか、その場で編集するか
 
 **その場で編集する場合**（同じ解析の改善）：

@@ -38,7 +38,7 @@ report(result)
 fig, ax, ax_res = plot_raman(spec; fit=result, residuals=true)
 save(joinpath(FIGDIR, "fit.png"), fig)
 
-# 三面図（論文用） / Three-panel (publication)
+# 三面図 / Three-panel (full spectrum + fit + residuals)
 fig, ax_ctx, ax_fit, ax_res = plot_raman(spec; fit=result, context=true, peaks=peaks)
 save(joinpath(FIGDIR, "context.pdf"), fig)
 
