@@ -1,27 +1,34 @@
 # Raman Exploration
 #
-# Runnable version of starter/templates/explore_raman.jl with real data.
+# Runnable version of bootstrap/templates/explore_raman.jl with real data.
 # Step through in the REPL to interactively explore your spectrum.
 #
-# Ref: starter/templates/explore_raman.jl
+# Ref: bootstrap/templates/explore_raman.jl
 
 using QPSTools, GLMakie
 
 PROJECT_ROOT = dirname(@__DIR__)
 set_theme!(qps_theme())
 
-# Load
+# ─────────────────────────────────────────────────────────────────────
+# 1. Load
+# ─────────────────────────────────────────────────────────────────────
+
 spec = load_raman(joinpath(PROJECT_ROOT, "data", "raman", "MoSe2", "MoSe2-center.csv");
     material="MoSe2", sample="center")
 
-# Survey
-fig, ax = plot_raman(spec)
-display(fig)
-DataInspector()  # hover to read values
+# ─────────────────────────────────────────────────────────────────────
+# 2. Fit a region
+# ─────────────────────────────────────────────────────────────────────
 
-# Peak detection
-peaks = find_peaks(spec)
-println(peak_table(peaks))
+region = (225, 260)   # A₁g
+result = fit_peaks(spec, region; model=lorentzian, n_peaks=1, baseline_order=1)
+report(result)
 
-fig, ax = plot_raman(spec; peaks=peaks)
+# ─────────────────────────────────────────────────────────────────────
+# 3. Plot fit with residuals
+# ─────────────────────────────────────────────────────────────────────
+
+fig, ax_ctx, ax_fit, ax_res = plot_raman(spec; fit=result, context=true, residuals=true)
 display(fig)
+DataInspector()

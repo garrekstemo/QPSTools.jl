@@ -1,9 +1,9 @@
 # PL Mapping Analysis
 #
-# Runnable version of starter/templates/plmap_analysis.jl with real data.
+# Runnable version of bootstrap/templates/plmap_analysis.jl with real data.
 # Produces a publication-quality 3-panel figure saved to figures/EXAMPLES/pl_map/.
 #
-# Ref: starter/templates/plmap_analysis.jl
+# Ref: bootstrap/templates/plmap_analysis.jl
 
 using QPSTools
 using CairoMakie

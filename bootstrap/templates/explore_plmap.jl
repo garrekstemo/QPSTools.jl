@@ -11,13 +11,23 @@
 using QPSTools, GLMakie
 set_theme!(qps_theme())
 
-# --- 設定 / Config (edit these) ---
+# --- 設定 / Config ---
+# すべてのオプションは変更・削除が自由。
+# All options can be changed or removed as needed.
+#   step_size:   ステージの移動量(μm) / stage step size in μm
+#   pixel_range: 積分するCCDピクセル範囲 / CCD pixel range to integrate (omit for full range)
+#   nx, ny:      グリッドサイズ / grid dimensions (auto-detected if omitted)
+#   positions:   スペクトルを表示する座標 / coordinates to plot spectra from
+
 filepath = "data/PLmap/my_scan.lvm"
 STEP_SIZE = 2.16
 PIXEL_RANGE = (950, 1100)
 positions = [(0.0, 0.0), (10.0, 10.0), (-10.0, -10.0)]
 
 # --- 読み込み + 処理 / Load + process ---
+# subtract_background: 自動でマップ端の参照スペクトルを減算（positionsで明示指定も可）
+# subtract_background: auto-subtracts reference from map edges (or pass positions= explicitly)
+
 m_raw = load_pl_map(filepath; step_size=STEP_SIZE)
 m = load_pl_map(filepath; step_size=STEP_SIZE, pixel_range=PIXEL_RANGE)
 m = subtract_background(m)

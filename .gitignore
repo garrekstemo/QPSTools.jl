@@ -1,5 +1,6 @@
 Manifest.toml
 data/
+!bootstrap/data/
 figures/
 docs/build/
 .DS_Store

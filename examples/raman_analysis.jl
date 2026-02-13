@@ -1,9 +1,9 @@
 # Raman Analysis
 #
-# Runnable version of starter/templates/raman_analysis.jl with real data.
+# Runnable version of bootstrap/templates/raman_analysis.jl with real data.
 # Produces publication-quality figures saved to figures/EXAMPLES/raman/.
 #
-# Ref: starter/templates/raman_analysis.jl
+# Ref: bootstrap/templates/raman_analysis.jl
 # See also: advanced/raman_comparison.jl for multi-position comparison.
 
 using QPSTools

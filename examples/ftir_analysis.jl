@@ -1,9 +1,9 @@
 # FTIR Analysis
 #
-# Runnable version of starter/templates/ftir_analysis.jl with real data.
+# Runnable version of bootstrap/templates/ftir_analysis.jl with real data.
 # Produces publication-quality figures saved to figures/EXAMPLES/ftir/.
 #
-# Ref: starter/templates/ftir_analysis.jl
+# Ref: bootstrap/templates/ftir_analysis.jl
 
 using QPSTools
 using CairoMakie

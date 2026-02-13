@@ -1,10 +1,10 @@
 # PL Map Exploration
 #
-# Runnable version of starter/templates/explore_plmap.jl with real data.
+# Runnable version of bootstrap/templates/explore_plmap.jl with real data.
 # Step through in the REPL to interactively inspect CCD spectra and find
 # the PL peak pixel range.
 #
-# Ref: starter/templates/explore_plmap.jl
+# Ref: bootstrap/templates/explore_plmap.jl
 
 using QPSTools, GLMakie
 
@@ -12,13 +12,15 @@ PROJECT_ROOT = dirname(@__DIR__)
 set_theme!(qps_theme())
 
 # Config
+# Options: step_size, pixel_range, nx/ny (auto-detected if omitted), positions
 filepath = joinpath(PROJECT_ROOT, "data", "PLmap", "CCDtmp_260129_111138.lvm")
 STEP_SIZE = 5.0
 PIXEL_RANGE = (850, 1200)
 positions = [(0.0, 0.0), (10.0, 10.0), (-10.0, -10.0), (-10.0, 10.0)]
 
 # Load + process
-# m_raw = load_pl_map(filepath; nx=51, ny=51, step_size=STEP_SIZE)
+# subtract_background: auto from map edges, or pass positions= explicitly
+m_raw = load_pl_map(filepath; nx=51, ny=51, step_size=STEP_SIZE)
 m = load_pl_map(filepath; nx=51, ny=51, step_size=STEP_SIZE, pixel_range=PIXEL_RANGE)
 m = subtract_background(m)
 centers = peak_centers(m)
