@@ -33,6 +33,7 @@ ax2 = Axis(fig[1, 2], xlabel="X (μm)", ylabel="Y (μm)",
 hm = heatmap!(ax2, xdata(m), ydata(m), intensity(m); colormap=:hot)
 Colorbar(fig[1, 3], hm, label="Counts")
 
+display(fig)
 DataInspector()  # マウスホバーで値を読む / hover to read values
 
 # --- ここから調整 / Tweak from here ---
