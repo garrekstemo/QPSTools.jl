@@ -64,6 +64,7 @@ import SpectroscopyTools: wavenumber, signal, delay, wavelength
 
 # Resolve name conflict: LinearAlgebra.normalize vs SpectroscopyTools.normalize
 import SpectroscopyTools: normalize
+import SpectroscopyTools: normalize_intensity
 
 # Import unexported SpectroscopyTools names that QPSTools re-exports
 import SpectroscopyTools: n_exp, weights, anharmonicity, format_results
@@ -108,7 +109,7 @@ export lorentzian, gaussian, pseudo_voigt, single_exponential
 export als_baseline, arpls_baseline, snip_baseline
 export correct_baseline
 # Spectroscopy utilities
-export normalize, smooth_data, calc_fwhm
+export normalize, normalize_intensity, smooth_data, calc_fwhm
 export transmittance_to_absorbance, absorbance_to_transmittance
 export subtract_spectrum
 export time_index, peak_table

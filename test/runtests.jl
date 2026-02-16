@@ -822,11 +822,11 @@ const PROJECT_ROOT = dirname(@__DIR__)
         @test_throws ErrorException extract_spectrum(m, 1, 52)
     end
 
-    @testset "PLMap normalize" begin
+    @testset "PLMap normalize_intensity" begin
         plmap_file = joinpath(PROJECT_ROOT, "data/PLmap/CCDtmp_260129_111138.lvm")
         m = load_pl_map(plmap_file; nx=51, ny=51)
 
-        m_norm = normalize(m)
+        m_norm = normalize_intensity(m)
         @test m_norm isa PLMap
         @test minimum(m_norm.intensity) ≈ 0.0
         @test maximum(m_norm.intensity) ≈ 1.0
@@ -899,12 +899,12 @@ const PROJECT_ROOT = dirname(@__DIR__)
         @test m_bg.intensity ≈ expected_intensity
     end
 
-    @testset "PLMap normalize after subtract_background" begin
+    @testset "PLMap normalize_intensity after subtract_background" begin
         plmap_file = joinpath(PROJECT_ROOT, "data/PLmap/CCDtmp_260129_111138.lvm")
         m = load_pl_map(plmap_file; nx=51, ny=51, step_size=2.16)
 
         m_bg = subtract_background(m)
-        m_norm = normalize(m_bg)
+        m_norm = normalize_intensity(m_bg)
 
         @test m_norm isa PLMap
         @test minimum(m_norm.intensity) ≈ 0.0
@@ -933,7 +933,7 @@ const PROJECT_ROOT = dirname(@__DIR__)
 
         plmap_file = joinpath(PROJECT_ROOT, "data/PLmap/CCDtmp_260129_111138.lvm")
         m = load_pl_map(plmap_file; nx=51, ny=51)
-        m_norm = normalize(m)
+        m_norm = normalize_intensity(m)
 
         # plot_pl_map returns (Figure, Axis, Heatmap)
         fig, ax, hm = plot_pl_map(m_norm)

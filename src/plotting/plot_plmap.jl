@@ -17,7 +17,7 @@ Plot the PL intensity as a spatial heatmap.
 # Example
 ```julia
 m = load_pl_map("data.lvm"; nx=51, ny=51, step_size=2.16)
-fig, ax, hm = plot_pl_map(normalize(m); title="PL Intensity Map")
+fig, ax, hm = plot_pl_map(normalize_intensity(m); title="PL Intensity Map")
 save("pl_map.pdf", fig)
 ```
 """

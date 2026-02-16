@@ -111,12 +111,12 @@ m_bg = subtract_background(m_pr; positions=[(-40, -40), (40, -40)])
 
 ### Normalize and compare
 
-After normalization to [0, 1], approaches 2 and 3 look visually identical because `normalize()` already removes the DC offset via min-max scaling. The background subtraction matters when you need absolute PL intensities (e.g., comparing samples or correlating with excitation power).
+After normalization to [0, 1], approaches 2 and 3 look visually identical because `normalize_intensity()` already removes the DC offset via min-max scaling. The background subtraction matters when you need absolute PL intensities (e.g., comparing samples or correlating with excitation power).
 
 ```julia
-m_raw_norm = normalize(m_raw)
-m_pr_norm = normalize(m_pr)
-m_bg_norm = normalize(m_bg)
+m_raw_norm = normalize_intensity(m_raw)
+m_pr_norm = normalize_intensity(m_pr)
+m_bg_norm = normalize_intensity(m_bg)
 ```
 
 ## 4. SNR Analysis
@@ -214,7 +214,7 @@ fig = Figure(size=(1000, 450))
 
 ax1 = Axis(fig[1, 1], xlabel="X (μm)", ylabel="Y (μm)",
            title="PL Intensity", aspect=DataAspect())
-hm1 = heatmap!(ax1, m_bg.x, m_bg.y, normalize(m_bg).intensity'; colormap=:hot)
+hm1 = heatmap!(ax1, m_bg.x, m_bg.y, normalize_intensity(m_bg).intensity'; colormap=:hot)
 Colorbar(fig[1, 2], hm1, label="Normalized PL")
 
 ax2 = Axis(fig[1, 3], xlabel="X (μm)", ylabel="Y (μm)",
@@ -237,7 +237,7 @@ The `:viridis` colormap with `nan_color=:transparent` is the standard convention
 | Extract | `extract_spectrum(m; x, y)` | Pull spectrum at a position |
 | Pixel range | `load_pl_map(...; pixel_range=(lo, hi))` | Integrate only PL emission pixels |
 | Background | `subtract_background(m)` | Remove per-pixel CCD baseline |
-| Normalize | `normalize(m)` | Scale intensity to [0, 1] |
+| Normalize | `normalize_intensity(m)` | Scale intensity to [0, 1] |
 | Peak centers | `peak_centers(m)` | Centroid peak position at each grid point |
 | Plot | `plot_pl_map(m)` | Spatial heatmap with colorbar |
 

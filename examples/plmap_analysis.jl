@@ -38,7 +38,7 @@ save(joinpath(FIGDIR, "spectra_full.png"), fig_spec)
 m = load_pl_map(filepath; nx=51, ny=51, step_size=2.16, pixel_range=(950, 1100))
 m = subtract_background(m)
 centers = peak_centers(m)
-m = normalize(m)
+m = normalize_intensity(m)
 println(m)
 
 # =============================================================================

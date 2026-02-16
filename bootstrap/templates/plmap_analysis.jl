@@ -28,7 +28,7 @@ m_raw = load_pl_map(filepath; step_size=STEP_SIZE)
 m = load_pl_map(filepath; step_size=STEP_SIZE, pixel_range=PIXEL_RANGE)
 m = subtract_background(m)
 centers = peak_centers(m)
-m = normalize(m)
+m = normalize_intensity(m)
 println(m)
 
 # =========================================================================
