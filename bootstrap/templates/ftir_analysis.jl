@@ -14,6 +14,7 @@ mkpath(FIGDIR)
 # 1. 読み込み / Load
 # パスとメタデータを自分のデータに合わせて変更
 # Change the path and metadata to match your data
+# サンプルデータ / Sample data: "data/ftir/1.0M_NH4SCN_DMF.csv"
 spec = load_ftir("data/ftir/my_solution.csv"; solute="NH4SCN", concentration="1.0M")
 
 # 2. 全体像 / Survey

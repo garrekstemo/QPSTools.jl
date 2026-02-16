@@ -35,6 +35,8 @@ println(m)
 # 2. 図の作成 / Build figure
 # =========================================================================
 
+# set_theme! is needed here because we build a custom figure below.
+# QPSTools plot functions (plot_pl_map, plot_raman, etc.) apply it automatically.
 set_theme!(qps_theme())
 fig = Figure(size=(1400, 400))
 

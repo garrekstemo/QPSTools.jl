@@ -62,6 +62,7 @@ end
 open(project_file, "w") do io
     TOML.print(io, project)
 end
+println("  (Project.toml formatting may change — this is normal)")
 
 try
     Pkg.resolve()
