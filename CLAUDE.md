@@ -91,7 +91,7 @@ julia --project=examples examples/raman_analysis.jl
 - **`load_pl_map()`**: Load LabVIEW CCD raster scan files
 - **`extract_spectrum()`**: Pull individual spectra by grid index or spatial position
 - **`subtract_background()`**: Remove per-pixel CCD baseline (explicit positions or auto)
-- **`normalize()`**: Min-max normalization to [0, 1]
+- **`normalize_intensity()`**: Min-max normalization to [0, 1]
 - **Plotting**: `plot_pl_map()` (spatial heatmap), `plot_pl_spectra()` (spectra at positions)
 
 ### Data Import
