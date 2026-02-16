@@ -14,7 +14,7 @@ set_theme!(qps_theme())
 # Config
 # Options: step_size, pixel_range, nx/ny (auto-detected if omitted), positions
 filepath = joinpath(PROJECT_ROOT, "data", "PLmap", "CCDtmp_260129_111138.lvm")
-STEP_SIZE = 5.0
+STEP_SIZE = 2.16
 PIXEL_RANGE = (850, 1200)
 positions = [(0.0, 0.0), (10.0, 10.0), (-10.0, -10.0), (-10.0, 10.0)]
 

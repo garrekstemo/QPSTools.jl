@@ -6,11 +6,29 @@
 パッケージのインストール、解析テンプレートのコピー、標準ディレクトリ
 構造の作成をすべて行います。
 
+## セットアップ
+
+1. https://github.com/garrekstemo/QPSTools.jl にアクセス
+2. 緑色の **Code** ボタン → **Download ZIP** をクリック
+3. ダウンロードしたファイルを解凍
+4. `bootstrap/` フォルダをプロジェクトディレクトリにコピー
+
+プロジェクトがまだない場合は、まず空のフォルダを作成してください：
+
+```bash
+mkdir my-project
+```
+
+`bootstrap/` を中に入れて `my-project/bootstrap/` になるようにします。
+
+（解凍した他のファイルは削除してOKです。必要なのは `bootstrap/` だけです。）
+
 ## インストール
 
 プロジェクトルートから実行：
 
 ```bash
+cd my-project
 julia --project=. bootstrap/install.jl
 ```
 

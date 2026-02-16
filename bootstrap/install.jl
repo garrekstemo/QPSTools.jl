@@ -18,9 +18,22 @@ PROJECT_ROOT = dirname(BOOTSTRAP_DIR)
 
 println("=== QPSTools Install ===")
 println()
-println("1/3  Installing packages...")
 
+# Guard: make sure we're operating on a local project, not the global environment
 project_file = Base.active_project()
+if project_file === nothing || contains(project_file, joinpath(".julia", "environments"))
+    printstyled("ERROR: ", color=:red, bold=true)
+    println("No local project detected.")
+    println()
+    println("  Run from your project directory with:")
+    println("    julia --project=. bootstrap/install.jl")
+    println()
+    println("  If you don't have a Project.toml yet, that's fine —")
+    println("  --project=. will create one automatically.")
+    exit(1)
+end
+
+println("1/4  Installing packages...")
 project = TOML.parsefile(project_file)
 
 if !haskey(project, "deps")
@@ -50,12 +63,30 @@ open(project_file, "w") do io
     TOML.print(io, project)
 end
 
-Pkg.resolve()
+try
+    Pkg.resolve()
 
-println()
-println("  Installing GLMakie and Revise...")
-Pkg.add("GLMakie")
-Pkg.add("Revise")
+    println()
+    println("  Installing GLMakie and Revise...")
+    Pkg.add("GLMakie")
+    Pkg.add("Revise")
+catch e
+    println()
+    printstyled("ERROR: ", color=:red, bold=true)
+    println("Package installation failed.")
+    println()
+    println("  Common causes:")
+    println("    - No internet connection")
+    println("    - Cannot reach github.com (check Wi-Fi / proxy / firewall)")
+    println("    - Git is not installed")
+    println()
+    println("  Try opening https://github.com in a browser first.")
+    println("  If that works but this still fails, ask Garrek for help.")
+    println()
+    printstyled("  Details: ", color=:yellow)
+    println(sprint(showerror, e))
+    exit(1)
+end
 
 # ─────────────────────────────────────────────────────────────────────
 # 2. Copy templates

@@ -89,3 +89,7 @@ function plot_pl_spectra(m::PLMap, positions::AbstractVector;
         return fig, ax
     end
 end
+
+# Convenience: single position without wrapping in a vector
+plot_pl_spectra(m::PLMap, pos::Tuple{Real,Real}; kwargs...) =
+    plot_pl_spectra(m, [pos]; kwargs...)

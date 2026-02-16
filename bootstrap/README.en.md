@@ -6,11 +6,29 @@ Adds QPSTools to an existing Julia project. One command installs all
 packages, copies analysis templates, and creates the standard directory
 structure.
 
+## Setup
+
+1. Go to https://github.com/garrekstemo/QPSTools.jl
+2. Click the green **Code** button → **Download ZIP**
+3. Unzip the downloaded file
+4. Copy the `bootstrap/` folder into your project directory
+
+If you don't have a project yet, create an empty folder first:
+
+```bash
+mkdir my-project
+```
+
+Then move the `bootstrap/` folder into it so you have `my-project/bootstrap/`.
+
+(You can delete the rest of the unzipped files — you only need `bootstrap/`.)
+
 ## Install
 
 From your project root:
 
 ```bash
+cd my-project
 julia --project=. bootstrap/install.jl
 ```
 
