@@ -81,14 +81,14 @@ import SpectroscopyTools: ChirpCalibration, polynomial,
 import SpectroscopyTools: das
 
 # PLMap type and analysis (moved to SpectroscopyTools)
-import SpectroscopyTools: extract_spectrum, peak_centers, intensity
+import SpectroscopyTools: extract_spectrum, peak_centers, intensity, fit_map, FitMapResult
 
 # Re-export SpectroscopyTools public names
 # Types (from SpectroscopyTools)
 export AbstractSpectroscopyData
 export TATrace, TASpectrum, TAMatrix
 export PLMap
-export PeakInfo, PeakFitResult, MultiPeakFitResult
+export PeakInfo, PeakFitResult, MultiPeakFitResult, FitMapResult
 export ExpDecayFit, MultiexpDecayFit
 export GlobalFitResult, TASpectrumFit
 # Types (defined in QPSTools)
@@ -191,6 +191,7 @@ export refractive_index, extinction_coeff
 # PL mapping (CCD raster scans — loader only, type lives in SpectroscopyTools)
 include("plmap.jl")
 export load_pl_map, extract_spectrum, peak_centers, intensity
+export integrated_intensity, intensity_mask, fit_map
 
 # ============================================================================
 # Lab-specific spectroscopy dispatches
