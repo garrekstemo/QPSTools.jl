@@ -10,24 +10,6 @@
 | **SpectroscopyTools.jl** | Base types and general spectroscopy | Active |
 | **CavitySpectroscopy.jl** | Polariton analysis | Independent (public) |
 
-## Project Mission
-
-**QPSTools.jl is the standardized analysis foundation for all research in the Quantum Photo-Science Laboratory.** This package eliminates the "coding from scratch" bottleneck that slows down every project, enabling students to focus on physics interpretation rather than technical implementation.
-
-## Lab Transformation Context
-
-This package is central to transforming our lab from a linear research model to a high-output pipeline system:
-
-- **Eliminates Knowledge Loss**: Common analysis tools persist when students graduate
-- **Enables Team Collaboration**: Standardized tools allow cross-project collaboration
-- **Accelerates Publication**: Automated analysis reduces time from data to manuscript
-- **Scales Expertise**: Garrek's analysis speed multipliers become available to all students
-- **Supports Living Manuscripts**: Fast, reproducible analysis enables continuous manuscript development
-
-See `Lab_Transformation_Assessment.md` and `Lab_Transformation_Roadmap.md` for full context.
-
----
-
 ## Package Dependencies
 
 **Note**: This package uses **loose dependency constraints** (no `[compat]` entries in Project.toml). Since we don't develop many packages or do extensive package development, we keep dependencies flexible to avoid version conflicts. This approach prioritizes usability over strict version compatibility - if issues arise, they can be addressed case-by-case.
@@ -56,12 +38,6 @@ julia --project=examples examples/raman_analysis.jl
 ## Development Status
 
 **This package has not shipped yet.** Backward compatibility is not a concern — breaking changes to APIs, struct fields, and function signatures are acceptable during development. Prioritize clean, correct design over maintaining legacy interfaces.
-
-## Communication Preferences
-
-- **Use tables** when presenting options, comparisons, or structured information — they're easier to scan and compare.
-
----
 
 ## Core Capabilities
 
@@ -652,37 +628,6 @@ YYYYMMDD_<sample>_<run>.csv
 
 ---
 
-## Vertical Team Integration
-
-### Team-Specific Usage Patterns
-
-**VSC Team**: 
-- Heavy pump-probe analysis, cavity spectroscopy integration
-- Living manuscript approach with automated figure generation
-- Theoretical knowledge transfer through documented analysis
-
-**TMDC Team**: 
-- Adaptation of pump-probe tools for 2D materials
-- Cross-correlation with VSC analysis for comparative studies
-- Equipment sharing optimization
-
-**MOF Team**: 
-- Steady-state characterization tools
-- New data format integration as needed
-
-**Equipment Team**: 
-- Maintain and extend instrument-specific import functions
-- Support all other teams with standardized analysis
-
-### Knowledge Transfer Protocol
-
-1. **All new analysis capabilities** must be added to QPSTools.jl, not kept in individual projects
-2. **Graduating students** must document analysis procedures in package documentation
-3. **Team leaders** ensure QPSTools.jl usage in all team publications
-4. **Monthly reviews** of package development and feature requests
-
----
-
 ## Quick Start Guide
 
 ### Installation
@@ -891,58 +836,3 @@ Remaining work:
 
 ---
 
-## Publication Standards
-
-### Manuscript Integration
-
-All lab publications should:
-1. **Use QPSTools.jl** for analysis whenever applicable
-2. **Cite the package** in methods sections
-3. **Contribute new capabilities** back to the package
-4. **Include analysis scripts** as supplementary material
-
-### Figure Quality Standards
-
-- **Use `print_theme()`** for all manuscript figures
-- **Save as PDF/SVG** for vector graphics
-- **Include error bars** from fitting uncertainties
-- **Follow lab color scheme** defined in plotting themes
-
-### Reproducibility Requirements
-
-- **Analysis scripts** must be runnable by other team members
-- **Data paths** should be relative to standard lab directory structure
-- **Package versions** should be documented in Project.toml
-
----
-
-## Success Metrics
-
-### Individual Student Impact
-- **Time to first analysis**: < 1 hour for standard pump-probe data
-- **Analysis consistency**: All students use same fitting procedures
-- **Error reduction**: Standardized uncertainty quantification
-
-### Lab-Wide Impact  
-- **Code reuse**: > 80% reduction in "coding from scratch"
-- **Cross-team collaboration**: Analysis tools shared between projects
-- **Publication acceleration**: Faster data-to-manuscript pipeline
-- **Knowledge retention**: Analysis capabilities persist after graduation
-
-### Team System Support
-- **Manuscript velocity**: Living documents updated with automated analysis
-- **Resource efficiency**: Shared tools reduce individual development time
-- **Quality consistency**: Standardized analysis across all publications
-
----
-
-## Contact & Support
-
-**Primary maintainer**: Garrek Stemo
-**Development model**: All lab members contribute
-**Issue reporting**: Use GitHub issues or lab Slack
-**Feature requests**: Discuss with team leaders and assistant professor
-
----
-
-*QPSTools.jl is more than a software package — it's the technical foundation that enables our lab's transformation from individual projects to collaborative research teams. Every contribution strengthens the entire lab's research capacity.*
