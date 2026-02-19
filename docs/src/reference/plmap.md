@@ -26,6 +26,18 @@ extract_spectrum
 subtract_background
 ```
 
+## Integrated Intensity
+
+```@docs
+integrated_intensity
+```
+
+## Intensity Mask
+
+```@docs
+intensity_mask
+```
+
 ## Peak Centers
 
 ```@docs

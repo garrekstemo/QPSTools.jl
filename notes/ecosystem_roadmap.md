@@ -1,12 +1,117 @@
-# SpectroscopyTools.jl Ecosystem Roadmap
+# QPS Spectroscopy Ecosystem
 
-A long-term vision for how SpectroscopyTools.jl could grow from a single package into a modular ecosystem for spectroscopy in Julia. Inspired by the SciML approach: start as a monolith, split along natural fracture lines as the codebase and user base grow.
-
-**Guiding principle:** Don't split preemptively. The interface should emerge from real usage patterns, not upfront design. SciML started as DifferentialEquations.jl (one package) and split as it grew. We do the same.
+A unified ecosystem for spectroscopy analysis, instrument control, and lab management — from raw data to publication figures to electronic lab notebook.
 
 ---
 
-## The Three-Layer Architecture
+## Full Ecosystem Map
+
+The ecosystem spans three domains: **public libraries** (general spectroscopy), **lab libraries** (QPS-specific), and **lab applications** (GUIs and instrument control).
+
+```
+                        PUBLIC LIBRARIES
+                    (general, registered/registerable)
+
+CurveFitModels.jl ──────────────────── zero deps, pure math
+       │
+CurveFit.jl ────────────────────────── fitting backend
+       │
+SpectroscopyTools.jl ───────────────── base types + algorithms
+       │                                 (TATrace, TASpectrum,
+       │                                  TAMatrix, PLMap,
+       │                                  fit_peaks, fit_exp_decay, ...)
+       │
+       │               CavitySpectroscopy.jl ──── polariton analysis
+       │                       │                  (independent, public)
+       │                       │
+       ├───────────────────────┘
+       │
+                         LAB LIBRARIES
+                      (QPS-specific, private)
+
+QPSTools.jl ────────────────────────── analysis + plotting + eLabFTW
+       │                                 load_ftir, load_raman, load_ta_*,
+       │                                 load_pl_map, plot_spectrum,
+       │                                 plot_kinetics, registry, themes
+       │
+       │
+       │             SHARED SWIFT INFRASTRUCTURE
+       │
+       │     QPSKit (Swift Package) ─── shared macOS app components
+       │       │                          ServerProcess (launch Julia)
+       │       │                          StatusBar, ConnectionBadge
+       │       │                          AppearanceMode, StatusLevel
+       │       │                          JuliaConnection protocol
+       │       │
+       │       │
+       │       │          LAB APPLICATIONS
+       │       │        (GUIs + instruments)
+       │       │
+       ├───────┼──── QPSLab ─────────── GUI analysis app
+       │       │       │                  Electron/Svelte (Windows)
+       │       │       │                  SwiftUI/QPSKit (macOS)
+       │       │       │                  Julia HTTP server calls QPSTools
+       │       │       │
+       │       │       │                  see: notes/gui_app_design.md
+       │       │       │
+       ├───────│──── Student scripts ── Julia REPL / analysis scripts
+       │       │
+       │       │
+QPSDrive.jl ───│──────────────────────── instrument control + scan engine
+       │       │                           WebSocket server (JSON protocol)
+       │       │                           uses SpectroscopyTools types
+       │       │
+       └───────┼──── QPSConsole ──────── native macOS scan controller
+               │                           SwiftUI/QPSKit, WebSocket to QPSDrive
+               │                           Monitor / Scan / Results tabs
+               │                           replaces QPSView.jl (deprecated)
+               │
+               └──── Future TA Viewer ── broadband TA live viewer
+                                           SwiftUI/QPSKit, WebSocket
+                                           heatmap + slice + DAS views
+```
+
+### Communication protocols
+
+HTTP is request/response (app asks, server answers, connection closes). WebSocket is a persistent open connection where either side can send at any time. Analysis is request/response; instrument streaming needs real-time push.
+
+| Connection | Protocol | Why |
+|-----------|----------|-----|
+| QPSLab frontends ↔ Julia server | HTTP/JSON (localhost) | Analysis is request/response — student clicks "Fit", server replies with results |
+| QPSConsole ↔ QPSDrive | WebSocket/JSON (`ws://host:8765`) | Instruments stream live: signal readings, scan progress, stage positions |
+| Future TA Viewer ↔ QPSDrive | WebSocket/JSON | Same — live CCD frames during acquisition |
+
+### Package status
+
+| Package | Role | Status | Platform |
+|---------|------|--------|----------|
+| CurveFitModels.jl | Fitting model functions | Stable | Julia (public) |
+| SpectroscopyTools.jl | Base types + algorithms | Active | Julia (public) |
+| CavitySpectroscopy.jl | Polariton analysis | Independent | Julia (public) |
+| QPSTools.jl | Lab analysis library | Active | Julia (lab) |
+| QPSDrive.jl | Instrument control | In dev | Julia (lab) |
+| QPSKit | Shared Swift infrastructure | Planned | Swift/macOS |
+| QPSConsole | Scan controller GUI | Active | SwiftUI/macOS |
+| QPSLab | Analysis GUI | Design phase | Electron + SwiftUI |
+| QPSView.jl | Live scan viewer | **Deprecated** → QPSConsole | Julia/GLMakie |
+
+### Competitive landscape
+
+| Tool | Language | Scope | Gap this ecosystem fills |
+|------|----------|-------|-----------------------------|
+| Igor Pro | Proprietary | General analysis | Open source, reproducible, free |
+| OriginLab | Proprietary | General analysis | Same as above |
+| Glotaran / pyglotaran | Java / Python | TA global analysis only | Unified with steady-state analysis |
+| TAPAS | Python | TA processing + analysis | Julia performance, composable types |
+| skultrafast | Python | TA data analysis | Same as above |
+| Spectra.jl | Julia | Geoscience spectroscopy | Different domain, incompatible design |
+| JASCO software | Proprietary | FTIR instrument | QPSLab replaces for analysis |
+
+**Unique value:** No existing tool covers both steady-state characterization and time-resolved analysis in one ecosystem. A sample goes from FTIR → pump-probe → global analysis using the same types, the same fitting engine, and the same result reporting. That workflow doesn't exist anywhere else. QPSLab puts a GUI on top of it.
+
+---
+
+## Architecture Layers
 
 Regardless of how many packages exist, the architecture always has three layers:
 
@@ -18,14 +123,20 @@ Analysis        Algorithms that solve spectroscopy problems
                 Types, fitting, baseline, decomposition
                     │
 Application     Lab-specific: instrument I/O, registries,
-                plotting themes, notebook integration
+                plotting themes, notebook integration, GUIs
 ```
 
-**Users interact at the Application layer.** Analysis and Models are invisible infrastructure. A student types `using QPS` and gets everything.
+**Users interact at the Application layer.** Analysis and Models are invisible infrastructure. A student types `using QPSTools` (scripting) or opens QPSLab (GUI) and gets everything.
 
 ---
 
-## Phase 1: Monolith (Current → Package Registration)
+## SpectroscopyTools.jl Growth Roadmap
+
+A long-term vision for how SpectroscopyTools.jl could grow from a single package into a modular ecosystem. Inspired by the SciML approach: start as a monolith, split along natural fracture lines as the codebase and user base grow.
+
+**Guiding principle:** Don't split preemptively. The interface should emerge from real usage patterns, not upfront design.
+
+### Phase 1: Monolith (Current → Package Registration)
 
 **Trigger:** Get something working and registered.
 
@@ -45,7 +156,7 @@ SpectroscopyTools.jl           monolith: types + all analysis
   Utilities:  normalize, subtract, FWHM, unit conversions
   Reporting:  report(), format_results()
 
-QPS.jl                         lab layer (exists)
+QPSTools.jl                    lab layer (exists)
   I/O:        load_lvm, load_ftir, load_raman
   Registry:   sample metadata lookup
   Plotting:   themes, layers, layouts, all plot_* functions
@@ -54,7 +165,7 @@ QPS.jl                         lab layer (exists)
 
 **User experience:**
 ```julia
-using QPS
+using QPSTools
 using CairoMakie
 
 spec = load_ftir(solute="NH4SCN", concentration="1.0M")
@@ -65,9 +176,7 @@ fig, ax = plot_spectrum(spec; fit=result, residuals=true)
 
 **What to focus on:** Get the API right. Write tests. Register CurveFitModels and SpectroscopyTools. Everything else follows from a solid foundation.
 
----
-
-## Phase 2: Extract the Interface (~8,000-10,000 lines)
+### Phase 2: Extract the Interface (~8,000-10,000 lines)
 
 **Trigger:** Someone wants to depend on your types but not your fitting code. Or you want a Makie extension that doesn't pull in the entire fitting stack.
 
@@ -87,7 +196,7 @@ SpectroscopyTools.jl           analysis algorithms + umbrella
   Exponential decay, IRF, global fitting
   Unit conversions, spectral math
 
-QPS.jl
+QPSTools.jl
   using SpectroscopyTools      (re-exports everything)
   Lab-specific layer (unchanged)
 ```
@@ -96,11 +205,9 @@ This is the SciMLBase pattern: separate "what things are" from "what you do with
 
 **The split test:** If you can draw a line in `types.jl` where everything above is pure data definitions and everything below is algorithms, that's your SpectroscopyBase.
 
----
+### Phase 3: Technique Splits (~15,000-20,000 lines)
 
-## Phase 3: Technique Splits (~15,000-20,000 lines)
-
-**Trigger:** Fluorescence lifetime analysis arrives. Or 2D-IR processing. The codebase has grown enough that independent versioning matters, and you find yourself avoiding changes to kinetics code because it might break peak fitting.
+**Trigger:** Fluorescence lifetime analysis arrives. Or 2D-IR processing. The codebase has grown enough that independent versioning matters.
 
 ```
 SpectroscopyBase.jl              types + interface (stable, rarely changes)
@@ -131,18 +238,7 @@ SpectroscopyBase.jl              types + interface (stable, rarely changes)
 
 **The key fracture line: PeakAnalysis vs KineticsFitting.** A Raman chemist never calls `fit_exp_decay`. An ultrafast physicist rarely calls `fit_peaks` on a static spectrum. But both call `normalize` and `subtract_spectrum`.
 
-**User experience is unchanged:**
-```julia
-using SpectroscopyTools  # gets everything
-
-# OR, for a lightweight Raman pipeline:
-using SpectroscopyBase
-using PeakAnalysis
-```
-
----
-
-## Phase 4: Advanced Analysis (~25,000+ lines)
+### Phase 4: Advanced Analysis (~25,000+ lines)
 
 **Trigger:** You implement target analysis, SVD, or MCR-ALS. These are substantial algorithmic packages, each potentially paper-worthy.
 
@@ -173,13 +269,9 @@ SpectroscopyBase.jl              types + interface
         └── SpectroscopyTools.jl umbrella (re-exports everything)
 ```
 
-At this point, `GlobalAnalysis.jl` is doing what Glotaran does — but in Julia, with composable types, and integrated with the same ecosystem that handles peak fitting and baseline correction. That's the value proposition no Python tool offers.
+### Phase 5: Community Ecosystem (~50,000+ lines, multiple contributors)
 
----
-
-## Phase 5: Ecosystem (~50,000+ lines, multiple contributors)
-
-**Trigger:** External contributors want to build technique-specific packages on top of SpectroscopyBase. You no longer own every package — the ecosystem grows beyond your lab.
+**Trigger:** External contributors want to build technique-specific packages on top of SpectroscopyBase.
 
 ```
 SpectroscopyBase.jl
@@ -187,74 +279,45 @@ SpectroscopyBase.jl
         ├── [core analysis packages from Phase 4]
         │
         ├── SpectroscopyMakieExt.jl    plotting recipes (weak dep extension)
-        │     Generic plot_spectrum, plot_kinetics, plot_heatmap
-        │     No themes — users set their own
         │
         │   Community packages (not yours to maintain):
         │
         ├── RamanTools.jl              Raman-specific processing
-        │     Cosmic ray removal
-        │     Stokes / anti-Stokes correction
-        │     Fluorescence background removal
-        │     Raman tensor analysis
-        │
         ├── FluorescenceTools.jl       fluorescence-specific
-        │     Lifetime fitting (uses KineticsFitting internally)
-        │     Quantum yield calculation
-        │     FRET analysis
-        │     Stern-Volmer
-        │
         ├── TwoDIR.jl                  2D infrared spectroscopy
-        │     Phasing, zero-padding, apodization
-        │     Diagonal / cross-peak analysis
-        │     Center-line slope
-        │     Spectral diffusion
-        │
         ├── CavitySpectroscopy.jl      your lab — polariton analysis
-        │     Coupled oscillator models
-        │     Rabi splitting extraction
-        │     Hopfield coefficients
         │
         └── SpectroscopyTools.jl       umbrella (core packages only)
 ```
 
-**QPS.jl at this stage:**
-```
-QPS.jl
-  using SpectroscopyTools        (all core analysis)
-  using CavitySpectroscopy       (lab research area)
-  Lab I/O, registry, eLabFTW, themes, plotting pipeline
-```
-
----
-
-## Dependency Graph at Maturity
+### Dependency graph at maturity
 
 ```
-CurveFitModels.jl ─────────────────────── zero deps, pure math
+                    JULIA                              SWIFT
+
+CurveFitModels.jl ──── zero deps, pure math
        │
-CurveFit.jl ──────────────────────────── fitting backend
+CurveFit.jl ────────── fitting backend
        │
-SpectroscopyBase.jl ──────────────────── types + interface (Statistics only)
-       │
-       ├─ SpectralMath.jl ────────────── utilities (Unitful, SavitzkyGolay)
-       │       │
-       ├─ PeakAnalysis.jl ───────────── peaks + baseline (Peaks.jl)
-       │       │
-       ├─ KineticsFitting.jl ────────── decay + IRF
-       │       │
-       ├─ GlobalAnalysis.jl ─────────── target analysis (uses Kinetics)
-       │       │
-       ├─ SpectralDecomposition.jl ──── SVD, MCR-ALS, NMF
-       │
-SpectroscopyTools.jl ─────────────────── umbrella: re-exports everything
-       │
-       ├─ RamanTools.jl ─────────────── community
-       ├─ FluorescenceTools.jl ──────── community
-       ├─ TwoDIR.jl ────────────────── community
-       ├─ CavitySpectroscopy.jl ─────── your lab
-       │
-QPS.jl ───────────────────────────────── lab application layer
+SpectroscopyBase.jl ── types + interface               QPSKit ──────── shared macOS infra
+       │                                                  │   (ServerProcess, StatusBar,
+       ├─ SpectralMath.jl                                 │    ConnectionBadge, protocols)
+       ├─ PeakAnalysis.jl                                 │
+       ├─ KineticsFitting.jl                              │
+       ├─ GlobalAnalysis.jl                               │
+       ├─ SpectralDecomposition.jl                        │
+       │                                                  │
+SpectroscopyTools.jl ── umbrella                          │
+       │                                                  │
+       ├─ Community packages...                           │
+       │                                                  │
+QPSTools.jl ──────────── lab layer ──────── QPSLab ───────┤ (macOS: SwiftUI + QPSKit)
+       │                                   (Julia HTTP    │ (Windows: Electron/Svelte)
+       ├─ Student scripts                    server)      │
+       │                                                  │
+QPSDrive.jl ──────────── instruments ────── QPSConsole ───┤ (SwiftUI + QPSKit)
+                                                          │
+                                            TA Viewer ────┘ (SwiftUI + QPSKit, future)
 ```
 
 ---
@@ -292,23 +355,8 @@ And conversely — signals that you should **not** split yet:
 
 3. **CurveFitModels stays independent.** Zero dependencies, pure math functions. This never merges into anything.
 
-4. **QPS stays the lab layer.** It never contains general-purpose spectroscopy code. It's I/O, registry, eLabFTW, and Makie plotting on top.
+4. **QPSTools stays the lab layer.** It never contains general-purpose spectroscopy code. It's I/O, registry, eLabFTW, and Makie plotting on top.
 
 5. **The API doesn't change when packages split.** If `fit_peaks(x, y)` works in Phase 1, it works in Phase 5. Internal reorganization is invisible to users.
 
----
-
-## Competitive Landscape
-
-For context on where this ecosystem would sit relative to existing tools:
-
-| Tool | Language | Scope | Gap SpectroscopyTools fills |
-|------|----------|-------|-----------------------------|
-| Igor Pro | Proprietary | General analysis | Open source, reproducible, free |
-| OriginLab | Proprietary | General analysis | Same as above |
-| Glotaran / pyglotaran | Java / Python | TA global analysis only | Unified with steady-state analysis |
-| TAPAS | Python | TA processing + analysis | Julia performance, composable types |
-| skultrafast | Python | TA data analysis | Same as above |
-| Spectra.jl | Julia | Geoscience spectroscopy | Different domain, incompatible design |
-
-The unique value: **no existing tool covers both steady-state characterization and time-resolved analysis in one ecosystem.** A sample goes from FTIR → pump-probe → global analysis using the same types, the same fitting engine, and the same result reporting. That workflow doesn't exist anywhere else.
+6. **QPSLab is a consumer, not a replacement.** Every analysis capability in the GUI must exist as a QPSTools function first. The GUI is a thin layer. New features always land in QPSTools/SpectroscopyTools, never in the GUI.
