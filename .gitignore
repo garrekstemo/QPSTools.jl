@@ -1,5 +1,4 @@
 Manifest.toml
-data/
 !bootstrap/data/
 figures/
 docs/build/

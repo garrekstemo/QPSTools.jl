@@ -1,0 +1,107 @@
+{
+  "ftir": {
+    "NH4SCN_DMF_1M": {
+      "solute": "NH4SCN",
+      "solvent": "DMF",
+      "concentration": "1.0M",
+      "pathlength": 12.0,
+      "substrate": "CaF2",
+      "path": "ftir/1.0M_NH4SCN_DMF.csv",
+      "date": "2025-06-19"
+    },
+    "DMF_ref_12um": {
+      "material": "DMF",
+      "pathlength": 12.0,
+      "substrate": "CaF2",
+      "path": "ftir/DMF.csv",
+      "date": "2025-04-22"
+    },
+    "DPPA_toluene_0.7OD": {
+      "solute": "DPPA",
+      "solvent": "toluene",
+      "OD": 0.7,
+      "pathlength": 12.5,
+      "substrate": "CaF2",
+      "path": "ftir/0.7OD_DPPA_toluene_12.5umspacer.csv"
+    },
+    "8CB_isotropic": {
+      "material": "8CB",
+      "phase": "isotropic",
+      "path": "ftir/8CB_isotropic.csv"
+    }
+  },
+  "raman": {
+    "ZIF62_crystal_1": {
+      "sample": "crystal_1",
+      "material": "ZIF-62",
+      "phase": "crystal",
+      "composition": "Zn/Co",
+      "laser_nm": 532.05,
+      "objective": "100x",
+      "baseline": "flat",
+      "path": "raman/ZIF62_crystal_1.csv",
+      "date": "2024-11-05"
+    },
+    "ZIF62_crystal_2": {
+      "sample": "crystal_2",
+      "material": "ZIF-62",
+      "phase": "crystal",
+      "composition": "Co",
+      "laser_nm": 532.05,
+      "objective": "100x",
+      "baseline": "sloped",
+      "path": "raman/ZIF62_crystal_2.csv",
+      "date": "2024-11-05"
+    },
+    "ZIF62_glass_2a": {
+      "sample": "glass_2a",
+      "material": "ZIF-62",
+      "phase": "glass",
+      "composition": "Co",
+      "laser_nm": 532.05,
+      "objective": "100x",
+      "baseline": "curved",
+      "path": "raman/ZIF62_glass_2a.csv",
+      "date": "2024-11-05"
+    },
+    "ZIF62_glass_2b": {
+      "sample": "glass_2b",
+      "material": "ZIF-62",
+      "phase": "glass",
+      "composition": "Co",
+      "laser_nm": 532.05,
+      "objective": "100x",
+      "baseline": "curved",
+      "path": "raman/ZIF62_glass_2b.csv",
+      "date": "2024-11-05"
+    },
+    "MoSe2_center": {
+      "sample": "center",
+      "material": "MoSe2",
+      "laser_nm": 532.05,
+      "objective": "100x",
+      "exposure_sec": 50,
+      "accumulations": 2,
+      "laser_power_mW": 0.7,
+      "grating": "2400 l/mm",
+      "path": "raman/MoSe2/MoSe2-center.csv",
+      "image": "raman/MoSe2/MoSe2_x100_center.PNG",
+      "date": "2026-01-20"
+    },
+    "MoSe2_right": {
+      "sample": "right",
+      "material": "MoSe2",
+      "laser_nm": 532.05,
+      "objective": "100x",
+      "exposure_sec": 50,
+      "accumulations": 2,
+      "laser_power_mW": 0.7,
+      "grating": "2400 l/mm",
+      "path": "raman/MoSe2/MoSe2-right.csv",
+      "image": "raman/MoSe2/MoSe2_x100_right.PNG",
+      "date": "2026-01-20"
+    }
+  },
+  "cavity": {
+  }
+}
