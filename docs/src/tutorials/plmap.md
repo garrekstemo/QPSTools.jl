@@ -241,8 +241,115 @@ The `:viridis` colormap with `nan_color=:transparent` is the standard convention
 | Peak centers | `peak_centers(m)` | Centroid peak position at each grid point |
 | Plot | `plot_pl_map(m)` | Spatial heatmap with colorbar |
 
+## 7. Cosmic Ray Detection and Removal
+
+CCD detectors occasionally register high-energy particle hits as sharp, narrow spikes in individual spectra. These "cosmic rays" are single-pixel artifacts — they affect one spatial pixel at a random spectral channel and don't correlate with spatial neighbors. They can distort integrated intensity, shift peak center calculations, and cause fitting failures.
+
+SpectroscopyTools provides automatic detection and removal using modified z-scores on first differences (Whitaker-Hayes method). For PLMap data, spatial validation prevents real spectral features (shared across neighbors) from being falsely flagged.
+
+### Detect and inspect
+
+```julia
+m = load_pl_map(filepath; nx=51, ny=51, step_size=2.16, pixel_range=(950, 1100))
+m = subtract_background(m)
+
+cr = detect_cosmic_rays(m; threshold=5.0)
+println("Found $(cr.count) cosmic ray spikes in $(cr.affected_spectra) spectra")
+```
+
+The result is a `CosmicRayMapResult` with:
+- `mask` — 3D BitArray `(nx, ny, n_pixel)`, `true` at spike locations
+- `count` — total number of flagged voxels
+- `affected_spectra` — number of spectra with at least one spike
+- `channel_counts` — spike count per spectral channel (useful for histograms)
+
+### Visualize spike locations
+
+```julia
+cr_counts = dropdims(sum(cr.mask; dims=3); dims=3)
+
+fig = Figure(size=(500, 450))
+ax = Axis(fig[1, 1], xlabel="X (μm)", ylabel="Y (μm)",
+    title="Cosmic Ray Count per Pixel", aspect=DataAspect())
+hm = heatmap!(ax, m.x, m.y, cr_counts; colormap=:inferno)
+Colorbar(fig[1, 2], hm, label="Spike Count")
+save("figures/cosmic_ray_map.png", fig)
+```
+
+### Remove and compare
+
+```julia
+m_clean = remove_cosmic_rays(m, cr)
+```
+
+Flagged voxels are replaced with the median value from non-flagged spatial neighbors. Edge pixels with no valid neighbors fall back to spectral interpolation. The cleaned PLMap has recomputed intensity.
+
+```julia
+fig = Figure(size=(1000, 400))
+ax1 = Axis(fig[1, 1], xlabel="X (μm)", ylabel="Y (μm)",
+    title="Before", aspect=DataAspect())
+hm1 = heatmap!(ax1, m.x, m.y, intensity(m); colormap=:hot)
+ax2 = Axis(fig[1, 2], xlabel="X (μm)", ylabel="Y (μm)",
+    title="After Cosmic Ray Removal", aspect=DataAspect())
+hm2 = heatmap!(ax2, m_clean.x, m_clean.y, intensity(m_clean); colormap=:hot)
+Colorbar(fig[1, 3], hm2, label="PL Intensity")
+save("figures/cosmic_ray_comparison.png", fig)
+```
+
+### Single spectrum
+
+The same functions work on any 1D signal:
+
+```julia
+spec = extract_spectrum(m, 25, 25)
+cr_1d = detect_cosmic_rays(spec.signal; threshold=5.0)
+cleaned = remove_cosmic_rays(spec.signal, cr_1d)
+```
+
+### Threshold tuning
+
+The `threshold` parameter controls sensitivity. Lower values detect more spikes but may flag real features; higher values are more conservative. The default of 5.0 works well for typical CCD data. Test different thresholds to find the right balance:
+
+```julia
+for thresh in [3.0, 4.0, 5.0, 6.0, 7.0]
+    cr_t = detect_cosmic_rays(m; threshold=thresh)
+    println("threshold=$thresh → $(cr_t.count) spikes in $(cr_t.affected_spectra) spectra")
+end
+```
+
+### Processing order
+
+When combining corrections, apply cosmic ray removal **after** background subtraction but **before** normalization. Background subtraction changes the baseline, improving spike contrast. Normalization should be applied last so it operates on the cleaned data.
+
+```julia
+m = load_pl_map(filepath; nx=51, ny=51, step_size=2.16, pixel_range=(950, 1100))
+m = subtract_background(m)               # 1. Remove baseline
+cr = detect_cosmic_rays(m; threshold=5.0) # 2. Detect spikes
+m = remove_cosmic_rays(m, cr)             # 3. Remove spikes
+m = normalize_intensity(m)                # 4. Normalize last
+```
+
+!!! tip "QPSLab desktop app"
+    In the QPSLab desktop app, cosmic ray removal is available as a correction in the Corrections tab. The heatmap mode `7` (Cosmic Rays) shows spike locations. The correction pipeline automatically handles the ordering.
+
+## Summary
+
+| Step | Function | What it does |
+|------|----------|-------------|
+| Load | `load_pl_map(path; nx, ny, step_size)` | Load CCD raster scan into `PLMap` |
+| Inspect | `plot_pl_spectra(m, positions)` | View CCD spectra at spatial positions |
+| Extract | `extract_spectrum(m; x, y)` | Pull spectrum at a position |
+| Pixel range | `load_pl_map(...; pixel_range=(lo, hi))` | Integrate only PL emission pixels |
+| Background | `subtract_background(m)` | Remove per-pixel CCD baseline |
+| Cosmic rays | `detect_cosmic_rays(m)` | Find cosmic ray spikes (1D or PLMap) |
+| Remove CRs | `remove_cosmic_rays(m, cr)` | Replace spikes with neighbor median |
+| Normalize | `normalize_intensity(m)` | Scale intensity to [0, 1] |
+| Peak centers | `peak_centers(m)` | Centroid peak position at each grid point |
+| Plot | `plot_pl_map(m)` | Spatial heatmap with colorbar |
+
 ## Next Steps
 
 - Experiment with different `pixel_range` values to isolate Raman bands vs PL emission
 - Use `extract_spectrum` to compare spectra at high-intensity and low-intensity positions
 - Try different colormaps (`:hot`, `:inferno`, `:viridis`) for different visual emphasis
+- Use cosmic ray detection before peak fitting to avoid fitting artifacts

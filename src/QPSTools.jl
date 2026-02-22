@@ -83,6 +83,10 @@ import SpectroscopyTools: das
 # PLMap type and analysis (moved to SpectroscopyTools)
 import SpectroscopyTools: extract_spectrum, peak_centers, intensity, fit_map, FitMapResult
 
+# Cosmic ray detection and removal (from SpectroscopyTools)
+import SpectroscopyTools: CosmicRayResult, CosmicRayMapResult,
+    detect_cosmic_rays, remove_cosmic_rays
+
 # Re-export SpectroscopyTools public names
 # Types (from SpectroscopyTools)
 export AbstractSpectroscopyData
@@ -192,6 +196,7 @@ export refractive_index, extinction_coeff
 include("plmap.jl")
 export load_pl_map, extract_spectrum, peak_centers, intensity
 export integrated_intensity, intensity_mask, fit_map
+export CosmicRayResult, CosmicRayMapResult, detect_cosmic_rays, remove_cosmic_rays
 
 # ============================================================================
 # Lab-specific spectroscopy dispatches

@@ -44,6 +44,15 @@ intensity_mask
 peak_centers
 ```
 
+## Cosmic Ray Detection and Removal
+
+```@docs
+CosmicRayResult
+CosmicRayMapResult
+detect_cosmic_rays
+remove_cosmic_rays
+```
+
 ## Plotting
 
 ```@docs
