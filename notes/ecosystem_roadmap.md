@@ -360,3 +360,42 @@ And conversely — signals that you should **not** split yet:
 5. **The API doesn't change when packages split.** If `fit_peaks(x, y)` works in Phase 1, it works in Phase 5. Internal reorganization is invisible to users.
 
 6. **QPSLab is a consumer, not a replacement.** Every analysis capability in the GUI must exist as a QPSTools function first. The GUI is a thin layer. New features always land in QPSTools/SpectroscopyTools, never in the GUI.
+
+---
+
+## Licensing and Commercial Strategy
+
+The ecosystem splits into open and commercial along a natural boundary:
+
+### Open Source (MIT)
+
+- **CurveFitModels.jl** — pure math, zero deps
+- **CurveFit.jl** — fitting backend
+- **SpectroscopyTools.jl** (and future sub-packages) — general spectroscopy algorithms
+
+These are commodity operations every spectroscopist needs.
+MIT license builds community, attracts contributors, and establishes SpectroscopyTools as a standard Julia spectroscopy package.
+Scientists can inspect the algorithms their analysis depends on — builds trust.
+
+### Commercial
+
+- **QPSTools.jl** — instrument connectors (LVM, JASCO, etc.), eLabFTW integration, lab-specific workflows.
+  The proprietary value is domain knowledge about specific instruments and lab data formats.
+  Expanding to other labs requires handling vendor-specific formats (WITec, Horiba, Renishaw, etc.) — either via a plugin/adapter model or by standardizing on the HDF5 interchange schema.
+
+- **QPSLab** — the GUI application.
+  Multi-technique analysis workspaces (PL maps now, single-spectrum and TA analysis planned).
+  Each workspace type maps to a SpectroscopyTools data type and analysis flow.
+  The GUI is where all the pieces come together for end users who don't write code.
+
+### Why this split works
+
+| Layer | License | Rationale |
+|-------|---------|-----------|
+| Algorithms | MIT | Commodity — everyone needs them, community contributions improve quality |
+| Instrument I/O + lab integration | Commercial | Domain knowledge — encodes specific instrument formats and lab workflows |
+| GUI | Commercial | User experience — ties algorithms + I/O into a polished analytical tool |
+
+Open algorithms make the commercial products more trustworthy.
+Commercial products fund continued development of the open libraries.
+The HDF5 project schema is a vendor-neutral interchange format that could become a community standard.
