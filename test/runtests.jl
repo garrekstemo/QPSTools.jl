@@ -604,11 +604,22 @@ const PROJECT_ROOT = dirname(@__DIR__)
         @test_throws ErrorException update_experiment(1; title="test")
         @test_throws ErrorException upload_to_experiment(1, "test.pdf")
         @test_throws ErrorException tag_experiment(1, "test")
+        @test_throws ErrorException tag_experiment(1, ["a", "b"])
         @test_throws ErrorException get_experiment(1)
         @test_throws ErrorException log_to_elab(title="test")
         @test_throws ErrorException list_experiments()
         @test_throws ErrorException search_experiments(query="test")
         @test_throws ErrorException delete_experiment(1)
+    end
+
+    @testset "eLabFTW tag API guards" begin
+        disable_elabftw()
+        @test_throws ErrorException list_tags(1)
+        @test_throws ErrorException untag_experiment(1, 1)
+        @test_throws ErrorException clear_tags(1)
+        @test_throws ErrorException list_team_tags()
+        @test_throws ErrorException rename_team_tag(1, "new")
+        @test_throws ErrorException delete_team_tag(1)
     end
 
     @testset "eLabFTW batch operation guards" begin
@@ -645,6 +656,34 @@ const PROJECT_ROOT = dirname(@__DIR__)
         @test occursin("42", output)
         @test occursin("Test experiment", output)
         @test occursin("ftir", output)
+    end
+
+    @testset "print_tags formatting" begin
+        buf = IOBuffer()
+        print_tags(Any[]; io=buf)
+        @test occursin("No tags", String(take!(buf)))
+
+        # Entity tags (tag_id key)
+        entity_tags = [
+            Dict("tag" => "ftir", "tag_id" => 7, "is_favorite" => 0),
+            Dict("tag" => "nh4scn", "tag_id" => 12, "is_favorite" => 0),
+        ]
+        buf = IOBuffer()
+        print_tags(entity_tags; io=buf)
+        output = String(take!(buf))
+        @test occursin("7", output)
+        @test occursin("ftir", output)
+        @test occursin("nh4scn", output)
+
+        # Team tags (id + item_count keys)
+        team_tags = [
+            Dict("id" => 3, "tag" => "raman", "item_count" => 5, "is_favorite" => 0, "team" => 1),
+        ]
+        buf = IOBuffer()
+        print_tags(team_tags; io=buf)
+        output = String(take!(buf))
+        @test occursin("raman", output)
+        @test occursin("5", output)
     end
 
     @testset "tags_from_sample" begin

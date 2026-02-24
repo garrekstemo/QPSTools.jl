@@ -165,7 +165,9 @@ export test_connection
 export clear_elabftw_cache, elabftw_cache_info
 export create_experiment, create_from_template
 export update_experiment, upload_to_experiment
-export tag_experiment, get_experiment, delete_experiment
+export tag_experiment, untag_experiment, list_tags, clear_tags
+export get_experiment, delete_experiment
+export list_team_tags, rename_team_tag, delete_team_tag, print_tags
 export list_experiments, search_experiments, print_experiments
 export delete_experiments, tag_experiments, update_experiments
 export add_step, list_steps, finish_step, link_experiments

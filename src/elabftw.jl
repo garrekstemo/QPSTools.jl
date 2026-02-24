@@ -446,6 +446,198 @@ function tag_experiment(id::Int, tag::String)
 end
 
 """
+    tag_experiment(id::Int, tags::Vector{String})
+
+Add multiple tags to an experiment.
+
+# Example
+```julia
+tag_experiment(42, ["ftir", "nh4scn", "peak_fit"])
+```
+"""
+function tag_experiment(id::Int, tags::Vector{String})
+    for tag in tags
+        tag_experiment(id, tag)
+    end
+    return nothing
+end
+
+"""
+    list_tags(id::Int) -> Vector{Dict}
+
+List all tags on an experiment. Returns an array of tag objects with
+`"tag_id"` and `"tag"` keys.
+
+# Example
+```julia
+tags = list_tags(42)
+for t in tags
+    println(t["tag_id"], ": ", t["tag"])
+end
+```
+"""
+function list_tags(id::Int)
+    if !elabftw_enabled()
+        error("eLabFTW not enabled. Call configure_elabftw() first.")
+    end
+
+    url = "$(_elabftw_config.url)/api/v2/experiments/$id/tags"
+    response = _elabftw_request(url)
+    return JSON.parse(String(response.body))
+end
+
+"""
+    untag_experiment(id::Int, tag_id::Int)
+
+Remove a single tag from an experiment (does not delete the team-level tag).
+
+Use `list_tags(id)` to find the tag ID (the `"tag_id"` field).
+
+# Example
+```julia
+tags = list_tags(42)
+untag_experiment(42, tags[1]["tag_id"])
+```
+"""
+function untag_experiment(id::Int, tag_id::Int)
+    if !elabftw_enabled()
+        error("eLabFTW not enabled. Call configure_elabftw() first.")
+    end
+
+    url = "$(_elabftw_config.url)/api/v2/experiments/$id/tags/$tag_id"
+    _elabftw_patch(url, Dict("action" => "unreference"))
+    return nothing
+end
+
+"""
+    clear_tags(id::Int)
+
+Remove all tags from an experiment.
+
+# Example
+```julia
+clear_tags(42)
+```
+"""
+function clear_tags(id::Int)
+    if !elabftw_enabled()
+        error("eLabFTW not enabled. Call configure_elabftw() first.")
+    end
+
+    url = "$(_elabftw_config.url)/api/v2/experiments/$id/tags"
+    _elabftw_delete(url)
+    return nothing
+end
+
+# =============================================================================
+# Team-level Tag Management
+# =============================================================================
+
+"""
+    list_team_tags() -> Vector{Dict}
+
+List all tags in the team registry.
+
+# Example
+```julia
+tags = list_team_tags()
+for t in tags
+    println(t["id"], ": ", t["tag"])
+end
+```
+"""
+function list_team_tags()
+    if !elabftw_enabled()
+        error("eLabFTW not enabled. Call configure_elabftw() first.")
+    end
+
+    url = "$(_elabftw_config.url)/api/v2/teams/current/tags"
+    response = _elabftw_request(url)
+    return JSON.parse(String(response.body))
+end
+
+"""
+    rename_team_tag(tag_id::Int, new_name::String)
+
+Rename a tag in the team registry. Admin-only operation.
+
+# Example
+```julia
+rename_team_tag(7, "ftir-analysis")
+```
+"""
+function rename_team_tag(tag_id::Int, new_name::String)
+    if !elabftw_enabled()
+        error("eLabFTW not enabled. Call configure_elabftw() first.")
+    end
+
+    url = "$(_elabftw_config.url)/api/v2/teams/current/tags/$tag_id"
+    _elabftw_patch(url, Dict("action" => "updatetag", "tag" => new_name))
+    return nothing
+end
+
+"""
+    delete_team_tag(tag_id::Int)
+
+Delete a tag from the team registry. Removes the tag from all entity references.
+Admin-only operation.
+
+# Example
+```julia
+delete_team_tag(7)
+```
+"""
+function delete_team_tag(tag_id::Int)
+    if !elabftw_enabled()
+        error("eLabFTW not enabled. Call configure_elabftw() first.")
+    end
+
+    url = "$(_elabftw_config.url)/api/v2/teams/current/tags/$tag_id"
+    _elabftw_delete(url)
+    return nothing
+end
+
+"""
+    print_tags(tags::Vector; io::IO=stdout)
+
+Pretty-print tag lists from `list_tags` (entity tags) or `list_team_tags` (team tags).
+
+# Examples
+```julia
+print_tags(list_tags(experiment_id))
+print_tags(list_team_tags())
+```
+"""
+function print_tags(tags::Vector; io::IO=stdout)
+    if isempty(tags)
+        println(io, "No tags found.")
+        return
+    end
+
+    # Detect entity vs team tags by key presence
+    is_team = haskey(first(tags), "item_count")
+
+    if is_team
+        println(io, rpad("ID", 8), rpad("Tag", 32), "Experiments")
+        println(io, repeat("-", 52))
+        for t in tags
+            id = string(get(t, "id", ""))
+            tag = string(get(t, "tag", ""))
+            count = string(get(t, "item_count", ""))
+            println(io, rpad(id, 8), rpad(tag, 32), count)
+        end
+    else
+        println(io, rpad("ID", 8), "Tag")
+        println(io, repeat("-", 32))
+        for t in tags
+            id = string(get(t, "tag_id", ""))
+            tag = string(get(t, "tag", ""))
+            println(io, rpad(id, 8), tag)
+        end
+    end
+end
+
+"""
     get_experiment(id::Int) -> Dict
 
 Retrieve an experiment by ID.
@@ -1042,8 +1234,8 @@ function log_to_elab(;
         id = existing.id
         update_experiment(id; title=title, body=body)
         _replace_attachments(id, attachments)
-        for tag in tags
-            tag_experiment(id, tag)
+        if !isempty(tags)
+            tag_experiment(id, tags)
         end
         exp_url = "$(_elabftw_config.url)/experiments.php?mode=view&id=$id"
         println("eLabFTW: updated experiment #$id")
@@ -1054,8 +1246,8 @@ function log_to_elab(;
         for filepath in attachments
             upload_to_experiment(id, filepath; comment=basename(filepath))
         end
-        for tag in tags
-            tag_experiment(id, tag)
+        if !isempty(tags)
+            tag_experiment(id, tags)
         end
         _write_elab_id(id, title)
         exp_url = "$(_elabftw_config.url)/experiments.php?mode=view&id=$id"
