@@ -1,3 +1,5 @@
+@isdefined(PROJECT_ROOT) || include("testsetup.jl")
+
 using Statistics: std
 
 @testset "Chirp correction (re-exports + integration)" begin

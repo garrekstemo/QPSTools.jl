@@ -1,8 +1,76 @@
+@isdefined(PROJECT_ROOT) || include("testsetup.jl")
+
 @testset "Cavity spectroscopy" begin
 
     @testset "Type hierarchy" begin
         @test CavitySpectrum <: QPSTools.AnnotatedSpectrum
         @test CavitySpectrum <: AbstractSpectroscopyData
+    end
+
+    @testset "Cavity transmittance physical properties" begin
+        # Empty cavity (no absorption): periodic Airy function
+        n, α, L, R, ϕ = 1.0, 0.0, 1.0, 0.9, 0.0
+
+        # At resonance, transmittance should be maximum
+        # Resonance condition: 4π·n·L·ν = 2π·m for integer m
+        # For L=1, n=1: ν_res = m/2
+        ν_res = 0.5  # First resonance
+        T_res = cavity_transmittance([n, α, L, R, ϕ], [ν_res])[1]
+
+        # Off resonance (halfway between resonances)
+        ν_off = 0.25
+        T_off = cavity_transmittance([n, α, L, R, ϕ], [ν_off])[1]
+
+        # Peak transmittance > off-resonance transmittance
+        @test T_res > T_off
+
+        # Transmittance is bounded: 0 ≤ T ≤ 1
+        ν_range = collect(0.0:0.01:2.0)
+        T_range = cavity_transmittance([n, α, L, R, ϕ], ν_range)
+        @test all(T_range .>= 0)
+        @test all(T_range .<= 1)
+
+        # For lossless cavity (α=0), peak transmittance approaches 1
+        @test T_res ≈ 1.0 rtol=0.01
+
+        # With absorption, peak transmittance decreases
+        α_absorb = 0.5
+        T_res_abs = cavity_transmittance([n, α_absorb, L, R, ϕ], [ν_res])[1]
+        @test T_res_abs < T_res
+
+        # Higher reflectance -> higher finesse -> sharper peaks
+        R_high = 0.99
+        R_low = 0.5
+        T_res_high = cavity_transmittance([n, 0.0, L, R_high, ϕ], [ν_res])[1]
+        T_off_high = cavity_transmittance([n, 0.0, L, R_high, ϕ], [ν_off])[1]
+        T_res_low = cavity_transmittance([n, 0.0, L, R_low, ϕ], [ν_res])[1]
+        T_off_low = cavity_transmittance([n, 0.0, L, R_low, ϕ], [ν_off])[1]
+        contrast_high = T_res_high / T_off_high
+        contrast_low = T_res_low / T_off_low
+        @test contrast_high > contrast_low
+
+        # Free spectral range: peaks separated by FSR = 1/(2nL)
+        FSR = 1 / (2 * n * L)
+        ν_res2 = ν_res + FSR
+        T_res2 = cavity_transmittance([n, α, L, R, ϕ], [ν_res2])[1]
+        @test T_res2 ≈ T_res rtol=0.01
+    end
+
+    @testset "Cavity transmittance fitting" begin
+        ν = collect(0.0:0.005:2.0)
+        p_true = [1.0, 0.0, 1.0, 0.9, 0.0]
+        T_true = cavity_transmittance(p_true, ν)
+        noise = 0.005 * randn(length(ν))
+        T_data = clamp.(T_true .+ noise, 0.0, 1.0)
+
+        # Fit reflectance (keeping other params fixed for stability)
+        model(p, x) = cavity_transmittance([1.0, 0.0, 1.0, p[1], 0.0], x)
+        p0 = [0.85]
+        prob = NonlinearCurveFitProblem(model, p0, ν, T_data)
+        sol = solve(prob)
+        R_fit = coef(sol)[1]
+
+        @test isapprox(R_fit, p_true[4], atol=0.05)
     end
 
     @testset "Physics: refractive_index and extinction_coeff" begin
