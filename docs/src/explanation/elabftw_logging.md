@@ -1,8 +1,8 @@
-# eLabFTW Experiment Logging
+# eLabFTW Integration
 
-A guide to logging analysis results from Julia to eLabFTW.
+A guide to using eLabFTW from Julia via QPSTools.
 
-QPS.jl can create experiment entries in eLabFTW with structured metadata, formatted result tables, and attached figures/data files. The web UI then becomes a browsable, searchable record of every analysis.
+QPSTools provides full read/write access to the eLabFTW API v2: experiment logging, item/resource management, cross-entity linking, comments, templates, scheduler events, and compounds. The web UI then becomes a browsable, searchable record of every analysis and lab resource.
 
 ## Setup
 
@@ -228,6 +228,148 @@ end
 
 # Update the body with a summary
 update_experiment(id; body=summary_text)
+```
+
+## Items (Resources)
+
+Items represent lab resources: samples, instruments, reagents, substrates, etc.
+They complement experiments — experiments describe *what you did*, items describe *what you used*.
+
+### When to use items vs experiments
+
+| Entity | Use for |
+|--------|---------|
+| Experiment | Analysis runs, measurements, protocols |
+| Item | Samples, instruments, reagents, substrates |
+
+### Create and manage items
+
+```julia
+# Create a sample entry
+sample_id = create_item(title="MoS2 sample A", category=5)
+
+# Add details
+update_item(sample_id; body="Exfoliated 2024-12-15, stored in N2 glovebox")
+tag_item(sample_id, ["mos2", "tmdc", "2d_materials"])
+
+# Upload characterization data
+upload_to_item(sample_id, "data/raman/mos2_a.csv"; comment="Raman spectrum")
+
+# Track preparation steps
+s1 = add_item_step(sample_id, "Exfoliation")
+s2 = add_item_step(sample_id, "Transfer to substrate")
+finish_item_step(sample_id, s1)
+```
+
+### Search and browse items
+
+```julia
+items = search_items(tags=["mos2"])
+print_items(items)
+
+# Get a specific item
+item = get_item(42)
+```
+
+## Linking Experiments to Items
+
+Cross-entity links connect experiments to the resources they used.
+Links are visible in the eLabFTW web UI on both entities.
+
+```julia
+# Link experiment to the sample and instrument used
+link_experiment_to_item(experiment_id, sample_id)
+link_experiment_to_item(experiment_id, instrument_id)
+
+# See what items an experiment references
+links = list_experiment_item_links(experiment_id)
+
+# Reverse: see which experiments used an item
+exp_links = list_item_experiment_links(sample_id)
+
+# Remove a link
+unlink_experiment_from_item(experiment_id, sample_id)
+
+# Link items to each other (e.g., sample ↔ substrate)
+link_items(sample_id, substrate_id)
+```
+
+## Templates
+
+Templates pre-populate new experiments with a standard body and structure.
+Create them once, then use them for every new analysis of a given type.
+
+### Experiment templates
+
+```julia
+# List available templates
+templates = list_experiment_templates()
+for t in templates
+    println(t["id"], ": ", t["title"])
+end
+
+# Create a new experiment from a template
+id = create_from_template(42; title="FTIR: NH4SCN run 3", tags=["ftir", "nh4scn"])
+
+# Manage templates programmatically
+tid = create_experiment_template(title="FTIR analysis", body="## Protocol\n...")
+update_experiment_template(tid; body="## Updated Protocol\n...")
+delete_experiment_template(tid)
+```
+
+### Items types
+
+Items types define categories for resources (Sample, Instrument, Reagent, etc.).
+
+```julia
+types = list_items_types()
+for t in types
+    println(t["id"], ": ", t["title"])
+end
+```
+
+## Comments
+
+Add review comments to experiments or items. Useful for peer review,
+supervisor feedback, or tracking decisions.
+
+```julia
+# Comment on an experiment
+cid = comment_experiment(42, "Looks good, approved for publication.")
+
+# List comments
+comments = list_experiment_comments(42)
+for c in comments
+    println(c["comment"])
+end
+
+# Comment on an item
+comment_item(7, "Sample degraded — prepare new batch.")
+
+# Edit or delete comments
+update_comment(:experiments, 42, cid, "Updated: approved with minor edits.")
+delete_comment(:experiments, 42, cid)
+```
+
+## Events / Booking
+
+Schedule instrument time using the eLabFTW scheduler.
+
+```julia
+# Create a booking
+event_id = create_event(
+    title = "FTIR session",
+    start = "2026-03-01T09:00:00",
+    end_  = "2026-03-01T12:00:00",
+    item  = instrument_id  # Link to an instrument item
+)
+
+# List upcoming events
+events = list_events()
+
+# Update or cancel
+update_event(event_id; title="FTIR session — rescheduled")
+delete_event(event_id)
 ```
 
 ## Tagging Convention

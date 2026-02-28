@@ -159,18 +159,75 @@ export find_peak_time                   # Time axis utility
 export JASCOSpectrum
 
 # eLabFTW integration
-include("elabftw.jl")
+include("elabftw/elabftw.jl")
+
+# Configuration
 export configure_elabftw, elabftw_enabled, disable_elabftw, enable_elabftw
 export test_connection
+
+# Cache
 export clear_elabftw_cache, elabftw_cache_info
+export download_elabftw_file, download_item_upload, download_experiment_upload
+
+# Experiments
 export create_experiment, create_from_template
 export update_experiment, upload_to_experiment
 export tag_experiment, untag_experiment, list_tags, clear_tags
-export get_experiment, delete_experiment
-export list_team_tags, rename_team_tag, delete_team_tag, print_tags
-export list_experiments, search_experiments, print_experiments
+export list_experiment_tags, clear_experiment_tags
+export get_experiment, delete_experiment, duplicate_experiment
+export list_experiments, search_experiments
+export list_experiment_uploads, delete_experiment_upload
+export add_step, list_steps, finish_step
+export link_experiments, list_experiment_links, unlink_experiments
+
+# Items
+export create_item, get_item, update_item, delete_item, duplicate_item
+export list_items, search_items
+export tag_item, untag_item, list_item_tags, clear_item_tags
+export upload_to_item, list_item_uploads, delete_item_upload
+export add_item_step, list_item_steps, finish_item_step
+
+# Cross-entity links
+export link_experiment_to_item, unlink_experiment_from_item, list_experiment_item_links
+export link_item_to_experiment, unlink_item_from_experiment, list_item_experiment_links
+export link_items, unlink_items, list_item_links
+
+# Comments
+export create_comment, list_comments, get_comment, update_comment, delete_comment
+export comment_experiment, list_experiment_comments
+export comment_item, list_item_comments
+
+# Templates
+export list_experiment_templates, create_experiment_template
+export get_experiment_template, update_experiment_template
+export delete_experiment_template, duplicate_experiment_template
+export list_items_types, create_items_type, get_items_type
+export update_items_type, delete_items_type
+
+# Team
+export list_team_tags, rename_team_tag, delete_team_tag
+export list_experiments_categories, list_items_categories
+
+# Batch
 export delete_experiments, tag_experiments, update_experiments
-export add_step, list_steps, finish_step, link_experiments
+export delete_items, tag_items, update_items
+
+# Events
+export list_events, create_event, get_event, update_event, delete_event
+
+# Compounds
+export list_compounds, create_compound, get_compound, delete_compound
+export link_compound, list_compound_links
+
+# Utility
+export instance_info
+export list_favorite_tags, add_favorite_tag, remove_favorite_tag
+export import_file, create_export, download_export
+
+# Printing
+export print_experiments, print_items, print_tags
+
+# Provenance
 export log_to_elab, tags_from_sample
 
 # FTIR loading and analysis
