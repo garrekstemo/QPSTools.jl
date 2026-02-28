@@ -135,10 +135,12 @@ export decay_time_to_linewidth, linewidth_to_decay_time
 using Statistics
 using LinearAlgebra
 using Dates
-using JSON
-using HTTP
 using JASCOFiles
 using Makie
+
+# eLabFTW client (standalone package)
+using ElabFTW
+import ElabFTW: tags_from_sample, log_to_elab, _elabftw_config
 
 # ============================================================================
 # Core modules
@@ -158,8 +160,8 @@ export find_peak_time                   # Time axis utility
 # Re-export JASCOFiles for raw spectrum data
 export JASCOSpectrum
 
-# eLabFTW integration
-include("elabftw/elabftw.jl")
+# eLabFTW glue (AnnotatedSpectrum dispatches for ElabFTW.jl)
+include("elabftw_glue.jl")
 
 # Configuration
 export configure_elabftw, elabftw_enabled, disable_elabftw, enable_elabftw
@@ -299,16 +301,5 @@ export plot_das, plot_das!  # Decay-associated spectra
 export plot_dispersion, plot_dispersion!  # Polariton dispersion
 export plot_hopfield, plot_hopfield!  # Hopfield coefficients
 export plot_pl_map, plot_pl_spectra  # PL spatial mapping
-
-# ============================================================================
-# Auto-configure eLabFTW from environment variables
-# ============================================================================
-function __init__()
-    url = get(ENV, "ELABFTW_URL", nothing)
-    key = get(ENV, "ELABFTW_API_KEY", nothing)
-    if !isnothing(url) && !isnothing(key) && !isempty(url) && !isempty(key)
-        configure_elabftw(url=url, api_key=key)
-    end
-end
 
 end # module QPSTools
