@@ -62,6 +62,77 @@ function absorbance_to_transmittance(spec::RamanSpectrum; kwargs...)
     return RamanSpectrum(new_data, spec.sample, spec.path)
 end
 
+function transmittance_to_absorbance(spec::UVVisSpectrum; kwargs...)
+    new_data = transmittance_to_absorbance(spec.data; kwargs...)
+    return UVVisSpectrum(new_data, spec.sample, spec.path)
+end
+
+function absorbance_to_transmittance(spec::UVVisSpectrum; kwargs...)
+    new_data = absorbance_to_transmittance(spec.data; kwargs...)
+    return UVVisSpectrum(new_data, spec.sample, spec.path)
+end
+
+# ============================================================================
+# SPECTRAL MATH: Typed dispatches for AnnotatedSpectrum
+# ============================================================================
+
+"""
+    savitzky_golay_smooth(spec::AnnotatedSpectrum; kwargs...)
+
+Apply Savitzky-Golay smoothing to an annotated spectrum.
+Returns `(x=..., y=...)` NamedTuple.
+"""
+function savitzky_golay_smooth(spec::AnnotatedSpectrum; kwargs...)
+    return (x=xdata(spec), y=savitzky_golay_smooth(ydata(spec); kwargs...))
+end
+
+"""
+    derivative(spec::AnnotatedSpectrum; kwargs...)
+
+Compute the derivative of an annotated spectrum.
+Returns `(x=..., y=...)` NamedTuple.
+"""
+function derivative(spec::AnnotatedSpectrum; kwargs...)
+    return (x=xdata(spec), y=derivative(xdata(spec), ydata(spec); kwargs...))
+end
+
+"""
+    band_area(spec::AnnotatedSpectrum, x_min, x_max)
+
+Compute the band area of an annotated spectrum within [x_min, x_max].
+"""
+band_area(spec::AnnotatedSpectrum, x_min::Real, x_max::Real) =
+    band_area(xdata(spec), ydata(spec), x_min, x_max)
+
+"""
+    normalize_area(spec::AnnotatedSpectrum)
+
+Area-normalize an annotated spectrum. Returns `(x=..., y=...)` NamedTuple.
+"""
+function normalize_area(spec::AnnotatedSpectrum)
+    return (x=xdata(spec), y=normalize_area(xdata(spec), ydata(spec)))
+end
+
+"""
+    normalize_to_peak(spec::AnnotatedSpectrum, position; kwargs...)
+
+Peak-normalize an annotated spectrum. Returns `(x=..., y=...)` NamedTuple.
+"""
+function normalize_to_peak(spec::AnnotatedSpectrum, position::Real; kwargs...)
+    return (x=xdata(spec), y=normalize_to_peak(xdata(spec), ydata(spec), position; kwargs...))
+end
+
+"""
+    estimate_snr(spec::AnnotatedSpectrum)
+
+Estimate the SNR of an annotated spectrum.
+"""
+estimate_snr(spec::AnnotatedSpectrum) = estimate_snr(ydata(spec))
+
+# ============================================================================
+# CAVITY TRANSMITTANCE
+# ============================================================================
+
 """
     cavity_transmittance(p, ν)
 

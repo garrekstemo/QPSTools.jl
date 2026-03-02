@@ -66,6 +66,11 @@ import SpectroscopyTools: wavenumber, signal, delay, wavelength
 import SpectroscopyTools: normalize
 import SpectroscopyTools: normalize_intensity
 
+# Spectral math functions (Phase 1)
+import SpectroscopyTools: savitzky_golay_smooth, derivative
+import SpectroscopyTools: band_area, normalize_area, normalize_to_peak
+import SpectroscopyTools: estimate_snr
+
 # Import unexported SpectroscopyTools names that QPSTools re-exports
 import SpectroscopyTools: n_exp, weights, anharmonicity, format_results
 
@@ -116,6 +121,9 @@ export correct_baseline
 export normalize, normalize_intensity, smooth_data, calc_fwhm
 export transmittance_to_absorbance, absorbance_to_transmittance
 export subtract_spectrum
+export savitzky_golay_smooth, derivative
+export band_area, normalize_area, normalize_to_peak
+export estimate_snr
 export time_index, peak_table
 export irf_fwhm, pulse_fwhm
 # Data interface
@@ -242,6 +250,11 @@ export xreversed
 include("raman.jl")
 export RamanSpectrum
 export load_raman, plot_raman
+
+# UV-Vis loading and analysis
+include("uvvis.jl")
+export UVVisSpectrum
+export load_uvvis, plot_uvvis
 
 # Cavity spectroscopy analysis
 include("cavity.jl")
