@@ -71,6 +71,18 @@ import SpectroscopyTools: savitzky_golay_smooth, derivative
 import SpectroscopyTools: band_area, normalize_area, normalize_to_peak
 import SpectroscopyTools: estimate_snr
 
+# Spectral arithmetic (Wave 1)
+import SpectroscopyTools: add_spectra, divide_spectra, multiply_spectrum
+import SpectroscopyTools: average_spectra, interpolate_spectrum
+
+# Transforms (Wave 1)
+import SpectroscopyTools: kramers_kronig, kubelka_munk, tauc_plot
+import SpectroscopyTools: reflectance_to_absorbance, snv, beer_lambert
+import SpectroscopyTools: urbach_tail, thickness_from_fringes
+
+# Baseline (Wave 1)
+import SpectroscopyTools: rubberband_baseline
+
 # Import unexported SpectroscopyTools names that QPSTools re-exports
 import SpectroscopyTools: n_exp, weights, anharmonicity, format_results
 
@@ -114,6 +126,7 @@ export report, format_results, n_exp, anharmonicity
 export NonlinearCurveFitProblem, solve, coef, stderror, confint
 export isconverged, mse, rss, nobs, weights
 export lorentzian, gaussian, pseudo_voigt, single_exponential
+export fano, voigt, log_normal
 # Baseline
 export als_baseline, arpls_baseline, snip_baseline
 export correct_baseline
@@ -124,6 +137,15 @@ export subtract_spectrum
 export savitzky_golay_smooth, derivative
 export band_area, normalize_area, normalize_to_peak
 export estimate_snr
+# Spectral arithmetic
+export add_spectra, divide_spectra, multiply_spectrum
+export average_spectra, interpolate_spectrum
+# Transforms
+export kramers_kronig, kubelka_munk, tauc_plot
+export reflectance_to_absorbance, snv, beer_lambert
+export urbach_tail, thickness_from_fringes
+# Baseline (rubberband)
+export rubberband_baseline
 export time_index, peak_table
 export irf_fwhm, pulse_fwhm
 # Data interface

@@ -13,4 +13,5 @@ include("testsetup.jl")
     include("test_plmap.jl")
     include("test_plotting.jl")
     include("test_format_results.jl")
+    include("test_wave1.jl")
 end
