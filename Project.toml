@@ -15,10 +15,10 @@ SpectroscopyTools = "f1436f7a-66ba-4269-a153-8996db8f0853"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [sources]
-CurveFitModels = {url = "https://github.com/garrekstemo/CurveFitModels.jl.git"}
-ElabFTW = {url = "https://github.com/garrekstemo/ElabFTW.jl.git"}
-JASCOFiles = {url = "https://github.com/garrekstemo/JASCOFiles.jl.git"}
-SpectroscopyTools = {url = "https://github.com/garrekstemo/SpectroscopyTools.jl.git"}
+CurveFitModels = {path = "../CurveFitModels.jl"}
+ElabFTW = {path = "../ElabFTW.jl"}
+JASCOFiles = {path = "../JASCOFiles.jl"}
+SpectroscopyTools = {path = "../SpectroscopyTools.jl"}
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
