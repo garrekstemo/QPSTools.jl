@@ -128,7 +128,7 @@ export isconverged, mse, rss, nobs, weights
 export lorentzian, gaussian, pseudo_voigt, single_exponential
 export fano, voigt, log_normal
 # Baseline
-export als_baseline, arpls_baseline, snip_baseline
+export arpls_baseline, snip_baseline
 export correct_baseline
 # Spectroscopy utilities
 export normalize, normalize_intensity, smooth_data, calc_fwhm
