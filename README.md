@@ -1,5 +1,8 @@
 # QPSTools.jl - Quantum Photo-Science Laboratory Analysis Package
 
+[![CI](https://github.com/garrekstemo/QPSTools.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/garrekstemo/QPSTools.jl/actions/workflows/CI.yml)
+[![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
+
 **The standardized analysis package for all lab members.**
 
 QPSTools.jl provides common tools for spectroscopic data analysis, pump-probe measurements, and publication-quality plotting. All students should use QPSTools.jl to ensure consistency and enable collaboration across research projects.
