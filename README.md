@@ -1,6 +1,5 @@
 # QPSTools.jl - Quantum Photo-Science Laboratory Analysis Package
 
-[![CI](https://github.com/garrekstemo/QPSTools.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/garrekstemo/QPSTools.jl/actions/workflows/CI.yml)
 [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
 **The standardized analysis package for all lab members.**
