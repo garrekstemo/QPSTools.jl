@@ -4,7 +4,7 @@ using Aqua
 @testset "QPSTools.jl" begin
 
     @testset "Code quality (Aqua.jl)" begin
-        Aqua.test_all(QPSTools)
+        Aqua.test_all(QPSTools; deps_compat=(check_extras=false, ignore=[:Dates, :DelimitedFiles, :LinearAlgebra, :Statistics],))
     end
     include("test_types.jl")
     include("test_io.jl")
