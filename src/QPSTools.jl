@@ -291,7 +291,7 @@ export refractive_index, extinction_coeff
 
 # PL mapping (CCD raster scans — loader only, type lives in SpectroscopyTools)
 include("plmap.jl")
-export load_pl_map, extract_spectrum, peak_centers, intensity
+export load_pl_map, load_wavelength_file, extract_spectrum, peak_centers, intensity
 export integrated_intensity, intensity_mask, fit_map
 export CosmicRayResult, CosmicRayMapResult, detect_cosmic_rays, remove_cosmic_rays
 

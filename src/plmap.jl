@@ -3,8 +3,34 @@
 using DelimitedFiles: readdlm
 
 """
+    load_wavelength_file(path::String) -> Vector{Float64}
+
+Read a CCD wavelength calibration sidecar file. The file is two-column
+tab-separated (wavelength nm, intensity counts) with a one-line header.
+Only the wavelength column is returned.
+
+Line endings may be mixed `\\r` and `\\r\\n` (LabVIEW quirk).
+"""
+function load_wavelength_file(path::String)
+    text = read(path, String)
+    # Normalize line endings: split on \r\n or standalone \r or \n
+    lines = split(replace(text, "\r\n" => "\n"), r"[\r\n]"; keepempty=false)
+
+    # Skip header line (contains column names)
+    data_lines = lines[2:end]
+
+    wavelengths = Vector{Float64}(undef, length(data_lines))
+    for (i, line) in enumerate(data_lines)
+        parts = split(strip(line), '\t')
+        wavelengths[i] = parse(Float64, parts[1])
+    end
+
+    return wavelengths
+end
+
+"""
     load_pl_map(filepath; nx=nothing, ny=nothing, step_size=1.0,
-                pixel_range=nothing, center=true) -> PLMap
+                pixel_range=nothing, center=true, wavelength=nothing) -> PLMap
 
 Load a PL/Raman spatial map from a CCD raster scan file.
 
@@ -18,6 +44,8 @@ tab-separated CCD spectra (one row per spatial point, one column per pixel).
 - `pixel_range`: `(start, stop)` pixel range for intensity integration.
   If `nothing` (default), integrates over all pixels.
 - `center`: Center spatial axes at zero (default `true`)
+- `wavelength`: Optional wavelength calibration vector (nm). If provided,
+  replaces the default pixel index axis. Must have length equal to `n_pixel`.
 
 # Returns
 `PLMap` with integrated intensity and full spectral data.
@@ -31,7 +59,8 @@ println(m)
 function load_pl_map(filepath::String; nx::Union{Int,Nothing}=nothing,
                      ny::Union{Int,Nothing}=nothing, step_size::Real=1.0,
                      pixel_range::Union{Tuple{Int,Int},Nothing}=nothing,
-                     center::Bool=true)
+                     center::Bool=true,
+                     wavelength::Union{Vector{Float64},Nothing}=nothing)
 
     raw = readdlm(filepath)
 
@@ -96,7 +125,14 @@ function load_pl_map(filepath::String; nx::Union{Int,Nothing}=nothing,
         y = range(0, (ny-1) * step, length=ny) |> collect
     end
 
-    pixel = collect(1.0:n_pixel)
+    if !isnothing(wavelength)
+        if length(wavelength) != n_pixel
+            error("Wavelength vector length ($(length(wavelength))) does not match pixel count ($n_pixel).")
+        end
+        pixel = wavelength
+    else
+        pixel = collect(1.0:n_pixel)
+    end
 
     metadata = Dict{String,Any}(
         "source_file" => basename(filepath),
