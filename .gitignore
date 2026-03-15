@@ -4,3 +4,5 @@ figures/
 docs/build/
 .DS_Store
 *.pdf
+data/PLmap/CCDspec_260308_141016.txt
+data/PLmap/CCDtmp_260308_141314.lvm
