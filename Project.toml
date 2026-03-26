@@ -4,7 +4,6 @@ version = "0.1.0"
 authors = ["Garrek Stemo <8449000+garrekstemo@users.noreply.github.com>"]
 
 [deps]
-CurveFitModels = "a3c2e87f-4d91-4e5b-9f3a-7c8b6d2e1f0a"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 ElabFTW = "cc2949f1-737d-51f9-be66-fe7a219205ce"
@@ -21,7 +20,6 @@ SpectroscopyTools = {url = "https://github.com/garrekstemo/SpectroscopyTools.jl"
 
 [compat]
 Aqua = "0.8"
-CurveFitModels = "0.1"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
