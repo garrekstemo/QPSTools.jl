@@ -137,30 +137,6 @@ end
 # COLOR SCHEMES & STYLING
 # ============================================================================
 
-"""
-    lab_colors()
-
-Standardized color palette for consistent lab figures.
-
-Returns a dictionary of semantic color names mapped to hex colors.
-Use these for consistent styling across all lab publications.
-
-# Available Colors
-- `:primary` - Main data color (dark blue)
-- `:secondary` - Comparison data (orange)
-- `:accent` - Highlight color (red)
-- `:fit` - Fit lines (red)
-- `:bare` - Bare molecule data (blue)
-- `:cavity` - Cavity data (orange)
-- `:kinetics` - Time-resolved data (green)
-
-# Usage
-```julia
-colors = lab_colors()
-lines!(ax, x, y, color=colors[:primary])
-lines!(ax, x_fit, y_fit, color=colors[:fit], linestyle=:dash)
-```
-"""
 const _LAB_COLORS = Dict(
     :primary => "#1f77b4",    # Dark blue
     :secondary => "#ff7f0e",  # Orange
@@ -174,28 +150,23 @@ const _LAB_COLORS = Dict(
     :neutral => "#7f7f7f",    # Gray for neutral/reference
 )
 
-lab_colors() = _LAB_COLORS
-
 """
-    lab_linewidths()
+    lab_colors() -> Dict{Symbol, String}
 
-Standardized line widths for different plot elements.
+Standardized color palette for consistent lab figures. Returns a dictionary of
+semantic names mapped to hex colors.
 
-Returns a dictionary of semantic line width names.
+Keys: `:primary`, `:secondary`, `:accent`, `:fit`, `:bare`, `:cavity`,
+`:kinetics`, `:positive`, `:negative`, `:neutral`.
 
-# Available Widths
-- `:data` - Main data lines (3pt)
-- `:fit` - Fit lines (2pt)
-- `:reference` - Reference/guide lines (1pt)
-- `:thick` - Emphasis lines (5pt)
-
-# Usage
 ```julia
-lw = lab_linewidths()
-lines!(ax, x, y, linewidth=lw[:data])
-lines!(ax, x_fit, y_fit, linewidth=lw[:fit], linestyle=:dash)
+colors = lab_colors()
+lines!(ax, x, y, color=colors[:primary])
+lines!(ax, x_fit, y_fit, color=colors[:fit], linestyle=:dash)
 ```
 """
+lab_colors() = _LAB_COLORS
+
 const _LAB_LINEWIDTHS = Dict(
     :data => 3,
     :fit => 2,
@@ -203,6 +174,20 @@ const _LAB_LINEWIDTHS = Dict(
     :thick => 5,
 )
 
+"""
+    lab_linewidths() -> Dict{Symbol, Int}
+
+Standardized line widths for plot elements. Returns a dictionary of semantic
+names mapped to integer line widths.
+
+Keys: `:data` (3), `:fit` (2), `:reference` (1), `:thick` (5).
+
+```julia
+lw = lab_linewidths()
+lines!(ax, x, y, linewidth=lw[:data])
+lines!(ax, x_fit, y_fit, linewidth=lw[:fit], linestyle=:dash)
+```
+"""
 lab_linewidths() = _LAB_LINEWIDTHS
 
 # ============================================================================
