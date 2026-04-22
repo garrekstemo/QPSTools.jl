@@ -1,4 +1,4 @@
-# Spectrum Plotting
+# Spectrum Plotting Views
 
 `plot_spectrum` is the unified plotting function for all spectrum types.
 It uses keyword arguments to select between different layouts, from a simple survey view to a three-panel publication figure.
@@ -167,6 +167,6 @@ save("custom_figure.pdf", fig)
 
 ## Related
 
-- [Peak Detection](@ref "Peak Detection") — `find_peaks` reference
-- [Peak Fitting](@ref "Peak Fitting") — `fit_peaks` and result types
-- [Tutorial: Raman Analysis](@ref "Tutorial: Raman Spectroscopy Analysis") — full workflow
+- [Peak Detection](https://garrekstemo.github.io/SpectroscopyTools.jl/stable/reference/peak_detection/) — `find_peaks` reference (SpectroscopyTools)
+- [Peak Fitting](https://garrekstemo.github.io/SpectroscopyTools.jl/stable/reference/peak_fitting/) — `fit_peaks` and result types (SpectroscopyTools)
+- [Raman Peak Fitting Tutorial](https://garrekstemo.github.io/SpectroscopyTools.jl/stable/tutorials/raman_peak_fitting/) — full fitting workflow (SpectroscopyTools)
