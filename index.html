@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QPS Spectroscopy Ecosystem</title>
+<meta name="description" content="Composable Julia packages for spectroscopy in the Quantum Photo-Science Lab — curve-fit primitives, file parsers, peak fitting, instrument control, and eLabFTW lab-notebook provenance.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="#top">QPS Spectroscopy</a>
+    <nav>
+      <a href="#pipeline">Pipeline</a>
+      <a href="#packages">Packages</a>
+      <a href="#getting-started">Getting started</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="container">
+      <h1>A Julia ecosystem for spectroscopy.</h1>
+      <p class="lede">From curve-fit primitives and file parsers through analysis, plotting, and instrument control &mdash; composable packages that thread together through multiple dispatch.</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="#getting-started">Get started</a>
+        <a class="btn" href="https://github.com/garrekstemo">GitHub</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="pipeline" class="pipeline">
+    <div class="container">
+      <h2>Pipeline</h2>
+      <p>Instrument files flow through loaders into analysis, then into publication-ready figures and an eLabFTW entry. A parallel control stack drives the instruments themselves.</p>
+      <figure>
+        <img src="assets/pipeline.svg" alt="A data pipeline from instrument files through loaders (QPSTools, JASCOFiles) to analysis (SpectroscopyTools, CurveFitModels, CavitySpectroscopy) to plotting (QPSTools + Makie) and the eLabFTW lab notebook, with a parallel instrument-control track from hardware through QPSDrive to QPSLab and QPSView.">
+        <figcaption>Data flow (top) and instrument control (bottom). Replace with an Excalidraw export when ready.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section id="packages" class="packages">
+    <div class="container">
+      <h2>Packages</h2>
+      <p>Each layer is its own package. QPSTools is the lab's private integration layer &mdash; not an umbrella. Install only what you need.</p>
+
+      <div class="layer">
+        <h3>Math &amp; file formats</h3>
+        <div class="cards">
+          <article class="card">
+            <header>
+              <h4>CurveFitModels.jl</h4>
+              <span class="badge badge-ok">Registered</span>
+            </header>
+            <p>Model functions: <code>lorentzian</code>, <code>gaussian</code>, <code>pseudo_voigt</code>, dielectric, sinusoids. Zero dependencies, pure math.</p>
+            <footer>
+              <a href="https://garrekstemo.github.io/CurveFitModels.jl/">Docs &rarr;</a>
+              <a href="https://github.com/garrekstemo/CurveFitModels.jl">GitHub &rarr;</a>
+            </footer>
+          </article>
+          <article class="card">
+            <header>
+              <h4>JASCOFiles.jl</h4>
+              <span class="badge badge-near">Nearly registered</span>
+            </header>
+            <p>JASCO CSV parser for FTIR, Raman, and UV&ndash;Vis spectra, with header-metadata extraction.</p>
+            <footer>
+              <a href="https://garrekstemo.github.io/JASCOFiles.jl/">Docs &rarr;</a>
+              <a href="https://github.com/garrekstemo/JASCOFiles.jl">GitHub &rarr;</a>
+            </footer>
+          </article>
+        </div>
+      </div>
+
+      <div class="layer">
+        <h3>Analysis</h3>
+        <div class="cards">
+          <article class="card">
+            <header>
+              <h4>SpectroscopyTools.jl</h4>
+              <span class="badge badge-near">Nearly registered</span>
+            </header>
+            <p>Peak fitting, baselines, exponential decay fitting with IRF, PL maps, and unit conversions &mdash; the analysis workhorse.</p>
+            <footer>
+              <a href="https://garrekstemo.github.io/SpectroscopyTools.jl/">Docs &rarr;</a>
+              <a href="https://github.com/garrekstemo/SpectroscopyTools.jl">GitHub &rarr;</a>
+            </footer>
+          </article>
+          <article class="card">
+            <header>
+              <h4>CavitySpectroscopy.jl</h4>
+              <span class="badge badge-wip">Pending</span>
+            </header>
+            <p>Polariton analysis &mdash; extraction from QPSTools in progress. Repository currently an empty shell.</p>
+            <footer>
+              <a href="https://github.com/garrekstemo/CavitySpectroscopy.jl">GitHub &rarr;</a>
+            </footer>
+          </article>
+        </div>
+      </div>
+
+      <div class="layer">
+        <h3>Lab integration</h3>
+        <div class="cards">
+          <article class="card">
+            <header>
+              <h4>QPSTools.jl</h4>
+              <span class="badge badge-private">Private</span>
+            </header>
+            <p>The lab's integration layer: LabVIEW LVM loaders, Makie plotting themes, cavity analysis, and eLabFTW provenance glue. Does not re-export siblings.</p>
+            <footer>
+              <a href="https://github.com/garrekstemo/QPSTools.jl">GitHub &rarr;</a>
+            </footer>
+          </article>
+          <article class="card">
+            <header>
+              <h4>ElabFTW.jl</h4>
+              <span class="badge badge-near">Nearly registered</span>
+            </header>
+            <p>Full eLabFTW lab-notebook API client &mdash; experiments, items, tags, uploads, and links.</p>
+            <footer>
+              <a href="https://garrekstemo.github.io/ElabFTW.jl/">Docs &rarr;</a>
+              <a href="https://github.com/garrekstemo/ElabFTW.jl">GitHub &rarr;</a>
+            </footer>
+          </article>
+        </div>
+      </div>
+
+      <div class="layer">
+        <h3>Instruments &amp; apps</h3>
+        <div class="cards">
+          <article class="card">
+            <header>
+              <h4>QPSDrive.jl</h4>
+              <span class="badge badge-private">Private</span>
+            </header>
+            <p>Instrument control &mdash; delay stages, lock-ins, monochromators, and the scan engine (WebSocket server).</p>
+            <footer>
+              <a href="https://github.com/garrekstemo/QPSDrive.jl">GitHub &rarr;</a>
+            </footer>
+          </article>
+          <article class="card">
+            <header>
+              <h4>QPSView.jl</h4>
+              <span class="badge badge-private">Private</span>
+            </header>
+            <p>Live data viewer &mdash; GLMakie with folder-watch for in-flight visualization.</p>
+            <footer>
+              <a href="https://github.com/garrekstemo/QPSView.jl">GitHub &rarr;</a>
+            </footer>
+          </article>
+          <article class="card">
+            <header>
+              <h4>QPSLab</h4>
+              <span class="badge badge-private">Private</span>
+            </header>
+            <p>Electron + Svelte GUI analysis app, backed by a Julia HTTP server over the same analysis libraries.</p>
+            <footer>
+              <a href="https://github.com/garrekstemo/QPSLab">GitHub &rarr;</a>
+            </footer>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="getting-started" class="getting-started">
+    <div class="container">
+      <h2>Getting started</h2>
+      <p>QPSTools deliberately does <em>not</em> re-export its siblings. Load each package explicitly &mdash; multiple dispatch threads them together.</p>
+      <pre><code>using QPSTools           # loaders, plotting, cavity, eLabFTW glue
+using SpectroscopyTools  # fit_peaks, fit_exp_decay, correct_baseline, &hellip;
+using CurveFitModels     # lorentzian, gaussian, pseudo_voigt, &hellip;
+using JASCOFiles         # JASCOSpectrum, isftir, israman, isuvvis
+using ElabFTW            # create_experiment, tag_item, &hellip;
+using CairoMakie
+
+spec = load_cavity("data/cavity/Au_0deg.csv"; mirror="Au", angle=0)
+result = fit_cavity_spectrum(spec;
+    oscillators=[(nu0=2055.0, Gamma=23.0)], L=12e-4, n_bg=1.4)
+fig, ax, ax_res = plot_spectrum(spec; fit=result, residuals=true)
+save("figures/cavity.pdf", fig)
+
+log_to_elab(spec, result; title="Cavity fit: Au 0&deg;",
+    attachments=["figures/cavity.pdf"])</code></pre>
+
+      <ul class="outlinks">
+        <li><a href="https://julialang.org/downloads/">Install Julia &rarr;</a></li>
+        <li><a href="https://garrekstemo.github.io/SpectroscopyTools.jl/">Analysis docs &rarr;</a></li>
+        <li><a href="https://github.com/garrekstemo?tab=repositories">Browse all repos &rarr;</a></li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p>Quantum Photo-Science Lab &middot; <a href="https://github.com/garrekstemo">@garrekstemo</a></p>
+  </div>
+</footer>
+</body>
+</html>
