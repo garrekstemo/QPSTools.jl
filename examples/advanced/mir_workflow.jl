@@ -7,6 +7,7 @@
 # - eLabFTW logging (optional)
 
 using QPSTools
+using SpectroscopyTools
 using CairoMakie
 
 PROJECT_ROOT = dirname(dirname(@__DIR__))

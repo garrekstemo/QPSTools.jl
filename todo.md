@@ -18,7 +18,6 @@ The fitting side (`fit_global(::TAMatrix; n_exp)`, multi-exp `GlobalFitResult`, 
 
 - [ ] Fluorescence spectroscopy support
 - [ ] Batch processing for multiple files
-- [ ] UV-vis module (`load_uvvis()`, `plot_uvvis()`)
 - [ ] Bootstrap error estimation (`errors=:bootstrap` for fitting functions)
 
 

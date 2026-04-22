@@ -35,7 +35,7 @@ Extract tags from an AnnotatedSpectrum's sample metadata.
 
 # Example
 ```julia
-spec = load_ftir(solute="NH4SCN", concentration="1.0M")
+spec = load_cavity("data/ftir/sample.csv"; solute="NH4SCN", concentration="1.0M")
 tags = tags_from_sample(spec)
 # => ["NH4SCN", "DMF", "1.0M", "CaF2"]
 ```
@@ -48,12 +48,12 @@ tags_from_sample(spec::AnnotatedSpectrum; kwargs...) = tags_from_sample(spec.sam
 Log analysis results with auto-provenance from JASCO header and auto-tags from
 sample kwargs. Inherits idempotency from the keyword-only form.
 
-Tags are auto-generated from: JASCO technique type + kwargs passed to load_ftir/load_raman.
+Tags are auto-generated from: JASCO technique type + kwargs passed to the loader.
 Body includes: provenance (file, instrument, date, script) + user body + formatted results.
 
 # Example
 ```julia
-spec = load_ftir("data/ftir/1.0M_NH4SCN_DMF.csv"; solute="NH4SCN", concentration="1.0M")
+spec = load_cavity("data/ftir/1.0M_NH4SCN_DMF.csv"; solute="NH4SCN", concentration="1.0M")
 result = fit_peaks(spec, (2000, 2100))
 
 log_to_elab(spec, result;

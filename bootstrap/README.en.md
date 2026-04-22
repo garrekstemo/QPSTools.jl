@@ -36,9 +36,11 @@ julia --project=. bootstrap/install.jl
 
 ```julia
 julia --project=.
-julia> using Revise, QPSTools
+julia> using Revise, QPSTools, SpectroscopyTools
 julia> using GLMakie
 ```
+
+`using QPSTools` brings in only QPSTools' own names (loaders, plotting, cavity polariton, eLabFTW glue). For peak fitting, baseline correction, exponential decay fitting, etc., load `SpectroscopyTools` alongside.
 
 ## What gets installed
 
@@ -46,9 +48,9 @@ julia> using GLMakie
 
 | Package | Purpose |
 |---------|---------|
-| QPSTools | Analysis, fitting, plotting |
-| SpectroscopyTools | Base types and spectroscopy functions |
-| JASCOFiles | JASCO FTIR/UV-vis file import |
+| QPSTools | Lab loaders, plotting, cavity polariton, eLabFTW glue |
+| SpectroscopyTools | Spectroscopy types, fitting, baseline, peak detection |
+| JASCOFiles | JASCO FTIR/Raman/UV-Vis CSV import (`JASCOSpectrum`) |
 | GLMakie | Interactive plotting |
 | Revise | Live code reloading |
 
@@ -56,11 +58,7 @@ julia> using GLMakie
 
 | File | Type | Description |
 |------|------|-------------|
-| `explore_raman.jl` | Explore | GLMakie + DataInspector |
-| `explore_ftir.jl` | Explore | GLMakie + DataInspector |
 | `explore_plmap.jl` | Explore | GLMakie + DataInspector |
-| `raman_analysis.jl` | Analysis | CairoMakie, saves PNG |
-| `ftir_analysis.jl` | Analysis | CairoMakie, saves PNG |
 | `plmap_analysis.jl` | Analysis | CairoMakie, saves PNG |
 
 ---
@@ -102,7 +100,7 @@ my-project/
   │  These scripts are ephemeral: quick, messy, disposable.         │
   │  Make as many as you want. Delete them when you're done.        │
   │                                                                 │
-  │  cp templates/explore_raman.jl explore/look_at_sample_A.jl     │
+  │  cp templates/explore_plmap.jl explore/look_at_sample_A.jl    │
   └───────────────────────────┬─────────────────────────────────────┘
                               │
                     Found something interesting?
@@ -117,7 +115,7 @@ my-project/
   │  Anyone in the lab can re-run them and get the same results.    │
   │                                                                 │
   │  mkdir -p analysis/MoSe2_A1g                                    │
-  │  cp templates/raman_analysis.jl analysis/MoSe2_A1g/analysis.jl │
+  │  cp templates/plmap_analysis.jl analysis/MoSe2_A1g/analysis.jl  │
   └───────────────────────────┬─────────────────────────────────────┘
                               │
                     Ready to write up?
@@ -149,7 +147,7 @@ Explore scripts are for **you**, right now. They are not meant to be
 permanent or pretty. Their purpose is to look at your data interactively
 so you can figure out what's going on.
 
-- Copy a template: `cp templates/explore_raman.jl explore/my_idea.jl`
+- Copy a template: `cp templates/explore_plmap.jl explore/my_idea.jl`
 - Open it in VS Code and step through line by line (Shift+Enter)
 - Zoom, pan, and hover over data with DataInspector
 - Write as many as you need -- one per sample, one per question
@@ -165,7 +163,7 @@ a baseline, or overlay a fit on the data -- write a quick script in
 Analysis scripts are for **the lab**. They should be clean enough that
 another student can understand and re-run them months later.
 
-- Copy a template: `cp templates/raman_analysis.jl analysis/MoSe2_A1g/analysis.jl`
+- Copy a template: `cp templates/plmap_analysis.jl analysis/MoSe2_A1g/analysis.jl`
 - Edit the data path and analysis parameters
 - Run the whole script: `julia --project=. analysis/MoSe2_A1g/analysis.jl`
 - Figures are saved to `analysis/MoSe2_A1g/figures/`
@@ -176,28 +174,42 @@ explored your data and know what story it tells, write a clean analysis
 that captures that story. Your future self and your labmates will
 thank you.
 
-### A note on QPSTools functions
+### A note on the ecosystem
 
-The functions in QPSTools are meant to be **flexible and easy to use**.
-Loading data, fitting peaks, plotting results -- these should each be
-one or two lines, not fifty. If something feels clunky, confusing, or
-doesn't work the way you expect, that's a bug in the tool, not in you.
+QPSTools is the lab integration layer. The functions you'll call most
+often live in sibling packages:
+
+- **QPSTools** — `load_ta_trace`, `load_pl_map`, `load_cavity`,
+  `plot_spectrum`, `plot_kinetics`, `plot_pl_map`, `print_theme`, …
+- **SpectroscopyTools** — `fit_exp_decay`, `fit_peaks`, `find_peaks`,
+  `subtract_background`, baselines, `report`, …
+- **JASCOFiles** — `JASCOSpectrum(path)` for any FTIR/Raman/UV-Vis CSV
+- **ElabFTW** — `log_to_elab`, `tags_from_sample`, experiment CRUD
+
+A typical script starts with `using QPSTools, SpectroscopyTools` (and a
+Makie backend). Method dispatch threads the layers together — you don't
+need to remember which package owns which function.
+
+The functions are meant to be **flexible and easy to use**. Loading
+data, fitting peaks, plotting results -- these should each be one or
+two lines, not fifty. If something feels clunky, confusing, or doesn't
+work the way you expect, that's a bug in the tool, not in you.
 
 **Please tell Garrek** if a function is hard to use or doesn't do what
 you need. Even better: try editing the code yourself (I'll show you
 how) and we can improve the analysis functions together. Every
 improvement you make benefits everyone in the lab.
 
-### Coming soon: eLabFTW integration
+### eLabFTW integration
 
 [eLabFTW](https://www.elabftw.net/) is an open-source electronic lab
-notebook that our lab uses for experiment tracking. QPSTools will
-integrate directly with eLabFTW so you can:
+notebook that our lab uses for experiment tracking. QPSTools (via
+ElabFTW.jl) lets you:
 
 - Log fit results and parameters to your notebook automatically
 - Attach figures to experiments with one function call
 - Tag experiments by sample, technique, and project
 - Search across all lab experiments by keyword or tag
 
-This means your analysis results flow straight from Julia into a
-searchable, shareable lab record -- no manual copy-paste needed.
+Your analysis results flow straight from Julia into a searchable,
+shareable lab record -- no manual copy-paste needed.

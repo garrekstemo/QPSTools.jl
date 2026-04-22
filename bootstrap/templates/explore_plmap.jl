@@ -8,7 +8,7 @@
 # スペクトルをホバーしてPLピークのピクセル範囲を特定 → PIXEL_RANGEを変更して再実行
 # Hover over spectra to find the PL peak pixel range → change PIXEL_RANGE and rerun
 
-using QPSTools, GLMakie
+using QPSTools, SpectroscopyTools, GLMakie
 set_theme!(qps_theme())
 
 # --- 設定 / Config ---

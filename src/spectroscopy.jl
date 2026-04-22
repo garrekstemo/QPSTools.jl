@@ -1,11 +1,9 @@
 # QPS-specific spectroscopy dispatches
 #
-# General-purpose functions (normalize, time_index, calc_ΔA, smooth_data,
-# savitzky_golay, calc_fwhm, subtract_spectrum for NamedTuple, etc.)
-# are provided by SpectroscopyTools.jl.
-#
-# This file adds QPS-specific dispatches for JASCOSpectrum, FTIRSpectrum,
-# and RamanSpectrum types.
+# General-purpose spectroscopy (normalize, smoothing, fitting, baseline,
+# unit conversions, transforms, etc.) lives in SpectroscopyTools.jl. This
+# file adds dispatches that are useful in the QPS lab context for
+# JASCOSpectrum and AnnotatedSpectrum, plus the cavity transmittance model.
 
 # ============================================================================
 # TRANSMITTANCE ↔ ABSORBANCE: JASCOSpectrum and AnnotatedSpectrum dispatches
@@ -27,16 +25,6 @@ function transmittance_to_absorbance(spec::JASCOSpectrum; percent::Bool=true)
                          spec.xunits, "ABS", spec.x, new_y, spec.metadata)
 end
 
-function transmittance_to_absorbance(spec::FTIRSpectrum; kwargs...)
-    new_data = transmittance_to_absorbance(spec.data; kwargs...)
-    return FTIRSpectrum(new_data, spec.sample, spec.path)
-end
-
-function transmittance_to_absorbance(spec::RamanSpectrum; kwargs...)
-    new_data = transmittance_to_absorbance(spec.data; kwargs...)
-    return RamanSpectrum(new_data, spec.sample, spec.path)
-end
-
 """
     absorbance_to_transmittance(spec::JASCOSpectrum; percent=true)
 
@@ -52,28 +40,20 @@ function absorbance_to_transmittance(spec::JASCOSpectrum; percent::Bool=true)
                          spec.xunits, yunits, spec.x, new_y, spec.metadata)
 end
 
-function absorbance_to_transmittance(spec::FTIRSpectrum; kwargs...)
-    new_data = absorbance_to_transmittance(spec.data; kwargs...)
-    return FTIRSpectrum(new_data, spec.sample, spec.path)
-end
-
-function absorbance_to_transmittance(spec::RamanSpectrum; kwargs...)
-    new_data = absorbance_to_transmittance(spec.data; kwargs...)
-    return RamanSpectrum(new_data, spec.sample, spec.path)
-end
-
-function transmittance_to_absorbance(spec::UVVisSpectrum; kwargs...)
+# Generic AnnotatedSpectrum dispatches: convert the inner JASCOSpectrum and
+# reconstruct the same wrapper type.
+function transmittance_to_absorbance(spec::T; kwargs...) where T<:AnnotatedSpectrum
     new_data = transmittance_to_absorbance(spec.data; kwargs...)
-    return UVVisSpectrum(new_data, spec.sample, spec.path)
+    return T(new_data, spec.sample, spec.path)
 end
 
-function absorbance_to_transmittance(spec::UVVisSpectrum; kwargs...)
+function absorbance_to_transmittance(spec::T; kwargs...) where T<:AnnotatedSpectrum
     new_data = absorbance_to_transmittance(spec.data; kwargs...)
-    return UVVisSpectrum(new_data, spec.sample, spec.path)
+    return T(new_data, spec.sample, spec.path)
 end
 
 # ============================================================================
-# SPECTRAL MATH: Typed dispatches for AnnotatedSpectrum
+# SPECTRAL MATH: typed dispatches for AnnotatedSpectrum
 # ============================================================================
 
 """
@@ -129,80 +109,6 @@ Estimate the SNR of an annotated spectrum.
 """
 estimate_snr(spec::AnnotatedSpectrum) = estimate_snr(ydata(spec))
 
-# ============================================================================
-# SPECTRAL TRANSFORMS: Typed dispatches for AnnotatedSpectrum
-# ============================================================================
-
-"""
-    snv(spec::AnnotatedSpectrum)
-
-Standard Normal Variate correction on an annotated spectrum.
-Returns `(x=..., y=...)` NamedTuple.
-"""
-function snv(spec::AnnotatedSpectrum)
-    return (x=xdata(spec), y=snv(ydata(spec)))
-end
-
-"""
-    kubelka_munk(spec::AnnotatedSpectrum)
-
-Convert diffuse reflectance spectrum to Kubelka-Munk function.
-Returns `(x=..., y=...)` NamedTuple.
-"""
-function kubelka_munk(spec::AnnotatedSpectrum)
-    return (x=xdata(spec), y=kubelka_munk.(ydata(spec)))
-end
-
-"""
-    reflectance_to_absorbance(spec::AnnotatedSpectrum)
-
-Convert reflectance spectrum to pseudo-absorbance.
-Returns `(x=..., y=...)` NamedTuple.
-"""
-function reflectance_to_absorbance(spec::AnnotatedSpectrum)
-    return (x=xdata(spec), y=reflectance_to_absorbance(ydata(spec)))
-end
-
-"""
-    kramers_kronig(spec::AnnotatedSpectrum; kwargs...)
-
-Kramers-Kronig transform on an annotated spectrum.
-Passes `xdata` as frequency axis and `ydata` as the spectrum.
-"""
-function kramers_kronig(spec::AnnotatedSpectrum; kwargs...)
-    return kramers_kronig(xdata(spec), ydata(spec); kwargs...)
-end
-
-"""
-    tauc_plot(spec::AnnotatedSpectrum; kwargs...)
-
-Construct a Tauc plot from an annotated spectrum.
-Passes `xdata` as energy and `ydata` as absorption.
-"""
-function tauc_plot(spec::AnnotatedSpectrum; kwargs...)
-    return tauc_plot(xdata(spec), ydata(spec); kwargs...)
-end
-
-"""
-    urbach_tail(spec::AnnotatedSpectrum; kwargs...)
-
-Fit the Urbach tail from an annotated spectrum.
-Passes `xdata` as energy and `ydata` as absorption.
-"""
-function urbach_tail(spec::AnnotatedSpectrum; kwargs...)
-    return urbach_tail(xdata(spec), ydata(spec); kwargs...)
-end
-
-"""
-    rubberband_baseline(spec::AnnotatedSpectrum)
-
-Rubber band baseline correction on an annotated spectrum.
-Returns the baseline y-values.
-"""
-function rubberband_baseline(spec::AnnotatedSpectrum)
-    return rubberband_baseline(xdata(spec), ydata(spec))
-end
-
 """
     average_spectra(specs::AnnotatedSpectrum...; interpolate=false)
 
@@ -245,4 +151,3 @@ function cavity_transmittance(p, ν)
     e = exp(-α * L)
     @. T^2 * e / (1 + R^2 * e^2 - 2 * R * e * cos(4π * n * L * ν + 2 * ϕ))
 end
-

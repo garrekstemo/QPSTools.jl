@@ -9,6 +9,7 @@
 # Use explore_plmap.jl to find PIXEL_RANGE first, then fill it in here.
 
 using QPSTools
+using SpectroscopyTools
 using CairoMakie
 
 FIGDIR = joinpath(@__DIR__, "figures")
@@ -36,7 +37,7 @@ println(m)
 # =========================================================================
 
 # set_theme! is needed here because we build a custom figure below.
-# QPSTools plot functions (plot_pl_map, plot_raman, etc.) apply it automatically.
+# QPSTools plot functions (plot_pl_map, plot_spectrum, etc.) apply it automatically.
 set_theme!(qps_theme())
 fig = Figure(size=(1400, 400))
 

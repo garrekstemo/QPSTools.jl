@@ -7,6 +7,11 @@
         @test CavitySpectrum <: AbstractSpectroscopyData
     end
 
+    @testset "xreversed default" begin
+        spec = load_cavity(joinpath(PROJECT_ROOT, "data/ftir/1.0M_NH4SCN_DMF.csv"))
+        @test xreversed(spec) == true
+    end
+
     @testset "Cavity transmittance physical properties" begin
         # Empty cavity (no absorption): periodic Airy function
         n, α, L, R, ϕ = 1.0, 0.0, 1.0, 0.9, 0.0

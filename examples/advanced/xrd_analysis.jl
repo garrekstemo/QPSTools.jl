@@ -3,6 +3,7 @@
 # Demonstrates peak labeling on X-ray diffraction data.
 
 using QPSTools
+using SpectroscopyTools
 using CairoMakie
 
 PROJECT_ROOT = dirname(dirname(@__DIR__))
