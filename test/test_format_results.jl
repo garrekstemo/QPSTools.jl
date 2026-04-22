@@ -1,10 +1,8 @@
 @isdefined(PROJECT_ROOT) || include("testsetup.jl")
 
 @testset "format_results" begin
-    # Test format_results returns markdown strings for all fit types
-
     # MultiPeakFitResult
-    spec = load_ftir(joinpath(PROJECT_ROOT, "data/ftir/1.0M_NH4SCN_DMF.csv"))
+    spec = load_cavity(joinpath(PROJECT_ROOT, "data/ftir/1.0M_NH4SCN_DMF.csv"))
     result = fit_peaks(spec, (2000, 2100))
     md = format_results(result)
     @test md isa String
@@ -40,7 +38,7 @@
     @test occursin("## Global Fit", md_global)
     @test occursin("Shared", md_global)
 
-    # MultiexpDecayFit
+    # MultiexpDecayFit (re-test for label consistency)
     result_multi = fit_exp_decay(trace; n_exp=2)
     md_multi = format_results(result_multi)
     @test md_multi isa String

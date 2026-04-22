@@ -8,8 +8,6 @@ using Aqua
     end
     include("test_types.jl")
     include("test_io.jl")
-    include("test_ftir.jl")
-    include("test_raman.jl")
     include("test_ta.jl")
     include("test_ta_matrix.jl")
     include("test_cavity.jl")
@@ -19,6 +17,4 @@ using Aqua
     include("test_plmap.jl")
     include("test_plotting.jl")
     include("test_format_results.jl")
-    include("test_wavelength.jl")
-    include("test_wave1.jl")
 end

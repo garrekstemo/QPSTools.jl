@@ -11,6 +11,7 @@
 # This example uses the CCD test data shipped with QPSTools.
 
 using QPSTools
+using SpectroscopyTools
 using CairoMakie
 
 PROJECT_ROOT = dirname(dirname(@__DIR__))

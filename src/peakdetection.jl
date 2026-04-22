@@ -29,7 +29,7 @@ height, prominence, and width for each detected peak.
 
 # Example
 ```julia
-spec = load_raman(sample="center", material="MoSe2")
+spec = load_cavity("data/ftir/sample.csv"; mirror="Au", angle=0)
 peaks = find_peaks(spec)
 peaks = find_peaks(spec; min_prominence=0.1, min_width=5.0)
 ```

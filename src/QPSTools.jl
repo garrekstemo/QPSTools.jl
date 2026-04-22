@@ -1,167 +1,26 @@
 """
-# QPSTools.jl - Quantum Photo-Science Laboratory Analysis Package
+# QPSTools.jl — QPS Laboratory Integration Layer
 
-Standardized analysis tools for all lab members. This package provides:
+Lab-specific glue for the QPS spectroscopy ecosystem. QPSTools defines:
 
-- **Spectroscopic Analysis**: Common functions for UV-vis, FTIR, pump-probe data
-- **Standardized Plotting**: Publication-quality themes and color schemes
-- **Pump-Probe Analysis**: Time-resolved spectroscopy with IRF deconvolution
-- **Baseline Correction**: Automated spectral processing
-- **Kinetics Fitting**: Single/biexponential decay with global fitting
+- LabVIEW pump-probe loaders (`load_ta_trace`, `load_ta_spectrum`, `load_ta_matrix`, `load_lvm`, `load_pl_map`)
+- Cavity polariton spectroscopy (`CavitySpectrum`, `fit_cavity_spectrum`, `fit_dispersion`)
+- Makie plotting themes and layouts (`plot_spectrum`, `plot_kinetics`, `plot_cavity`, …)
+- eLabFTW provenance (`log_to_elab`, `tags_from_sample` dispatched on `AnnotatedSpectrum`)
 
-General-purpose spectroscopy functionality (types, fitting, baseline, units)
-is provided by SpectroscopyTools.jl. QPSTools.jl adds lab-specific loaders,
-eLabFTW integration, and Makie plotting.
+`using QPSTools` brings in only names QPSTools itself defines. General-purpose
+spectroscopy lives in the sibling packages — load them alongside:
 
-## Transient Absorption Workflow
 ```julia
 using QPSTools
-using CairoMakie  # or GLMakie for interactive use
-
-# Load kinetic trace (time is shifted so peak is at t=0)
-trace = load_ta_trace("data/kinetics.lvm"; mode=:OD)
-
-# Fit with IRF deconvolution (default)
-result = fit_exp_decay(trace)
-println("τ = ", round(result.tau, digits=2), " ps")
-
-# Plot with automatic residuals panel
-fig, ax, ax_res = plot_kinetics(trace; fit=result)
-save("figures/kinetics.pdf", fig)
+using SpectroscopyTools  # types, fitting, baseline, peak detection
+using JASCOFiles         # JASCOSpectrum + isftir/israman/isuvvis
+using ElabFTW            # eLabFTW CRUD
 ```
 
-## FTIR Workflow
-```julia
-using QPSTools
-
-# Load FTIR spectrum from file
-spec = load_ftir("data/ftir/1.0M_NH4SCN_DMF.csv"; solute="NH4SCN", concentration="1.0M")
-
-# Fit a peak
-result = fit_peaks(spec, (2000, 2100))
-result[1][:center].value
-```
-
-This is the **lab-wide standard analysis package**. All students should use these
-functions for consistency and reproducibility.
+Method dispatch threads the layers together.
 """
 module QPSTools
-
-# ============================================================================
-# Dependencies
-# ============================================================================
-
-# General-purpose spectroscopy (types, fitting, baseline, units, peak detection/fitting)
-using SpectroscopyTools
-
-# Functions that QPS extends with new method dispatches
-import SpectroscopyTools: find_peaks, fit_peaks
-import SpectroscopyTools: transmittance_to_absorbance, absorbance_to_transmittance
-import SpectroscopyTools: subtract_spectrum, correct_baseline
-import SpectroscopyTools: xdata, ydata, zdata, xlabel, ylabel, zlabel
-import SpectroscopyTools: source_file, npoints, title, is_matrix
-import SpectroscopyTools: wavenumber, signal, delay, wavelength
-
-# Resolve name conflict: LinearAlgebra.normalize vs SpectroscopyTools.normalize
-import SpectroscopyTools: normalize
-import SpectroscopyTools: normalize_intensity
-
-# Spectral math functions (Phase 1)
-import SpectroscopyTools: savitzky_golay_smooth, derivative
-import SpectroscopyTools: band_area, normalize_area, normalize_to_peak
-import SpectroscopyTools: estimate_snr
-
-# Spectral arithmetic (Wave 1)
-import SpectroscopyTools: add_spectra, divide_spectra, multiply_spectrum
-import SpectroscopyTools: average_spectra, interpolate_spectrum
-
-# Transforms (Wave 1)
-import SpectroscopyTools: kramers_kronig, kubelka_munk, tauc_plot
-import SpectroscopyTools: reflectance_to_absorbance, snv, beer_lambert
-import SpectroscopyTools: urbach_tail, thickness_from_fringes
-
-# Baseline (Wave 1)
-import SpectroscopyTools: rubberband_baseline
-
-# Import unexported SpectroscopyTools names that QPSTools re-exports
-import SpectroscopyTools: n_exp, weights, anharmonicity, format_results
-
-# Dielectric functions from CurveFitModels (via SpectroscopyTools)
-import SpectroscopyTools: dielectric_real, dielectric_imag
-
-# Chirp correction (moved to SpectroscopyTools)
-import SpectroscopyTools: ChirpCalibration, polynomial,
-    detect_chirp, correct_chirp, subtract_background,
-    save_chirp, load_chirp
-
-# Decay-associated spectra (from global TAMatrix fitting)
-import SpectroscopyTools: das
-
-# PLMap type and analysis (moved to SpectroscopyTools)
-import SpectroscopyTools: extract_spectrum, peak_centers, intensity, fit_map, FitMapResult
-
-# Cosmic ray detection and removal (from SpectroscopyTools)
-import SpectroscopyTools: CosmicRayResult, CosmicRayMapResult,
-    detect_cosmic_rays, remove_cosmic_rays
-
-# Re-export SpectroscopyTools public names
-# Types (from SpectroscopyTools)
-export AbstractSpectroscopyData
-export TATrace, TASpectrum, TAMatrix
-export PLMap
-export PeakInfo, PeakFitResult, MultiPeakFitResult, FitMapResult
-export ExpDecayFit, MultiexpDecayFit
-export GlobalFitResult, TASpectrumFit
-# Types (defined in QPSTools)
-export AxisType, time_axis, wavelength_axis
-export PumpProbeData
-# Fitting
-export fit_exp_decay
-export fit_decay_irf
-export fit_global, das
-export fit_peaks, find_peaks, fit_ta_spectrum
-export predict, predict_peak, predict_baseline, residuals
-export report, format_results, n_exp, anharmonicity
-# CurveFit / CurveFitModels re-exports
-export NonlinearCurveFitProblem, solve, coef, stderror, confint
-export isconverged, mse, rss, nobs, weights
-export lorentzian, gaussian, pseudo_voigt, single_exponential
-export fano, voigt, log_normal
-# Baseline
-export arpls_baseline, snip_baseline, rubberband_baseline
-export imodpoly_baseline, rolling_ball_baseline
-export correct_baseline
-# Spectroscopy utilities
-export normalize, normalize_intensity, smooth_data, calc_fwhm
-export transmittance_to_absorbance, absorbance_to_transmittance
-export subtract_spectrum
-export savitzky_golay_smooth, derivative
-export band_area, normalize_area, normalize_to_peak
-export estimate_snr
-# Spectral arithmetic
-export add_spectra, divide_spectra, multiply_spectrum
-export average_spectra, interpolate_spectrum
-# Transforms
-export kramers_kronig, kubelka_munk, tauc_plot
-export reflectance_to_absorbance, snv, beer_lambert
-export urbach_tail, thickness_from_fringes
-# Baseline (rubberband)
-export rubberband_baseline
-export time_index, peak_table
-export irf_fwhm, pulse_fwhm
-# Data interface
-export xdata, ydata, zdata, xlabel, ylabel, zlabel
-export is_matrix, source_file, npoints, title
-export xaxis, xaxis_label
-# Semantic accessors (from SpectroscopyTools)
-export delay, signal, wavenumber, wavelength
-# Semantic accessors (QPSTools-specific)
-export shift
-export absorbance, transmittance, reflectance, ykind
-# Units
-export wavelength_to_wavenumber, wavenumber_to_wavelength
-export wavelength_to_energy, energy_to_wavelength, wavenumber_to_energy
-export decay_time_to_linewidth, linewidth_to_decay_time
 
 using Statistics
 using LinearAlgebra
@@ -169,152 +28,33 @@ using Dates
 using JASCOFiles
 using Makie
 
-# eLabFTW client (standalone package)
+using SpectroscopyTools
 using ElabFTW
-import ElabFTW: tags_from_sample, log_to_elab, _elabftw_config
+
+# Functions extended with new method dispatches in this package
+import SpectroscopyTools: find_peaks, fit_peaks
+import SpectroscopyTools: transmittance_to_absorbance, absorbance_to_transmittance
+import SpectroscopyTools: subtract_spectrum, correct_baseline
+import SpectroscopyTools: xdata, ydata, xlabel, ylabel, source_file, wavenumber
+import SpectroscopyTools: savitzky_golay_smooth, derivative
+import SpectroscopyTools: band_area, normalize_area, normalize_to_peak, estimate_snr
+import SpectroscopyTools: average_spectra
+import SpectroscopyTools: dielectric_real, dielectric_imag
+import ElabFTW: tags_from_sample, log_to_elab
 
 # ============================================================================
-# Core modules
+# Source files
 # ============================================================================
 
-# QPS-specific types (AnnotatedSpectrum, FTIRFitResult alias)
 include("types.jl")
-
-# I/O
 include("io.jl")
-export load_spectroscopy                # Auto-detecting unified loader
-export load_ta_trace, load_ta_spectrum  # Unified TA API
-export load_ta_matrix                   # 2D TA data loading
-export load_lvm                         # Legacy (raw channel access)
-export find_peak_time                   # Time axis utility
-
-# Re-export JASCOFiles for raw spectrum data
-export JASCOSpectrum
-
-# eLabFTW glue (AnnotatedSpectrum dispatches for ElabFTW.jl)
 include("elabftw_glue.jl")
-
-# Configuration
-export configure_elabftw, elabftw_enabled, disable_elabftw, enable_elabftw
-export test_connection
-
-# Cache
-export clear_elabftw_cache, elabftw_cache_info
-export download_elabftw_file, download_item_upload, download_experiment_upload
-
-# Experiments
-export create_experiment, create_from_template
-export update_experiment, upload_to_experiment
-export tag_experiment, untag_experiment, list_tags, clear_tags
-export list_experiment_tags, clear_experiment_tags
-export get_experiment, delete_experiment, duplicate_experiment
-export list_experiments, search_experiments
-export list_experiment_uploads, delete_experiment_upload
-export add_step, list_steps, finish_step
-export link_experiments, list_experiment_links, unlink_experiments
-
-# Items
-export create_item, get_item, update_item, delete_item, duplicate_item
-export list_items, search_items
-export tag_item, untag_item, list_item_tags, clear_item_tags
-export upload_to_item, list_item_uploads, delete_item_upload
-export add_item_step, list_item_steps, finish_item_step
-
-# Cross-entity links
-export link_experiment_to_item, unlink_experiment_from_item, list_experiment_item_links
-export link_item_to_experiment, unlink_item_from_experiment, list_item_experiment_links
-export link_items, unlink_items, list_item_links
-
-# Comments
-export create_comment, list_comments, get_comment, update_comment, delete_comment
-export comment_experiment, list_experiment_comments
-export comment_item, list_item_comments
-
-# Templates
-export list_experiment_templates, create_experiment_template
-export get_experiment_template, update_experiment_template
-export delete_experiment_template, duplicate_experiment_template
-export list_items_types, create_items_type, get_items_type
-export update_items_type, delete_items_type
-
-# Team
-export list_team_tags, rename_team_tag, delete_team_tag
-export list_experiments_categories, list_items_categories
-
-# Batch
-export delete_experiments, tag_experiments, update_experiments
-export delete_items, tag_items, update_items
-
-# Events
-export list_events, create_event, get_event, update_event, delete_event
-
-# Compounds
-export list_compounds, create_compound, get_compound, delete_compound
-export link_compound, list_compound_links
-
-# Utility
-export instance_info
-export list_favorite_tags, add_favorite_tag, remove_favorite_tag
-export import_file, create_export, download_export
-
-# Printing
-export print_experiments, print_items, print_tags
-
-# Provenance
-export log_to_elab, tags_from_sample
-
-# FTIR loading and analysis
-include("ftir.jl")
-export FTIRSpectrum, FTIRFitResult
-export load_ftir, plot_ftir
-export xreversed
-
-# Raman loading and analysis
-include("raman.jl")
-export RamanSpectrum
-export load_raman, plot_raman
-
-# UV-Vis loading and analysis
-include("uvvis.jl")
-export UVVisSpectrum
-export load_uvvis, plot_uvvis
-
-# Cavity spectroscopy analysis
 include("cavity.jl")
-export CavitySpectrum, CavityFitResult, DispersionFitResult
-export load_cavity, plot_cavity
-export fit_cavity_spectrum, fit_dispersion
-export compute_cavity_transmittance
-export cavity_mode_energy, polariton_branches, polariton_eigenvalues
-export hopfield_coefficients
-export refractive_index, extinction_coeff
-
-# PL mapping (CCD raster scans — loader only, type lives in SpectroscopyTools)
 include("plmap.jl")
-export load_pl_map, load_wavelength_file, extract_spectrum, peak_centers, intensity
-export integrated_intensity, intensity_mask, fit_map
-export CosmicRayResult, CosmicRayMapResult, detect_cosmic_rays, remove_cosmic_rays
-
-# ============================================================================
-# Lab-specific spectroscopy dispatches
-# ============================================================================
-
-# QPS-specific dispatches (JASCOSpectrum, FTIRSpectrum, RamanSpectrum methods)
 include("spectroscopy.jl")
-export cavity_transmittance
-
-# QPS-specific peak detection dispatches (AnnotatedSpectrum)
 include("peakdetection.jl")
-
-# QPS-specific peak fitting dispatches (AnnotatedSpectrum)
 include("peakfitting.jl")
 
-# Chirp correction (re-export from SpectroscopyTools)
-export ChirpCalibration
-export detect_chirp, correct_chirp, subtract_background
-export save_chirp, load_chirp
-
-# Plotting: themes, layers, layouts, and public API
 include("plotting/themes.jl")
 include("plotting/layers.jl")
 include("plotting/plot_spectrum.jl")
@@ -323,19 +63,51 @@ include("plotting/plot_chirp.jl")
 include("plotting/plot_das.jl")
 include("plotting/plot_cavity.jl")
 include("plotting/plot_plmap.jl")
-export qps_theme
-export print_theme, poster_theme
+
+# ============================================================================
+# Exports
+# ============================================================================
+
+# Types
+export AnnotatedSpectrum
+export AxisType, time_axis, wavelength_axis
+export PumpProbeData
+
+# Loaders
+export load_spectroscopy
+export load_ta_trace, load_ta_spectrum, load_ta_matrix
+export load_lvm
+export load_pl_map, load_wavelength_file
+export find_peak_time
+export load_cavity
+
+# Cavity types and analysis
+export CavitySpectrum, CavityFitResult, DispersionFitResult
+export fit_cavity_spectrum, fit_dispersion
+export compute_cavity_transmittance, cavity_transmittance
+export cavity_mode_energy, polariton_branches, polariton_eigenvalues
+export hopfield_coefficients
+export refractive_index, extinction_coeff
+
+# Plotting
+export plot_spectrum, plot_kinetics
+export plot_cavity
+export plot_ta_heatmap, plot_spectra
+export plot_data
+export plot_peak_decomposition!, plot_peaks!
+export plot_comparison, plot_waterfall
+export plot_chirp, plot_chirp!
+export plot_das, plot_das!
+export plot_dispersion, plot_dispersion!
+export plot_hopfield, plot_hopfield!
+export plot_pl_map, plot_pl_spectra
+
+# Themes
+export qps_theme, print_theme, poster_theme
 export lab_colors, lab_linewidths
 export setup_poster_plot
-export plot_spectrum, plot_kinetics
-export plot_ta_heatmap, plot_spectra  # TAMatrix plotting
-export plot_data  # Generic plotting via interface
-export plot_peak_decomposition!, plot_peaks!  # Layer functions for existing axes
-export plot_comparison, plot_waterfall  # Multi-spectrum views
-export plot_chirp, plot_chirp!  # Chirp diagnostic visualization
-export plot_das, plot_das!  # Decay-associated spectra
-export plot_dispersion, plot_dispersion!  # Polariton dispersion
-export plot_hopfield, plot_hopfield!  # Hopfield coefficients
-export plot_pl_map, plot_pl_spectra  # PL spatial mapping
+
+# Accessors
+export xreversed, xaxis, xaxis_label
 
 end # module QPSTools

@@ -5,14 +5,10 @@
 # ============================================================================
 
 # Title dispatch for AnnotatedSpectrum subtypes
-_annotated_title(spec::FTIRSpectrum) = _ftir_title(spec)
-_annotated_title(spec::RamanSpectrum) = _raman_title(spec)
 _annotated_title(spec::CavitySpectrum) = _cavity_title(spec)
 _annotated_title(::AnnotatedSpectrum) = nothing
 
 # Units dispatch for annotations
-_annotated_units(::FTIRSpectrum) = "cm⁻¹"
-_annotated_units(::RamanSpectrum) = "cm⁻¹"
 _annotated_units(::CavitySpectrum) = "cm⁻¹"
 _annotated_units(::AnnotatedSpectrum) = ""
 
@@ -285,7 +281,7 @@ Plot an annotated spectrum (FTIR, Raman, etc.) with automatic axis labels and or
 
 # Examples
 ```julia
-spec = load_ftir(solute="NH4SCN", concentration="1.0M")
+spec = load_cavity("data/ftir/sample.csv"; solute="NH4SCN", concentration="1.0M")
 
 # Survey view
 fig, ax = plot_spectrum(spec)

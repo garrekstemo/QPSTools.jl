@@ -1,14 +1,13 @@
 """
 QPS-specific data types.
 
-General-purpose types (AbstractSpectroscopyData, TATrace, TASpectrum, TAMatrix,
-fit result types, etc.) are provided by SpectroscopyTools.jl.
+General-purpose types (`AbstractSpectroscopyData`, `TATrace`, `TASpectrum`,
+`TAMatrix`, fit result types, etc.) are provided by SpectroscopyTools.jl.
 
 This file defines QPS-specific types:
 - `AxisType` — enum for raw LVM axis detection (time vs wavelength)
 - `PumpProbeData` — raw LabVIEW LVM pump-probe container
 - `AnnotatedSpectrum` — abstract type for JASCO spectra with sample metadata
-- `FTIRFitResult` — alias for `MultiPeakFitResult`
 """
 
 # =============================================================================
@@ -51,7 +50,7 @@ xaxis(d::PumpProbeData) = d.time
 xaxis_label(d::PumpProbeData) = d.axis_type == time_axis ? "Time (ps)" : "Wavelength (nm)"
 
 # =============================================================================
-# Abstract types for JASCO spectra
+# Abstract type for JASCO-backed spectra with sample metadata
 # =============================================================================
 
 """
@@ -72,9 +71,6 @@ Inherits default implementations of `zdata` (returns nothing) and
 """
 abstract type AnnotatedSpectrum <: AbstractSpectroscopyData end
 
-"""Convenience alias: `FTIRFitResult === MultiPeakFitResult`."""
-const FTIRFitResult = MultiPeakFitResult
-
 # Common interface for all AnnotatedSpectrum subtypes
 spectrum_data(s::AnnotatedSpectrum) = s.data
 sample_metadata(s::AnnotatedSpectrum) = s.sample
@@ -84,7 +80,7 @@ sample_id(s::AnnotatedSpectrum) = get(s.sample, "_id", "unknown")
     xreversed(spec::AnnotatedSpectrum) -> Bool
 
 Whether the x-axis should be reversed when plotting.
-Default is `false`. FTIR overrides to `true` (high wavenumber on left).
+Default is `false`. `CavitySpectrum` overrides to `true` (high wavenumber on left).
 """
 xreversed(::AnnotatedSpectrum) = false
 
