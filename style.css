@@ -16,6 +16,8 @@
   --badge-wip-fg: #3730a3;
   --badge-private-bg: #f1f5f9;
   --badge-private-fg: #475569;
+  --badge-ext-bg: #f1f5f9;
+  --badge-ext-fg: #475569;
   --max: 1100px;
   --radius: 10px;
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
@@ -41,6 +43,8 @@
     --badge-wip-fg: #c7d2fe;
     --badge-private-bg: #1f2937;
     --badge-private-fg: #cbd5e1;
+    --badge-ext-bg: #1f2937;
+    --badge-ext-fg: #cbd5e1;
   }
 }
 
@@ -61,6 +65,26 @@ body {
 
 a { color: var(--accent); }
 a:hover { color: var(--accent-hover); }
+
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+.btn:focus-visible,
+.card footer a:focus-visible {
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
 
 .container {
   max-width: var(--max);
@@ -259,29 +283,26 @@ section > .container > p {
 .badge-near { background: var(--badge-near-bg); color: var(--badge-near-fg); }
 .badge-wip { background: var(--badge-wip-bg); color: var(--badge-wip-fg); }
 .badge-private { background: var(--badge-private-bg); color: var(--badge-private-fg); }
+.badge-ext { background: var(--badge-ext-bg); color: var(--badge-ext-fg); }
 
-/* Getting started */
-.getting-started {
+/* About */
+.about {
   background: var(--bg-soft);
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
 }
-pre {
-  background: var(--code-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1.4rem 1.5rem;
-  overflow-x: auto;
-  font-size: 0.875rem;
-  line-height: 1.65;
-  color: var(--code-fg);
-  margin: 0;
+.about .container > p {
+  max-width: 68ch;
+  color: var(--fg);
+  font-size: 1.02rem;
+  margin-bottom: 1.25rem;
 }
-pre code {
-  font-family: var(--mono);
-  background: none;
-  padding: 0;
+.about .container > p:last-child {
+  color: var(--fg-muted);
+  font-size: 0.95rem;
+  margin-bottom: 0;
 }
+
 code {
   background: var(--code-bg);
   padding: 0.1rem 0.35rem;
@@ -289,20 +310,6 @@ code {
   font-size: 0.88em;
   font-family: var(--mono);
 }
-.outlinks {
-  list-style: none;
-  padding: 0;
-  margin: 1.75rem 0 0;
-  display: flex;
-  gap: 1.75rem;
-  flex-wrap: wrap;
-}
-.outlinks a {
-  color: var(--accent);
-  text-decoration: none;
-  font-weight: 500;
-}
-.outlinks a:hover { text-decoration: underline; }
 
 /* Footer */
 .site-footer {

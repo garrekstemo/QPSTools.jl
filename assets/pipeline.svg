@@ -77,21 +77,17 @@
 
   <!-- Instruments -->
   <rect class="box-alt" x="24" y="360" width="170" height="100" rx="8"/>
-  <text class="head" x="109" y="398" text-anchor="middle">Instruments</text>
-  <text class="sub" x="109" y="422" text-anchor="middle">delay stages</text>
-  <text class="sub" x="109" y="440" text-anchor="middle">lock-ins · mono</text>
+  <text class="head" x="109" y="415" text-anchor="middle">Instruments</text>
 
   <!-- QPSDrive -->
   <rect class="box-alt" x="234" y="360" width="170" height="100" rx="8"/>
   <text class="head" x="319" y="398" text-anchor="middle">QPSDrive</text>
-  <text class="sub" x="319" y="422" text-anchor="middle">scan engine</text>
-  <text class="sub" x="319" y="440" text-anchor="middle">WebSocket server</text>
+  <text class="sub" x="319" y="422" text-anchor="middle">driver + Julia server</text>
 
-  <!-- Apps -->
+  <!-- QPSLab -->
   <rect class="box-alt" x="444" y="360" width="210" height="100" rx="8"/>
-  <text class="head" x="549" y="398" text-anchor="middle">Apps</text>
-  <text class="sub" x="549" y="422" text-anchor="middle">QPSLab (Electron + Svelte)</text>
-  <text class="sub" x="549" y="440" text-anchor="middle">QPSView (GLMakie)</text>
+  <text class="head" x="549" y="398" text-anchor="middle">QPSLab</text>
+  <text class="sub" x="549" y="422" text-anchor="middle">Electron + Svelte GUI</text>
 
   <!-- Arrows: control row -->
   <path class="arrow" d="M 194 410 H 234" marker-end="url(#arrowhead)"/>
