@@ -6,49 +6,20 @@
 # JASCOSpectrum and AnnotatedSpectrum, plus the cavity transmittance model.
 
 # ============================================================================
-# TRANSMITTANCE ↔ ABSORBANCE: JASCOSpectrum and AnnotatedSpectrum dispatches
+# TRANSMITTANCE ↔ ABSORBANCE: AnnotatedSpectrum dispatches
+# (JASCOSpectrum conversions live in JASCOFiles.)
 # ============================================================================
 
-"""
-    transmittance_to_absorbance(spec::JASCOSpectrum; percent=true)
-
-Convert a JASCOSpectrum from transmittance to absorbance.
-
-JASCO instruments record percent transmittance (0–100) by default.
-Set `percent=false` if the data is fractional transmittance (0–1).
-
-Returns a new `JASCOSpectrum` with absorbance y-axis.
-"""
-function transmittance_to_absorbance(spec::JASCOSpectrum; percent::Bool=true)
-    new_y = transmittance_to_absorbance(spec.y; percent=percent)
-    return JASCOSpectrum(spec.title, spec.date, spec.spectrometer, spec.datatype,
-                         spec.xunits, "ABS", spec.x, new_y, spec.metadata)
-end
-
-"""
-    absorbance_to_transmittance(spec::JASCOSpectrum; percent=true)
-
-Convert a JASCOSpectrum from absorbance to transmittance.
-
-Returns a new `JASCOSpectrum` with transmittance y-axis. Defaults to percent
-transmittance (`percent=true`).
-"""
-function absorbance_to_transmittance(spec::JASCOSpectrum; percent::Bool=true)
-    new_y = absorbance_to_transmittance(spec.y; percent=percent)
-    yunits = percent ? "TRANSMITTANCE" : "TRANSMITTANCE_FRAC"
-    return JASCOSpectrum(spec.title, spec.date, spec.spectrometer, spec.datatype,
-                         spec.xunits, yunits, spec.x, new_y, spec.metadata)
-end
-
-# Generic AnnotatedSpectrum dispatches: convert the inner JASCOSpectrum and
-# reconstruct the same wrapper type.
+# AnnotatedSpectrum dispatches delegate to JASCOFiles, which owns the
+# JASCOSpectrum conversions. The integration layer's job is to reconstruct
+# the wrapper around the converted inner data.
 function transmittance_to_absorbance(spec::T; kwargs...) where T<:AnnotatedSpectrum
-    new_data = transmittance_to_absorbance(spec.data; kwargs...)
+    new_data = JASCOFiles.transmittance_to_absorbance(spec.data; kwargs...)
     return T(new_data, spec.sample, spec.path)
 end
 
 function absorbance_to_transmittance(spec::T; kwargs...) where T<:AnnotatedSpectrum
-    new_data = absorbance_to_transmittance(spec.data; kwargs...)
+    new_data = JASCOFiles.absorbance_to_transmittance(spec.data; kwargs...)
     return T(new_data, spec.sample, spec.path)
 end
 
@@ -114,7 +85,8 @@ estimate_snr(spec::AnnotatedSpectrum) = estimate_snr(ydata(spec))
 
 Average multiple annotated spectra. Uses `xdata`/`ydata` interface.
 """
-function average_spectra(specs::Vararg{T}; interpolate=false) where T<:AnnotatedSpectrum
+function average_spectra(first::T, rest::T...; interpolate=false) where T<:AnnotatedSpectrum
+    specs = (first, rest...)
     named = ((x=xdata(s), y=ydata(s)) for s in specs)
     return average_spectra(named...; interpolate)
 end
