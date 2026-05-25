@@ -31,6 +31,12 @@ using Makie
 using SpectroscopyTools
 using ElabFTW
 
+# Brought in so QPSTools-side methods can DISPATCH on QPSScanFormat's Loaded*
+# types (e.g. future `plot_kinetics(::LoadedScanResult)` overloads). Per
+# QPSTools' no-sibling-re-export rule, QPSScanFormat names stay reachable
+# only via `using QPSScanFormat` in user code — they're not re-exported here.
+using QPSScanFormat
+
 # Functions extended with new method dispatches in this package
 import SpectroscopyTools: find_peaks, fit_peaks
 import SpectroscopyTools: transmittance_to_absorbance, absorbance_to_transmittance

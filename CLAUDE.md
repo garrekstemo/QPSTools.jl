@@ -20,6 +20,7 @@ using QPSTools
 using SpectroscopyTools  # types, fitting, baseline, peak detection
 using JASCOFiles         # JASCOSpectrum + isftir/israman/isuvvis
 using ElabFTW            # eLabFTW CRUD
+using QPSScanFormat      # QPSDrive scan-file I/O (load_scan, Loaded* types)
 ```
 
 `using QPSTools` brings in only names QPSTools itself defines. No sibling re-exports — method dispatch threads the layers together.

@@ -3,6 +3,7 @@ using QPSTools
 using SpectroscopyTools
 using JASCOFiles
 using ElabFTW
+using QPSScanFormat
 
 import SpectroscopyTools: format_results, n_exp, weights
 

@@ -7,7 +7,7 @@ using Aqua
         Aqua.test_all(QPSTools;
             deps_compat=(ignore=[
                 :Dates, :DelimitedFiles, :LinearAlgebra, :Statistics,
-                :ElabFTW, :JASCOFiles, :SpectroscopyTools,
+                :ElabFTW, :JASCOFiles, :QPSScanFormat, :SpectroscopyTools,
             ],),
         )
     end
@@ -22,4 +22,5 @@ using Aqua
     include("test_plmap.jl")
     include("test_plotting.jl")
     include("test_format_results.jl")
+    include("test_qpsscanformat_coexistence.jl")
 end
