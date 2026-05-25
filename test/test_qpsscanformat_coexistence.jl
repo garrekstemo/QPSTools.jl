@@ -1,33 +1,48 @@
-# Smoke tests for the recommended student workflow:
+# Smoke tests for the QPSScanFormat ⇄ QPSTools integration.
+#
+# Student workflow this should make work:
 #
 #     using QPSTools
-#     using QPSScanFormat
-#     result = load_scan("foo.h5")
+#     result = load_scan("foo.h5")   # reader re-exported from QPSScanFormat
+#     QPSScanFormat.save_kinetic_scan(...)   # writers stay namespace-prefixed
 #
-# QPSTools does not re-export load_scan or Loaded* (per the no-sibling-re-export
-# rule in QPSTools' CLAUDE.md); these tests just verify the two packages
-# coexist and that a file produced by QPSScanFormat is readable in a session
-# that has both packages loaded.
+# Read-side names are explicitly re-exported as a documented exception to the
+# no-sibling-re-export rule (see QPSTools/CLAUDE.md). Writers and schema
+# constants are NOT re-exported.
 
-@testset "QPSScanFormat coexistence" begin
+@testset "QPSScanFormat coexistence + re-exports" begin
     @testset "both packages load alongside QPSTools" begin
         @test isdefined(@__MODULE__, :QPSScanFormat)
         @test isdefined(@__MODULE__, :QPSTools)
         @test isdefined(@__MODULE__, :SpectroscopyTools)
     end
 
-    @testset "QPSTools does not re-export load_scan or Loaded* types" begin
-        # Per QPSTools CLAUDE.md: "using QPSTools brings in only names QPSTools
-        # itself defines. No sibling re-exports." Confirm the public names of
-        # QPSScanFormat are reachable via the QPSScanFormat module, not the
-        # QPSTools module.
-        @test :load_scan ∉ names(QPSTools)
-        @test :LoadedScanResult ∉ names(QPSTools)
-        @test :load_scan ∈ names(QPSScanFormat)
-        @test :LoadedScanResult ∈ names(QPSScanFormat)
+    @testset "read-side API re-exported, writers and schema NOT re-exported" begin
+        qpstools_names = names(QPSTools)
+
+        # Read-side API: re-exported.
+        @test :load_scan ∈ qpstools_names
+        @test :LoadedScanResult ∈ qpstools_names
+        @test :LoadedSpectralResult ∈ qpstools_names
+        @test :LoadedCompositeResult ∈ qpstools_names
+        @test :LoadedNoiseResult ∈ qpstools_names
+        @test :update_scan_description! ∈ qpstools_names
+        @test :update_scan_comment! ∈ qpstools_names
+        @test :update_scan_sample_name! ∈ qpstools_names
+
+        # Writers + schema constants: NOT re-exported, reachable only via
+        # QPSScanFormat.* (intentional — students don't write files, QPSDrive does).
+        @test :save_kinetic_scan ∉ qpstools_names
+        @test :save_spectral_scan ∉ qpstools_names
+        @test :save_composite_scan ∉ qpstools_names
+        @test :save_broadband_scan ∉ qpstools_names
+        @test :save_noise_scan ∉ qpstools_names
+        @test :FORMAT_VERSION ∉ qpstools_names
+        @test :FORMAT_TAG ∉ qpstools_names
+        @test :is_hdf5_path ∉ qpstools_names
     end
 
-    @testset "round-trip a QPSScanFormat file in a QPSTools session" begin
+    @testset "round-trip: write via QPSScanFormat, read via QPSTools.load_scan" begin
         trace = TATrace(collect(0.0:0.5:5.0), randn(11))
         sweeps = SweepData(randn(11, 3), randn(11, 3), zeros(11, 3))
 
@@ -38,8 +53,10 @@
                 description = "QPSTools coexistence smoke",
                 duration_seconds = 1.0,
             )
-            r = QPSScanFormat.load_scan(path)
-            @test r isa QPSScanFormat.LoadedScanResult
+            # Reader called without the QPSScanFormat. prefix — this is the
+            # ergonomic win of the re-export.
+            r = load_scan(path)
+            @test r isa LoadedScanResult
             @test r.description == "QPSTools coexistence smoke"
             @test r.trace.time ≈ trace.time
             @test r.sweeps.X ≈ sweeps.X

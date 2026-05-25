@@ -31,10 +31,14 @@ using Makie
 using SpectroscopyTools
 using ElabFTW
 
-# Brought in so QPSTools-side methods can DISPATCH on QPSScanFormat's Loaded*
-# types (e.g. future `plot_kinetics(::LoadedScanResult)` overloads). Per
-# QPSTools' no-sibling-re-export rule, QPSScanFormat names stay reachable
-# only via `using QPSScanFormat` in user code — they're not re-exported here.
+# QPSScanFormat owns the canonical HDF5 scan-file reader/writer + Loaded*
+# types. We re-export the user-facing reader API as a documented exception
+# to the no-sibling-re-export rule, because `load_scan` is the analysis
+# entry point students use every day — making them load a separate package
+# for one function call is friction with no real upside (QPSScanFormat will
+# never have an independent identity to a QPSTools user). The exception
+# applies only to the read-side API. Writer + schema constants stay
+# behind the `QPSScanFormat.` prefix.
 using QPSScanFormat
 
 # Functions extended with new method dispatches in this package
@@ -86,6 +90,14 @@ export load_lvm
 export load_pl_map, load_wavelength_file
 export find_peak_time
 export load_cavity
+
+# QPSDrive scan-file reader (re-exported from QPSScanFormat; see using
+# block above for the rationale behind this documented exception to
+# the no-re-export rule). Writers and schema constants stay namespace-
+# prefixed under `QPSScanFormat.`.
+export load_scan
+export LoadedScanResult, LoadedSpectralResult, LoadedCompositeResult, LoadedNoiseResult
+export update_scan_description!, update_scan_comment!, update_scan_sample_name!
 
 # Cavity types and analysis
 export CavitySpectrum, CavityFitResult, DispersionFitResult
