@@ -12,7 +12,7 @@ QPSTools.jl provides LabVIEW pump-probe loaders, cavity polariton analysis, Maki
 | Package | Role |
 |---|---|
 | **QPSTools.jl** | Lab loaders, cavity polariton, plotting, eLabFTW glue (this package) |
-| [SpectroscopyTools.jl](https://github.com/garrekstemo/SpectroscopyTools.jl) | Types, fitting, baseline, peak detection, PLMap, chirp, DAS |
+| [OpticalSpectroscopy.jl](https://github.com/garrekstemo/OpticalSpectroscopy.jl) | Types, fitting, baseline, peak detection, PLMap, chirp, DAS |
 | [JASCOFiles.jl](https://github.com/garrekstemo/JASCOFiles.jl) | `JASCOSpectrum` + FTIR/Raman/UV-Vis CSV parsing |
 | [ElabFTW.jl](https://github.com/garrekstemo/ElabFTW.jl) | eLabFTW API client |
 | [CurveFitModels.jl](https://github.com/garrekstemo/CurveFitModels.jl) | Pure-math model functions (lineshapes, dielectric, etc.) |
@@ -25,14 +25,14 @@ QPSTools.jl provides LabVIEW pump-probe loaders, cavity polariton analysis, Maki
 julia --project=.
 using Revise
 using QPSTools
-using SpectroscopyTools  # fit_exp_decay, fit_peaks, find_peaks, baselines, …
+using OpticalSpectroscopy  # fit_exp_decay, fit_peaks, find_peaks, baselines, …
 using CairoMakie         # or GLMakie for interactive
 ```
 
 ### Pump-probe workflow
 
 ```julia
-using QPSTools, SpectroscopyTools, CairoMakie
+using QPSTools, OpticalSpectroscopy, CairoMakie
 
 # Load kinetic trace (peak auto-shifted to t=0)
 trace = load_ta_trace("data/kinetics.lvm"; mode=:OD)
@@ -54,7 +54,7 @@ report(global_result)
 ### Cavity polariton workflow
 
 ```julia
-using QPSTools, SpectroscopyTools, CairoMakie
+using QPSTools, OpticalSpectroscopy, CairoMakie
 
 # Load a JASCO FTIR transmission spectrum from a cavity sample
 spec = load_cavity("data/cavity/Au_0deg.csv"; mirror="Au", angle=0,
@@ -73,7 +73,7 @@ save("figures/cavity.pdf", fig)
 ### PL map workflow
 
 ```julia
-using QPSTools, SpectroscopyTools, CairoMakie
+using QPSTools, OpticalSpectroscopy, CairoMakie
 
 m = load_pl_map("data/PLmap/scan.lvm"; nx=51, ny=51, step_size=2.16,
                 pixel_range=(950, 1100))
@@ -87,7 +87,7 @@ save("figures/pl_map.pdf", fig)
 ### Publication figure
 
 ```julia
-using QPSTools, SpectroscopyTools, CairoMakie
+using QPSTools, OpticalSpectroscopy, CairoMakie
 
 set_theme!(print_theme())
 fig = Figure(size=(1000, 400))
@@ -114,7 +114,7 @@ save("figures/publication.pdf", fig)
 - **Plotting themes and layouts**: `qps_theme`, `print_theme`, `poster_theme`, `lab_colors`, `lab_linewidths`, `plot_spectrum`, `plot_kinetics`, `plot_cavity`, `plot_ta_heatmap`, `plot_dispersion`, `plot_hopfield`, `plot_pl_map`, `plot_pl_spectra`, `plot_chirp`, `plot_das`, `plot_comparison`, `plot_waterfall`
 - **eLabFTW provenance** for `AnnotatedSpectrum`: `log_to_elab`, `tags_from_sample`
 
-For peak detection / fitting, baseline correction, exponential decay fitting, chirp correction, PLMap analysis, DAS extraction, normalize / smooth, and unit conversions, load `SpectroscopyTools` alongside QPSTools.
+For peak detection / fitting, baseline correction, exponential decay fitting, chirp correction, PLMap analysis, DAS extraction, normalize / smooth, and unit conversions, load `OpticalSpectroscopy` alongside QPSTools.
 
 ## Data Import
 
@@ -141,7 +141,7 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
 - **Julia 1.11+**
 - **Makie.jl**: load CairoMakie (publications) or GLMakie (interactive) yourself
-- **SpectroscopyTools.jl**, **JASCOFiles.jl**, **ElabFTW.jl**: sibling packages, declared in `Project.toml`
+- **OpticalSpectroscopy.jl**, **JASCOFiles.jl**, **ElabFTW.jl**: sibling packages, declared in `Project.toml`
 
 ## Contributing
 

@@ -13,7 +13,7 @@ spectroscopy lives in the sibling packages — load them alongside:
 
 ```julia
 using QPSTools
-using SpectroscopyTools  # types, fitting, baseline, peak detection
+using OpticalSpectroscopy  # types, fitting, baseline, peak detection
 using JASCOFiles         # JASCOSpectrum + isftir/israman/isuvvis
 using ElabFTW            # eLabFTW CRUD
 ```
@@ -28,7 +28,7 @@ using Dates
 using JASCOFiles
 using Makie
 
-using SpectroscopyTools
+using OpticalSpectroscopy
 using ElabFTW
 
 # QPSScanFormat owns the canonical HDF5 scan-file reader/writer + Loaded*
@@ -42,14 +42,14 @@ using ElabFTW
 using QPSScanFormat
 
 # Functions extended with new method dispatches in this package
-import SpectroscopyTools: find_peaks, fit_peaks
-import SpectroscopyTools: transmittance_to_absorbance, absorbance_to_transmittance
-import SpectroscopyTools: subtract_spectrum, correct_baseline
-import SpectroscopyTools: xdata, ydata, xlabel, ylabel, source_file, wavenumber
-import SpectroscopyTools: savitzky_golay_smooth, derivative
-import SpectroscopyTools: band_area, normalize_area, normalize_to_peak, estimate_snr
-import SpectroscopyTools: average_spectra
-import SpectroscopyTools: dielectric_real, dielectric_imag
+import OpticalSpectroscopy: find_peaks, fit_peaks
+import OpticalSpectroscopy: transmittance_to_absorbance, absorbance_to_transmittance
+import OpticalSpectroscopy: subtract_spectrum, correct_baseline
+import OpticalSpectroscopy: xdata, ydata, xlabel, ylabel, source_file, wavenumber
+import OpticalSpectroscopy: savitzky_golay_smooth, derivative
+import OpticalSpectroscopy: band_area, normalize_area, normalize_to_peak, estimate_snr
+import OpticalSpectroscopy: average_spectra
+import OpticalSpectroscopy: dielectric_real, dielectric_imag
 import ElabFTW: tags_from_sample, log_to_elab
 
 # ============================================================================

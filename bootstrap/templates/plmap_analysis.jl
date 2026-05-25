@@ -9,7 +9,7 @@
 # Use explore_plmap.jl to find PIXEL_RANGE first, then fill it in here.
 
 using QPSTools
-using SpectroscopyTools
+using OpticalSpectroscopy
 using CairoMakie
 
 FIGDIR = joinpath(@__DIR__, "figures")

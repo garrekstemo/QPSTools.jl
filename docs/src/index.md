@@ -2,7 +2,7 @@
 
 **Lab-specific integration layer for the QPS spectroscopy ecosystem.**
 
-QPSTools is the glue package for the Quantum Photonic Spectroscopy (QPS) lab. It owns the lab-specific pieces — LabVIEW file loaders, cavity polariton analysis, Makie plotting themes, and eLabFTW provenance — and composes them on top of the registered, general-purpose sibling packages. General-purpose spectroscopy (types, fitting, baseline correction, peak detection) lives in [SpectroscopyTools.jl](https://garrekstemo.github.io/SpectroscopyTools.jl/).
+QPSTools is the glue package for the Quantum Photonic Spectroscopy (QPS) lab. It owns the lab-specific pieces — LabVIEW file loaders, cavity polariton analysis, Makie plotting themes, and eLabFTW provenance — and composes them on top of the registered, general-purpose sibling packages. General-purpose spectroscopy (types, fitting, baseline correction, peak detection) lives in [OpticalSpectroscopy.jl](https://garrekstemo.github.io/OpticalSpectroscopy.jl/).
 
 ## Installation
 
@@ -17,7 +17,7 @@ Pkg.add(url="https://github.com/garrekstemo/QPSTools.jl")
 
 ```julia
 using QPSTools
-using SpectroscopyTools  # types, fitting, baseline, peak detection
+using OpticalSpectroscopy  # types, fitting, baseline, peak detection
 using JASCOFiles         # JASCOSpectrum + isftir/israman/isuvvis
 using ElabFTW            # eLabFTW CRUD
 using CairoMakie         # or GLMakie for interactive exploration
@@ -32,7 +32,7 @@ CurveFitModels.jl ──── zero deps, pure math model functions
        │
 CurveFit.jl ────────── fitting backend (NonlinearCurveFitProblem, solve)
        │
-SpectroscopyTools.jl ── base types + algorithms (public, registerable)
+OpticalSpectroscopy.jl ── base types + algorithms (public, registerable)
        │                  TATrace, TASpectrum, TAMatrix, PLMap
        │                  fit_peaks, fit_exp_decay, fit_ta_spectrum
        │                  baseline, smoothing, normalize
@@ -71,7 +71,7 @@ QPSTools.QPSTools
 
 ## Related Packages
 
-- [SpectroscopyTools.jl](https://garrekstemo.github.io/SpectroscopyTools.jl/) — steady-state and ultrafast spectroscopy types and algorithms
+- [OpticalSpectroscopy.jl](https://garrekstemo.github.io/OpticalSpectroscopy.jl/) — steady-state and ultrafast spectroscopy types and algorithms
 - [CurveFitModels.jl](https://garrekstemo.github.io/CurveFitModels.jl/stable/) — lineshape and temporal model functions
 - [CurveFit.jl](https://github.com/garrekstemo/CurveFit.jl) — the nonlinear least-squares solver
 - [JASCOFiles.jl](https://github.com/garrekstemo/JASCOFiles.jl) — JASCO instrument file reader

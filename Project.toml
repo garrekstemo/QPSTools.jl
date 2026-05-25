@@ -10,18 +10,16 @@ ElabFTW = "cc2949f1-737d-51f9-be66-fe7a219205ce"
 JASCOFiles = "8f461479-960a-4355-a802-16cf8971498c"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+OpticalSpectroscopy = "f1436f7a-66ba-4269-a153-8996db8f0853"
 QPSScanFormat = "be28e0f9-8e2f-4b98-9124-ee1c250d40da"
-SpectroscopyTools = "f1436f7a-66ba-4269-a153-8996db8f0853"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [sources]
 ElabFTW = {url = "https://github.com/garrekstemo/ElabFTW.jl"}
 JASCOFiles = {url = "https://github.com/garrekstemo/JASCOFiles.jl"}
+OpticalSpectroscopy = {path = "../OpticalSpectroscopy.jl"}
 # QPSScanFormat is local-only during dev; switch to GitHub URL once published.
 QPSScanFormat = {path = "../QPSScanFormat.jl"}
-# TEMPORARY: point at feat/sweepdata until PR garrekstemo/SpectroscopyTools.jl#31
-# merges. Swap back to bare `url = ...` after merge.
-SpectroscopyTools = {url = "https://github.com/garrekstemo/SpectroscopyTools.jl", rev = "feat/sweepdata"}
 
 [compat]
 Aqua = "0.8"

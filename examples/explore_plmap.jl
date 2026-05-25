@@ -6,7 +6,7 @@
 #
 # Ref: bootstrap/templates/explore_plmap.jl
 
-using QPSTools, SpectroscopyTools, GLMakie
+using QPSTools, OpticalSpectroscopy, GLMakie
 
 PROJECT_ROOT = dirname(@__DIR__)
 set_theme!(qps_theme())

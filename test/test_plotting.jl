@@ -13,7 +13,7 @@
     # Global fit on subset of wavelengths (fast)
     result = fit_global(matrix; n_exp=2, λ=[550, 600, 650])
 
-    # das accessor re-exported from SpectroscopyTools
+    # das accessor re-exported from OpticalSpectroscopy
     d = das(result)
     @test size(d, 1) == 2
     @test size(d, 2) == 3

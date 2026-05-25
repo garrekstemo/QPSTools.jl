@@ -335,7 +335,7 @@ transmittance(r::CavityFitResult) = r._T_data
 
 Return fitted transmittance on the original wavenumber grid.
 """
-function SpectroscopyTools.predict(result::CavityFitResult)
+function OpticalSpectroscopy.predict(result::CavityFitResult)
     return predict(result, result._nu)
 end
 
@@ -344,7 +344,7 @@ end
 
 Return fitted transmittance on a custom wavenumber array.
 """
-function SpectroscopyTools.predict(result::CavityFitResult, nu::AbstractVector)
+function OpticalSpectroscopy.predict(result::CavityFitResult, nu::AbstractVector)
     nu0s = [osc.nu0 for osc in result.oscillators]
     Gammas = [osc.Gamma for osc in result.oscillators]
     As = [osc.A for osc in result.oscillators]
@@ -357,7 +357,7 @@ end
 
 Return residuals (data - fit) on the original wavenumber grid.
 """
-function SpectroscopyTools.residuals(result::CavityFitResult)
+function OpticalSpectroscopy.residuals(result::CavityFitResult)
     return result._T_data .- predict(result)
 end
 
@@ -401,7 +401,7 @@ end
 
 Format cavity fit results as a markdown table.
 """
-function SpectroscopyTools.format_results(r::CavityFitResult)
+function OpticalSpectroscopy.format_results(r::CavityFitResult)
     lines = String[]
     push!(lines, "## Cavity Spectrum Fit\n")
 
@@ -502,7 +502,7 @@ function Base.show(io::IO, ::MIME"text/plain", r::DispersionFitResult)
     println(io, "Data points: $(length(r.lp_angles)) LP, $(length(r.up_angles)) UP")
 end
 
-function SpectroscopyTools.format_results(r::DispersionFitResult)
+function OpticalSpectroscopy.format_results(r::DispersionFitResult)
     lines = String[]
     push!(lines, "## Dispersion Fit (Coupled Oscillator)\n")
 

@@ -5,7 +5,7 @@
 ### TA Phase 4: plot_das()
 - [x] `plot_das(result::GlobalFitResult)` — decay-associated spectra visualization (Makie)
 
-The fitting side (`fit_global(::TAMatrix; n_exp)`, multi-exp `GlobalFitResult`, DAS extraction) is a SpectroscopyTools task — see `SpectroscopyTools.jl/TODO.md` task 3.
+The fitting side (`fit_global(::TAMatrix; n_exp)`, multi-exp `GlobalFitResult`, DAS extraction) is a OpticalSpectroscopy task — see `OpticalSpectroscopy.jl/TODO.md` task 3.
 
 ### Housekeeping
 - [x] Fix `fit_global` test: `result.tau` → `result.taus` (field was renamed)
@@ -25,7 +25,7 @@ The fitting side (`fit_global(::TAMatrix; n_exp)`, multi-exp `GlobalFitResult`, 
 
 - [x] Multi-peak fitting (FTIR + Raman) with auto-detect via find_peaks()
 - [x] TA Phases 1-3: TATrace, TAMatrix, multi-exponential, plotting
-- [x] TA Phase 5: Chirp correction + background subtraction (moved to SpectroscopyTools)
+- [x] TA Phase 5: Chirp correction + background subtraction (moved to OpticalSpectroscopy)
 - [x] Registry system (eLabFTW read + hybrid cache)
 - [x] Unitful.jl integration (concentrations, time, spectroscopy conversions)
 - [x] Exponential decay fitting with IRF convolution

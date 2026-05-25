@@ -7,7 +7,7 @@ using Aqua
         Aqua.test_all(QPSTools;
             deps_compat=(ignore=[
                 :Dates, :DelimitedFiles, :LinearAlgebra, :Statistics,
-                :ElabFTW, :JASCOFiles, :QPSScanFormat, :SpectroscopyTools,
+                :ElabFTW, :JASCOFiles, :QPSScanFormat, :OpticalSpectroscopy,
             ],),
         )
     end

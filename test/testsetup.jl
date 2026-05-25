@@ -1,11 +1,15 @@
 using Test
 using QPSTools
-using SpectroscopyTools
+using OpticalSpectroscopy
 using JASCOFiles
 using ElabFTW
 using QPSScanFormat
 
-import SpectroscopyTools: format_results, n_exp, weights
+import OpticalSpectroscopy: format_results, n_exp, weights
+# Disambiguate: both OpticalSpectroscopy and JASCOFiles export xlabel/ylabel.
+# Tests in this suite operate on OpticalSpectroscopy types (TATrace, TASpectrum,
+# TAMatrix), so resolve the bare names to OpticalSpectroscopy's methods.
+import OpticalSpectroscopy: xlabel, ylabel
 
 const PROJECT_ROOT = dirname(@__DIR__)
 

@@ -1,7 +1,7 @@
 # QPS-specific spectroscopy dispatches
 #
 # General-purpose spectroscopy (normalize, smoothing, fitting, baseline,
-# unit conversions, transforms, etc.) lives in SpectroscopyTools.jl. This
+# unit conversions, transforms, etc.) lives in OpticalSpectroscopy.jl. This
 # file adds dispatches that are useful in the QPS lab context for
 # JASCOSpectrum and AnnotatedSpectrum, plus the cavity transmittance model.
 

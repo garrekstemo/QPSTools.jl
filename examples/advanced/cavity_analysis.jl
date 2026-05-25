@@ -15,7 +15,7 @@
 # Output: figures/EXAMPLES/cavity/
 
 using QPSTools
-using SpectroscopyTools
+using OpticalSpectroscopy
 using CairoMakie
 
 # Output directory

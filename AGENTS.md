@@ -20,16 +20,13 @@ using QPSTools
 using OpticalSpectroscopy  # types, fitting, baseline, peak detection
 using JASCOFiles         # JASCOSpectrum + isftir/israman/isuvvis
 using ElabFTW            # eLabFTW CRUD
-using QPSScanFormat      # QPSDrive scan-file I/O (load_scan, Loaded* types)
 ```
 
-`using QPSTools` brings in only names QPSTools itself defines, with one documented exception: the read-side API of [QPSScanFormat](https://github.com/garrekstemo/QPSScanFormat.jl) (`load_scan`, `update_scan_description!`, `update_scan_comment!`, `update_scan_sample_name!`, and the `Loaded*` result types) is re-exported here because `load_scan` is the daily analysis entry point and forcing a second `using QPSScanFormat` for one function call is friction with no upside. Writers (`save_*_scan`) and schema constants (`FORMAT_VERSION`, `is_hdf5_path`, etc.) stay behind the `QPSScanFormat.` prefix — those are for the writer side (QPSDrive) and schema introspection, not student analysis.
-
-Sibling re-export remains the exception, not the rule. Method dispatch threads the rest of the layers together.
+`using QPSTools` brings in only names QPSTools itself defines. No sibling re-exports — method dispatch threads the layers together.
 
 ## Package Dependencies
 
-Compat policy follows global CLAUDE.md: let `Pkg.add()` auto-add lower bounds, don't remove them.
+Compat policy follows global AGENTS.md: let `Pkg.add()` auto-add lower bounds, don't remove them.
 
 ### Examples Environment
 

@@ -36,11 +36,11 @@ julia --project=. bootstrap/install.jl
 
 ```julia
 julia --project=.
-julia> using Revise, QPSTools, SpectroscopyTools
+julia> using Revise, QPSTools, OpticalSpectroscopy
 julia> using GLMakie
 ```
 
-`using QPSTools` brings in only QPSTools' own names (loaders, plotting, cavity polariton, eLabFTW glue). For peak fitting, baseline correction, exponential decay fitting, etc., load `SpectroscopyTools` alongside.
+`using QPSTools` brings in only QPSTools' own names (loaders, plotting, cavity polariton, eLabFTW glue). For peak fitting, baseline correction, exponential decay fitting, etc., load `OpticalSpectroscopy` alongside.
 
 ## What gets installed
 
@@ -49,7 +49,7 @@ julia> using GLMakie
 | Package | Purpose |
 |---------|---------|
 | QPSTools | Lab loaders, plotting, cavity polariton, eLabFTW glue |
-| SpectroscopyTools | Spectroscopy types, fitting, baseline, peak detection |
+| OpticalSpectroscopy | Spectroscopy types, fitting, baseline, peak detection |
 | JASCOFiles | JASCO FTIR/Raman/UV-Vis CSV import (`JASCOSpectrum`) |
 | GLMakie | Interactive plotting |
 | Revise | Live code reloading |
@@ -181,12 +181,12 @@ often live in sibling packages:
 
 - **QPSTools** — `load_ta_trace`, `load_pl_map`, `load_cavity`,
   `plot_spectrum`, `plot_kinetics`, `plot_pl_map`, `print_theme`, …
-- **SpectroscopyTools** — `fit_exp_decay`, `fit_peaks`, `find_peaks`,
+- **OpticalSpectroscopy** — `fit_exp_decay`, `fit_peaks`, `find_peaks`,
   `subtract_background`, baselines, `report`, …
 - **JASCOFiles** — `JASCOSpectrum(path)` for any FTIR/Raman/UV-Vis CSV
 - **ElabFTW** — `log_to_elab`, `tags_from_sample`, experiment CRUD
 
-A typical script starts with `using QPSTools, SpectroscopyTools` (and a
+A typical script starts with `using QPSTools, OpticalSpectroscopy` (and a
 Makie backend). Method dispatch threads the layers together — you don't
 need to remember which package owns which function.
 

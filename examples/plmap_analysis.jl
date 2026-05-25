@@ -6,7 +6,7 @@
 # Ref: bootstrap/templates/plmap_analysis.jl
 
 using QPSTools
-using SpectroscopyTools
+using OpticalSpectroscopy
 using CairoMakie
 
 PROJECT_ROOT = dirname(@__DIR__)

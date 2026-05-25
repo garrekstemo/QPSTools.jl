@@ -47,8 +47,8 @@ end
 unregistered = Dict(
     "QPSTools"          => ("91240044-bfa4-4bca-8577-4d123ebe80d7",
                             "https://github.com/garrekstemo/QPSTools.jl.git"),
-    "SpectroscopyTools" => ("f1436f7a-66ba-4269-a153-8996db8f0853",
-                            "https://github.com/garrekstemo/SpectroscopyTools.jl.git"),
+    "OpticalSpectroscopy" => ("f1436f7a-66ba-4269-a153-8996db8f0853",
+                            "https://github.com/garrekstemo/OpticalSpectroscopy.jl.git"),
     "JASCOFiles"        => ("8f461479-960a-4355-a802-16cf8971498c",
                             "https://github.com/garrekstemo/JASCOFiles.jl.git"),
 )

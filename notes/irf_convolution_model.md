@@ -4,7 +4,7 @@
 
 Ultrafast pump-probe experiments measure dynamics convolved with the instrument response function (IRF). When the decay timescale is comparable to the pulse duration, fitting a simple exponential to the data gives the wrong time constant. IRF deconvolution recovers the true dynamics.
 
-The fitting itself is provided by SpectroscopyTools.jl (`fit_exp_decay(trace; irf=true)`); QPSTools just supplies the LabVIEW loaders and plotting layouts. This document explains the underlying model.
+The fitting itself is provided by OpticalSpectroscopy.jl (`fit_exp_decay(trace; irf=true)`); QPSTools just supplies the LabVIEW loaders and plotting layouts. This document explains the underlying model.
 
 ## The Model
 
@@ -71,7 +71,7 @@ The cross-correlation of two identical Gaussians with width `sigma_pulse` gives 
 ## Usage
 
 ```julia
-using QPSTools, SpectroscopyTools
+using QPSTools, OpticalSpectroscopy
 
 trace = load_ta_trace("kinetics.lvm"; mode=:OD)
 

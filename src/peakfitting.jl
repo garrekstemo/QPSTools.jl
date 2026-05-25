@@ -2,7 +2,7 @@
 #
 # General-purpose peak fitting (fit_peaks for raw vectors and AbstractSpectroscopyData,
 # predict, predict_peak, predict_baseline, residuals, and all helpers)
-# is provided by SpectroscopyTools.jl.
+# is provided by OpticalSpectroscopy.jl.
 #
 # This file adds:
 # - fit_peaks dispatches for AnnotatedSpectrum (auto-fills sample_id)

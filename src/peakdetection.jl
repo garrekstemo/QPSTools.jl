@@ -1,7 +1,7 @@
 # QPS-specific peak detection dispatches
 #
 # General-purpose peak detection (PeakInfo, find_peaks for vectors, peak_table)
-# is provided by SpectroscopyTools.jl.
+# is provided by OpticalSpectroscopy.jl.
 #
 # This file adds:
 # - find_peaks dispatch for AnnotatedSpectrum

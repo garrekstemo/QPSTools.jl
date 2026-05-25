@@ -1,7 +1,7 @@
 @isdefined(PROJECT_ROOT) || include("testsetup.jl")
 
 # PLMap algorithm behaviour (extract_spectrum, subtract_background,
-# normalize_intensity, peak_centers, etc.) is tested in SpectroscopyTools.
+# normalize_intensity, peak_centers, etc.) is tested in OpticalSpectroscopy.
 # This file exercises only the QPSTools-owned pieces: the `.lvm` loader
 # (`load_pl_map`) and the Makie plotting wrappers.
 

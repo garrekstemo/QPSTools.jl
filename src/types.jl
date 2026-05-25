@@ -2,7 +2,7 @@
 QPS-specific data types.
 
 General-purpose types (`AbstractSpectroscopyData`, `TATrace`, `TASpectrum`,
-`TAMatrix`, fit result types, etc.) are provided by SpectroscopyTools.jl.
+`TAMatrix`, fit result types, etc.) are provided by OpticalSpectroscopy.jl.
 
 This file defines QPS-specific types:
 - `AxisType` — enum for raw LVM axis detection (time vs wavelength)

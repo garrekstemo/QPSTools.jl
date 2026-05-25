@@ -36,11 +36,11 @@ julia --project=. bootstrap/install.jl
 
 ```julia
 julia --project=.
-julia> using Revise, QPSTools, SpectroscopyTools
+julia> using Revise, QPSTools, OpticalSpectroscopy
 julia> using GLMakie
 ```
 
-`using QPSTools` はQPSTools自身が定義する名前（ローダー、プロット、共振器ポラリトン、eLabFTW連携）のみを取り込みます。ピークフィッティング、ベースライン補正、指数減衰フィットなどには `SpectroscopyTools` を併用してください。
+`using QPSTools` はQPSTools自身が定義する名前（ローダー、プロット、共振器ポラリトン、eLabFTW連携）のみを取り込みます。ピークフィッティング、ベースライン補正、指数減衰フィットなどには `OpticalSpectroscopy` を併用してください。
 
 ## インストールされるもの
 
@@ -49,7 +49,7 @@ julia> using GLMakie
 | パッケージ | 用途 |
 |-----------|------|
 | QPSTools | ラボ用ローダー、プロット、共振器ポラリトン、eLabFTW連携 |
-| SpectroscopyTools | 分光データ型、フィッティング、ベースライン、ピーク検出 |
+| OpticalSpectroscopy | 分光データ型、フィッティング、ベースライン、ピーク検出 |
 | JASCOFiles | JASCO FTIR/Raman/UV-Vis CSV読み込み（`JASCOSpectrum`） |
 | GLMakie | インタラクティブなプロット |
 | Revise | コードのライブリロード |
@@ -177,12 +177,12 @@ QPSToolsはラボ統合層です。よく使う関数は兄弟パッケージに
 
 - **QPSTools** — `load_ta_trace`、`load_pl_map`、`load_cavity`、
   `plot_spectrum`、`plot_kinetics`、`plot_pl_map`、`print_theme`、…
-- **SpectroscopyTools** — `fit_exp_decay`、`fit_peaks`、`find_peaks`、
+- **OpticalSpectroscopy** — `fit_exp_decay`、`fit_peaks`、`find_peaks`、
   `subtract_background`、ベースライン、`report`、…
 - **JASCOFiles** — `JASCOSpectrum(path)` でFTIR/Raman/UV-Vis CSVを読む
 - **ElabFTW** — `log_to_elab`、`tags_from_sample`、実験ノートCRUD
 
-典型的なスクリプトは `using QPSTools, SpectroscopyTools`（とMakieバックエンド）
+典型的なスクリプトは `using QPSTools, OpticalSpectroscopy`（とMakieバックエンド）
 で始まります。メソッドディスパッチが層を繋ぐので、どの関数がどのパッケージに
 属するかを覚える必要はありません。
 

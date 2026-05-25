@@ -14,7 +14,7 @@
     @testset "both packages load alongside QPSTools" begin
         @test isdefined(@__MODULE__, :QPSScanFormat)
         @test isdefined(@__MODULE__, :QPSTools)
-        @test isdefined(@__MODULE__, :SpectroscopyTools)
+        @test isdefined(@__MODULE__, :OpticalSpectroscopy)
     end
 
     @testset "read-side API re-exported, writers and schema NOT re-exported" begin
