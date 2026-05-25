@@ -15,11 +15,15 @@ QPSScanFormat = "be28e0f9-8e2f-4b98-9124-ee1c250d40da"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [sources]
+# URLs in [sources] are the canonical setting — CI runners check out only
+# this repo, so local paths break them. For interactive live-edit dev, use
+# `Pkg.develop(path="../OpticalSpectroscopy.jl")` etc. (Manifest-only override,
+# not committed). See the global CLAUDE.md "Developing unregistered
+# interdependent packages" section.
 ElabFTW = {url = "https://github.com/garrekstemo/ElabFTW.jl"}
 JASCOFiles = {url = "https://github.com/garrekstemo/JASCOFiles.jl"}
-OpticalSpectroscopy = {path = "../OpticalSpectroscopy.jl"}
-# QPSScanFormat is local-only during dev; switch to GitHub URL once published.
-QPSScanFormat = {path = "../QPSScanFormat.jl"}
+OpticalSpectroscopy = {url = "https://github.com/garrekstemo/OpticalSpectroscopy.jl"}
+QPSScanFormat = {url = "https://github.com/garrekstemo/QPSScanFormat.jl"}
 
 [compat]
 Aqua = "0.8"
