@@ -73,4 +73,48 @@
             @test_throws ErrorException load_pl_map(lvm_path; nx=2, ny=2, wavelength=bad_wl)
         end
     end
+
+    @testset "generate_wavelength_axis from start/stop" begin
+        wl = generate_wavelength_axis(5; start=500.0, stop=502.0)
+
+        @test wl isa Vector{Float64}
+        @test length(wl) == 5
+        @test wl ≈ [500.0, 500.5, 501.0, 501.5, 502.0]
+        @test first(wl) == 500.0
+        @test last(wl) == 502.0
+        @test issorted(wl)
+    end
+
+    @testset "generate_wavelength_axis from start/dispersion" begin
+        wl = generate_wavelength_axis(5; start=500.0, dispersion=0.5)
+
+        @test length(wl) == 5
+        @test wl ≈ [500.0, 500.5, 501.0, 501.5, 502.0]
+
+        # Negative dispersion (reversed axis) is valid
+        wl_rev = generate_wavelength_axis(3; start=700.0, dispersion=-1.0)
+        @test wl_rev ≈ [700.0, 699.0, 698.0]
+    end
+
+    @testset "generate_wavelength_axis length matches a PLMap pixel count" begin
+        mktempdir() do dir
+            lvm_path = joinpath(dir, "map.lvm")
+            write_synthetic_lvm(lvm_path, 2, 2, 5)
+            m = load_pl_map(lvm_path; nx=2, ny=2)  # default pixel index axis
+
+            wl = generate_wavelength_axis(length(m.pixel); start=500.0, stop=600.0)
+            m2 = load_pl_map(lvm_path; nx=2, ny=2, wavelength=wl)
+
+            @test length(wl) == size(m.spectra, 3)
+            @test m2.pixel == wl
+        end
+    end
+
+    @testset "generate_wavelength_axis rejects degenerate input" begin
+        @test_throws ArgumentError generate_wavelength_axis(1; start=500.0, stop=600.0)        # n_pixel < 2
+        @test_throws ArgumentError generate_wavelength_axis(5; start=500.0)                     # neither stop nor dispersion
+        @test_throws ArgumentError generate_wavelength_axis(5; start=500.0, stop=600.0, dispersion=0.5)  # both
+        @test_throws ArgumentError generate_wavelength_axis(5; start=500.0, stop=500.0)         # flat
+        @test_throws ArgumentError generate_wavelength_axis(5; start=500.0, dispersion=0.0)     # zero dispersion
+    end
 end

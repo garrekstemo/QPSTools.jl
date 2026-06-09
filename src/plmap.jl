@@ -29,6 +29,47 @@ function load_wavelength_file(path::String)
 end
 
 """
+    generate_wavelength_axis(n_pixel; start, stop=nothing, dispersion=nothing) -> Vector{Float64}
+
+Build a length-`n_pixel` linear wavelength axis (nm) without a calibration
+file, for the common constant-dispersion spectrometer case. The result is a
+drop-in replacement for [`load_wavelength_file`](@ref) — assign it to a
+`PLMap`'s pixel axis.
+
+Provide exactly one of `stop` or `dispersion` alongside `start`:
+- `stop`: even ramp from `start` to `stop` inclusive (`range(start, stop, length=n_pixel)`).
+- `dispersion`: `start .+ (0:n_pixel-1) .* dispersion`, where `dispersion` is nm/pixel.
+
+Throws an `ArgumentError` if `n_pixel < 2`, if neither or both of `stop`/`dispersion`
+are given, if `stop == start`, or if `dispersion == 0` (all degenerate axes).
+
+# Examples
+```julia
+generate_wavelength_axis(512; start=500.0, stop=700.0)
+generate_wavelength_axis(512; start=500.0, dispersion=0.39)
+```
+"""
+function generate_wavelength_axis(n_pixel::Integer; start::Real,
+                                  stop::Union{Real,Nothing}=nothing,
+                                  dispersion::Union{Real,Nothing}=nothing)
+    n_pixel >= 2 || throw(ArgumentError("n_pixel must be at least 2 (got $n_pixel)."))
+
+    has_stop = !isnothing(stop)
+    has_disp = !isnothing(dispersion)
+    if has_stop == has_disp
+        throw(ArgumentError("Provide exactly one of `stop` or `dispersion`."))
+    end
+
+    if has_stop
+        stop == start && throw(ArgumentError("`stop` ($stop) must differ from `start` ($start)."))
+        return collect(range(Float64(start), Float64(stop), length=n_pixel))
+    else
+        dispersion == 0 && throw(ArgumentError("`dispersion` must be nonzero."))
+        return Float64(start) .+ (0:n_pixel-1) .* Float64(dispersion)
+    end
+end
+
+"""
     load_pl_map(filepath; nx=nothing, ny=nothing, step_size=1.0,
                 pixel_range=nothing, center=true, wavelength=nothing) -> PLMap
 

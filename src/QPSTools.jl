@@ -87,7 +87,7 @@ export PumpProbeData
 export load_spectroscopy
 export load_ta_trace, load_ta_spectrum, load_ta_matrix
 export load_lvm
-export load_pl_map, load_wavelength_file
+export load_pl_map, load_wavelength_file, generate_wavelength_axis
 export find_peak_time
 export load_cavity
 
