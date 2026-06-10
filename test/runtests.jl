@@ -7,7 +7,8 @@ using Aqua
         Aqua.test_all(QPSTools;
             deps_compat=(ignore=[
                 :Dates, :DelimitedFiles, :LinearAlgebra, :Statistics,
-                :ElabFTW, :JASCOFiles, :QPSScanFormat, :OpticalSpectroscopy,
+                :ElabFTW, :HamamatsuStreakFiles, :JASCOFiles, :QPSScanFormat,
+                :OpticalSpectroscopy,
             ],),
         )
     end
@@ -20,6 +21,7 @@ using Aqua
     include("test_elabftw.jl")
     include("test_wavelength.jl")
     include("test_plmap.jl")
+    include("test_streak.jl")
     include("test_plotting.jl")
     include("test_format_results.jl")
     include("test_qpsscanformat_coexistence.jl")
