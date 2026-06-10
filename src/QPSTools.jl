@@ -4,18 +4,20 @@
 Lab-specific glue for the QPS spectroscopy ecosystem. QPSTools defines:
 
 - LabVIEW pump-probe loaders (`load_ta_trace`, `load_ta_spectrum`, `load_ta_matrix`, `load_lvm`, `load_pl_map`)
+- Streak-camera PL loader (`load_streak_pl` → `StreakPL`)
 - Cavity polariton spectroscopy (`CavitySpectrum`, `fit_cavity_spectrum`, `fit_dispersion`)
 - Makie plotting themes and layouts (`plot_spectrum`, `plot_kinetics`, `plot_cavity`, …)
-- eLabFTW provenance (`log_to_elab`, `tags_from_sample` dispatched on `AnnotatedSpectrum`)
+- eLabFTW provenance (`log_to_elab`, `tags_from_sample` dispatched on `AnnotatedSpectrum` and `StreakPL`)
 
 `using QPSTools` brings in only names QPSTools itself defines. General-purpose
 spectroscopy lives in the sibling packages — load them alongside:
 
 ```julia
 using QPSTools
-using OpticalSpectroscopy  # types, fitting, baseline, peak detection
-using JASCOFiles         # JASCOSpectrum + isftir/israman/isuvvis
-using ElabFTW            # eLabFTW CRUD
+using OpticalSpectroscopy    # types, fitting, baseline, peak detection
+using JASCOFiles             # JASCOSpectrum + isftir/israman/isuvvis
+using HamamatsuStreakFiles   # StreakImage (raw streak .img reader)
+using ElabFTW                # eLabFTW CRUD
 ```
 
 Method dispatch threads the layers together.
@@ -26,6 +28,7 @@ using Statistics
 using LinearAlgebra
 using Dates
 using JASCOFiles
+using HamamatsuStreakFiles
 using Makie
 
 using OpticalSpectroscopy
@@ -58,6 +61,7 @@ import ElabFTW: tags_from_sample, log_to_elab
 
 include("types.jl")
 include("io.jl")
+include("streak.jl")
 include("elabftw_glue.jl")
 include("cavity.jl")
 include("plmap.jl")
@@ -73,6 +77,7 @@ include("plotting/plot_chirp.jl")
 include("plotting/plot_das.jl")
 include("plotting/plot_cavity.jl")
 include("plotting/plot_plmap.jl")
+include("plotting/plot_streak.jl")
 
 # ============================================================================
 # Exports
@@ -82,12 +87,14 @@ include("plotting/plot_plmap.jl")
 export AnnotatedSpectrum
 export AxisType, time_axis, wavelength_axis
 export PumpProbeData
+export StreakPL
 
 # Loaders
 export load_spectroscopy
 export load_ta_trace, load_ta_spectrum, load_ta_matrix
 export load_lvm
 export load_pl_map, load_wavelength_file
+export load_streak_pl
 export find_peak_time
 export load_cavity
 
@@ -119,6 +126,7 @@ export plot_das, plot_das!
 export plot_dispersion, plot_dispersion!
 export plot_hopfield, plot_hopfield!
 export plot_pl_map, plot_pl_spectra
+export plot_streak_pl
 
 # Themes
 export qps_theme, print_theme, poster_theme

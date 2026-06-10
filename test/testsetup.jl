@@ -2,6 +2,7 @@ using Test
 using QPSTools
 using OpticalSpectroscopy
 using JASCOFiles
+using HamamatsuStreakFiles
 using ElabFTW
 using QPSScanFormat
 
@@ -15,3 +16,6 @@ const PROJECT_ROOT = dirname(@__DIR__)
 
 include("fixtures/plmap.jl")
 const PLMAP_FIXTURE = make_plmap_fixture(joinpath(mktempdir(), "plmap_fixture.lvm"))
+
+include("fixtures/streak.jl")
+const STREAK_FIXTURE = make_streak_fixture(joinpath(mktempdir(), "streak_fixture.img"))
