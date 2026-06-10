@@ -275,15 +275,17 @@
         @test h.photon_LP + h.matter_LP ≈ 1.0 atol=1e-10
         @test h.photon_UP + h.matter_UP ≈ 1.0 atol=1e-10
 
-        # Far positive detuning: LP becomes more photon-like
+        # Far positive detuning (E_cav above E_vib): LP converges to the bare
+        # vibration -> matter-like; the UP takes the photon character.
         h_pos = hopfield_coefficients(E_vib + 100, E_vib, Omega)
-        @test h_pos.photon_LP > 0.9
-        @test h_pos.matter_UP > 0.9
+        @test h_pos.matter_LP > 0.9
+        @test h_pos.photon_UP > 0.9
 
-        # Far negative detuning: LP becomes more matter-like
+        # Far negative detuning (E_cav below E_vib): LP converges to the bare
+        # cavity mode -> photon-like; the UP takes the matter character.
         h_neg = hopfield_coefficients(E_vib - 100, E_vib, Omega)
-        @test h_neg.matter_LP > 0.9
-        @test h_neg.photon_UP > 0.9
+        @test h_neg.photon_LP > 0.9
+        @test h_neg.matter_UP > 0.9
 
         # Vector dispatch: fractions sum to 1 at every angle
         E_cav_vec = collect(1800.0:10.0:2300.0)
@@ -302,10 +304,47 @@
         @test all(h_vec.photon_LP .≈ h_vec.matter_UP)
         @test all(h_vec.matter_LP .≈ h_vec.photon_UP)
 
-        # Monotonicity: as E_cav increases, LP becomes more photon-like
+        # Monotonicity: as E_cav increases past the vibration, the LP pins to
+        # the vibration, so its photon fraction decreases.
         for i in 2:length(E_cav_vec)
-            @test h_vec.photon_LP[i] >= h_vec.photon_LP[i-1] - 1e-10
+            @test h_vec.photon_LP[i] <= h_vec.photon_LP[i-1] + 1e-10
         end
+    end
+
+    @testset "Physics: hopfield_coefficients match Hamiltonian eigenvectors" begin
+        # Reference: direct diagonalization of H = [E_cav Ω/2; Ω/2 E_vib].
+        # Basis order (photon, vibration); eigen() returns ascending eigenvalues,
+        # so column 1 is the lower polariton. Squared components are the fractions,
+        # independent of the trig parameterization used in the implementation.
+        eigen = QPSTools.LinearAlgebra.eigen
+        E_vib = 2050.0
+        Omega = 50.0
+
+        for delta in (-300.0, -50.0, 0.0, 50.0, 300.0)
+            E_cav = E_vib + delta
+            F = eigen([E_cav Omega/2; Omega/2 E_vib])
+            photon_LP_ref = F.vectors[1, 1]^2
+            matter_LP_ref = F.vectors[2, 1]^2
+            photon_UP_ref = F.vectors[1, 2]^2
+            matter_UP_ref = F.vectors[2, 2]^2
+
+            h = hopfield_coefficients(E_cav, E_vib, Omega)
+            @test h.photon_LP ≈ photon_LP_ref atol=1e-10
+            @test h.matter_LP ≈ matter_LP_ref atol=1e-10
+            @test h.photon_UP ≈ photon_UP_ref atol=1e-10
+            @test h.matter_UP ≈ matter_UP_ref atol=1e-10
+        end
+
+        # Closed form: photon_LP = (1 - δ/√(δ²+Ω²))/2
+        delta = 200.0
+        h = hopfield_coefficients(E_vib + delta, E_vib, Omega)
+        @test h.photon_LP ≈ (1 - delta / hypot(delta, Omega)) / 2 atol=1e-12
+
+        # Limiting case: cavity far ABOVE the vibration (positive detuning),
+        # the LP converges to the bare vibration → matter-like, photon_LP → 0.
+        h_far = hopfield_coefficients(E_vib + 1e4, E_vib, Omega)
+        @test h_far.photon_LP < 0.01
+        @test h_far.matter_LP > 0.99
     end
 
     @testset "Fitting: synthetic cavity spectrum round-trip" begin

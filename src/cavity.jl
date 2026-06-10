@@ -265,9 +265,11 @@ function hopfield_coefficients(E_cav, E_vib, Omega)
     delta = @. E_cav - E_vib
     theta = @. 0.5 * atan(Omega, delta)
 
-    # |C|^2 = cos^2(theta) is photon fraction of LP
-    photon_LP = @. cos(theta)^2
-    matter_LP = @. sin(theta)^2
+    # Photon fraction of the LP is sin^2(theta) = (1 - delta/sqrt(delta^2 + Omega^2))/2:
+    # at far positive detuning (E_cav >> E_vib) the LP converges to the bare
+    # vibration, so its photon fraction must vanish (theta -> 0, sin^2 -> 0).
+    photon_LP = @. sin(theta)^2
+    matter_LP = @. cos(theta)^2
     photon_UP = matter_LP
     matter_UP = photon_LP
 
