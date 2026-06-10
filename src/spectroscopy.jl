@@ -7,19 +7,51 @@
 
 # ============================================================================
 # TRANSMITTANCE ↔ ABSORBANCE: AnnotatedSpectrum dispatches
-# (JASCOSpectrum conversions live in JASCOFiles.)
 # ============================================================================
 
-# AnnotatedSpectrum dispatches delegate to JASCOFiles, which owns the
-# JASCOSpectrum conversions. The integration layer's job is to reconstruct
-# the wrapper around the converted inner data.
-function transmittance_to_absorbance(spec::T; kwargs...) where T<:AnnotatedSpectrum
-    new_data = JASCOFiles.transmittance_to_absorbance(spec.data; kwargs...)
+# The conversion NUMERICS are owned by OpticalSpectroscopy (single owner —
+# JASCOFiles' JASCOSpectrum methods duplicate the math with the opposite
+# percent default and deprecate implicit-default use). These dispatches call
+# the OpticalSpectroscopy vector functions with percent passed EXPLICITLY,
+# then reconstruct the JASCO wrapper. The default here is percent=true
+# because JASCO instruments record percent transmittance (0–100).
+# Note: OpticalSpectroscopy throws ArgumentError for nonpositive
+# transmittance (JASCOFiles 1.x returned Inf for T = 0).
+
+"""
+    transmittance_to_absorbance(spec::AnnotatedSpectrum; percent=true)
+
+Convert an annotated spectrum from transmittance to absorbance, `A = -log10(T)`.
+
+JASCO instruments record percent transmittance (0–100), so `percent=true` is
+the default; pass `percent=false` if the y-data is already fractional (0–1).
+Returns a new spectrum of the same type with `yunits = "ABS"`; sample
+metadata and path are preserved. Numerics from `OpticalSpectroscopy`.
+"""
+function transmittance_to_absorbance(spec::T; percent::Bool=true) where T<:AnnotatedSpectrum
+    d = spec.data
+    new_y = OpticalSpectroscopy.transmittance_to_absorbance(d.y; percent=percent)
+    new_data = JASCOSpectrum(d.title, d.date, d.spectrometer, d.datatype,
+                             d.xunits, "ABS", d.x, new_y, d.metadata)
     return T(new_data, spec.sample, spec.path)
 end
 
-function absorbance_to_transmittance(spec::T; kwargs...) where T<:AnnotatedSpectrum
-    new_data = JASCOFiles.absorbance_to_transmittance(spec.data; kwargs...)
+"""
+    absorbance_to_transmittance(spec::AnnotatedSpectrum; percent=true)
+
+Convert an annotated spectrum from absorbance to transmittance, `T = 10^(-A)`.
+
+Defaults to percent transmittance (`percent=true`, `yunits = "TRANSMITTANCE"`);
+pass `percent=false` for fractional transmittance (`yunits =
+"TRANSMITTANCE_FRAC"`). Returns a new spectrum of the same type; sample
+metadata and path are preserved. Numerics from `OpticalSpectroscopy`.
+"""
+function absorbance_to_transmittance(spec::T; percent::Bool=true) where T<:AnnotatedSpectrum
+    d = spec.data
+    new_y = OpticalSpectroscopy.absorbance_to_transmittance(d.y; percent=percent)
+    yunits = percent ? "TRANSMITTANCE" : "TRANSMITTANCE_FRAC"
+    new_data = JASCOSpectrum(d.title, d.date, d.spectrometer, d.datatype,
+                             d.xunits, yunits, d.x, new_y, d.metadata)
     return T(new_data, spec.sample, spec.path)
 end
 
