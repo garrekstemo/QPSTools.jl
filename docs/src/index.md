@@ -33,7 +33,7 @@ CurveFitModels.jl ──── zero deps, pure math model functions
 CurveFit.jl ────────── fitting backend (NonlinearCurveFitProblem, solve)
        │
 OpticalSpectroscopy.jl ── base types + algorithms (public, registerable)
-       │                  TATrace, TASpectrum, TAMatrix, PLMap
+       │                  KineticTrace, TASpectrum, TimeResolvedMatrix, PLMap
        │                  fit_peaks, fit_exp_decay, fit_ta_spectrum
        │                  baseline, smoothing, normalize
        │

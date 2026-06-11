@@ -1,6 +1,6 @@
 name = "QPSTools"
 uuid = "91240044-bfa4-4bca-8577-4d123ebe80d7"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Garrek Stemo <8449000+garrekstemo@users.noreply.github.com>"]
 
 [deps]

@@ -5,7 +5,7 @@
 ### TA Phase 4: plot_das()
 - [x] `plot_das(result::GlobalFitResult)` — decay-associated spectra visualization (Makie)
 
-The fitting side (`fit_global(::TAMatrix; n_exp)`, multi-exp `GlobalFitResult`, DAS extraction) is a OpticalSpectroscopy task — see `OpticalSpectroscopy.jl/TODO.md` task 3.
+The fitting side (`fit_global(::TimeResolvedMatrix; n_exp)`, multi-exp `GlobalFitResult`, DAS extraction) is a OpticalSpectroscopy task — see `OpticalSpectroscopy.jl/TODO.md` task 3.
 
 ### Housekeeping
 - [x] Fix `fit_global` test: `result.tau` → `result.taus` (field was renamed)
