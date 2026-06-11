@@ -110,7 +110,7 @@ save("figures/publication.pdf", fig)
 ## What lives here
 
 - **LabVIEW loaders**: `load_ta_trace`, `load_ta_spectrum`, `load_ta_matrix`, `load_lvm`, `load_pl_map`, `load_wavelength_file`, `load_spectroscopy` (auto-detect)
-- **Cavity polariton spectroscopy**: `CavitySpectrum`, `load_cavity`, `fit_cavity_spectrum`, `fit_dispersion`, `cavity_mode_energy`, `polariton_branches`, `polariton_eigenvalues`, `hopfield_coefficients`, `compute_cavity_transmittance`
+- **Cavity polariton spectroscopy**: the JASCO-backed `CavitySpectrum`, `load_cavity`, and a metadata-aware `fit_cavity_spectrum` dispatch. The physics and fitting (`fit_dispersion`, `cavity_mode_energy`, `polariton_branches`, `polariton_eigenvalues`, `hopfield_coefficients`, `compute_cavity_transmittance`) live in [CavitySpectroscopy.jl](https://github.com/garrekstemo/CavitySpectroscopy.jl) and are re-exported here
 - **Plotting themes and layouts**: `qps_theme`, `print_theme`, `poster_theme`, `lab_colors`, `lab_linewidths`, `plot_spectrum`, `plot_kinetics`, `plot_cavity`, `plot_ta_heatmap`, `plot_dispersion`, `plot_hopfield`, `plot_pl_map`, `plot_pl_spectra`, `plot_chirp`, `plot_das`, `plot_comparison`, `plot_waterfall`
 - **eLabFTW provenance** for `AnnotatedSpectrum`: `log_to_elab`, `tags_from_sample`
 

@@ -1,16 +1,11 @@
 """
-Cavity spectroscopy analysis: types, physics, and fitting.
+Lab-side cavity spectroscopy layer.
 
-Provides tools for fitting Fabry-Perot cavity transmission spectra with
-Lorentz oscillator models, extracting polariton peak positions, building
-dispersion curves, and fitting the coupled oscillator model to extract
-Rabi splitting and Hopfield coefficients.
-
-Physics chain:
-1. Multi-oscillator dielectric function (CurveFitModels: `dielectric_real`, `dielectric_imag`)
-2. Complex refractive index from dielectric function (`refractive_index`, `extinction_coeff`)
-3. Absorption coefficient from extinction coefficient
-4. Fabry-Perot Airy function (`cavity_transmittance` from spectroscopy.jl)
+QPSTools owns the JASCO-backed `CavitySpectrum` type, `load_cavity`, and the
+JASCO-aware `fit_cavity_spectrum` dispatch. The physics chain (dielectric
+function → refractive index → Fabry-Perot transmittance), polariton
+branches/Hopfield coefficients, and the fitting numerics live in the public
+CavitySpectroscopy.jl package.
 """
 
 # =============================================================================
