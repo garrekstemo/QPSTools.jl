@@ -116,35 +116,3 @@ function average_spectra(first::T, rest::T...; interpolate=false) where T<:Annot
     return average_spectra(named...; interpolate)
 end
 
-# ============================================================================
-# CAVITY TRANSMITTANCE
-# ============================================================================
-
-"""
-    cavity_transmittance(p, ν)
-
-Fabry-Perot cavity transmittance with an absorbing medium as a function of frequency.
-
-# Arguments
-- `p`: Parameters [n, α, L, R, ϕ]
-  - `n`: Refractive index
-  - `α`: Absorption coefficient
-  - `L`: Cavity length
-  - `R`: Mirror reflectance (T = 1 - R assumed)
-  - `ϕ`: Phase shift upon reflection
-- `ν`: Frequency (independent variable)
-
-```math
-\\begin{aligned}
-    T(\\nu) = \\frac{(1-R)^2 e^{-\\alpha L}}{1 + R^2 e^{-2\\alpha L} - 2R e^{-\\alpha L} \\cos(4\\pi n L \\nu + 2\\phi)}
-\\end{aligned}
-```
-
-[https://en.wikipedia.org/wiki/Fabry%E2%80%93P%C3%A9rot_interferometer](https://en.wikipedia.org/wiki/Fabry%E2%80%93P%C3%A9rot_interferometer)
-"""
-function cavity_transmittance(p, ν)
-    n, α, L, R, ϕ = p[1], p[2], p[3], p[4], p[5]
-    T = 1 - R
-    e = exp(-α * L)
-    @. T^2 * e / (1 + R^2 * e^2 - 2 * R * e * cos(4π * n * L * ν + 2 * ϕ))
-end

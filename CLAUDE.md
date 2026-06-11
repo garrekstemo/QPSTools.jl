@@ -10,7 +10,7 @@ QPSTools is the lab-specific integration layer for the QPS spectroscopy ecosyste
 
 - LabVIEW pump-probe loaders (`load_ta_trace`, `load_ta_spectrum`, `load_ta_matrix`, `load_lvm`, `load_pl_map`, `load_wavelength_file`)
 - Streak-camera PL wrapper (`load_streak_pl` → `StreakPL`, wrapping HamamatsuStreakFiles' `StreakImage`)
-- Cavity polariton spectroscopy (`CavitySpectrum`, `fit_cavity_spectrum`, `fit_dispersion`, polariton/Hopfield helpers)
+- Lab-side cavity polariton layer: JASCO-backed `CavitySpectrum`, `load_cavity`, JASCO-aware `fit_cavity_spectrum` dispatch. The physics + fitting numerics live in the public [CavitySpectroscopy.jl](https://github.com/garrekstemo/CavitySpectroscopy.jl) (re-exported here as a documented exception)
 - Makie themes and plot layouts (`plot_spectrum`, `plot_kinetics`, `plot_cavity`, `plot_ta_heatmap`, `plot_dispersion`, `plot_hopfield`, `plot_pl_map`, `plot_streak_pl`, `print_theme`, `poster_theme`)
 - eLabFTW provenance dispatches (`log_to_elab(::AnnotatedSpectrum, …)`, `tags_from_sample(::AnnotatedSpectrum)`, ditto for `StreakPL`)
 
@@ -58,7 +58,7 @@ src/
   spectroscopy.jl     # JASCOSpectrum/AnnotatedSpectrum dispatches, cavity_transmittance
   peakdetection.jl    # find_peaks(::AnnotatedSpectrum)
   peakfitting.jl      # fit_peaks(::AnnotatedSpectrum, …)
-  cavity.jl           # CavitySpectrum, fit_cavity_spectrum, fit_dispersion, polariton physics
+  cavity.jl           # JASCO-backed CavitySpectrum + dispatches into CavitySpectroscopy.jl
   plmap.jl            # load_pl_map, load_wavelength_file
   streak.jl           # StreakPL, load_streak_pl (wraps HamamatsuStreakFiles)
   elabftw_glue.jl     # log_to_elab/tags_from_sample dispatches on AnnotatedSpectrum + StreakPL

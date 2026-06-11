@@ -4,6 +4,7 @@ using OpticalSpectroscopy
 using JASCOFiles
 using HamamatsuStreakFiles
 using ElabFTW
+import CavitySpectroscopy
 # Qualified access only (QPSScanFormat.save_*_scan in fixtures). NOT
 # blanket-`using`: both QPSTools and QPSScanFormat export a `load_scan`
 # (QPSTools' is the typed wrapper) and the bindings would clash.
