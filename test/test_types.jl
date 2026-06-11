@@ -30,32 +30,33 @@ end
 end
 
 @testset "AnnotatedSpectrum transmittance ↔ absorbance" begin
-    # Regression pins for the AnnotatedSpectrum conversion path. The numerics
-    # are owned by OpticalSpectroscopy (single owner); the dispatch passes
-    # percent explicitly with default percent=true because JASCO instruments
-    # record percent transmittance (0–100).
+    # Regression pins for the AnnotatedSpectrum conversion path. Semantics
+    # are owned by JASCOFiles 2.0: scale inferred from yunits, explicit
+    # percent overrides, canonical ABSORBANCE output, NaN-with-warning for
+    # nonpositive transmittance.
     spec = JASCOSpectrum("cavity", DateTime(2026), "test", "INFRARED SPECTRUM",
                          "1/CM", "TRANSMITTANCE",
                          [1000.0, 2000.0, 3000.0], [95.0, 50.0, 10.0],
                          Dict{String,Any}())
     cs = CavitySpectrum(spec, Dict{String,Any}("_id" => "test"), "test.csv")
 
-    # Pinned %T → A: A = -log10(T/100); T = 10% → A = 1 landmark
+    # Pinned %T → A with the scale inferred from yunits: T = 10% → A = 1
     a = transmittance_to_absorbance(cs)
     @test a isa CavitySpectrum
-    @test a.data.yunits == "ABS"
+    @test a.data.yunits == "ABSORBANCE"
     @test a.data.x == spec.x
     @test ydata(a) ≈ [-log10(0.95), -log10(0.50), 1.0]
 
-    # Explicit percent=false for already-fractional data
+    # TRANSMITTANCE_FRAC is inferred as fractional; explicit percent agrees
     spec_frac = JASCOSpectrum("cavity", DateTime(2026), "test", "INFRARED SPECTRUM",
                               "1/CM", "TRANSMITTANCE_FRAC",
                               [1000.0], [0.5], Dict{String,Any}())
     cs_frac = CavitySpectrum(spec_frac, Dict{String,Any}(), "test.csv")
+    @test ydata(transmittance_to_absorbance(cs_frac)) ≈ [-log10(0.5)]
     @test ydata(transmittance_to_absorbance(cs_frac; percent=false)) ≈ [-log10(0.5)]
 
-    # Round trip back to %T preserves values, units, and sample metadata
-    t = absorbance_to_transmittance(a)
+    # Round trip back to %T: output scale is an explicit, required choice
+    t = absorbance_to_transmittance(a; percent=true)
     @test t isa CavitySpectrum
     @test t.data.yunits == "TRANSMITTANCE"
     @test ydata(t) ≈ [95.0, 50.0, 10.0]
@@ -64,18 +65,18 @@ end
     @test tf.data.yunits == "TRANSMITTANCE_FRAC"
     @test ydata(tf) ≈ [0.95, 0.50, 0.10]
 
-    # The dispatches must route through OpticalSpectroscopy's numerics, not
-    # JASCOFiles': JASCOFiles 1.x emits a deprecation-style warning when its
-    # JASCOSpectrum methods are called without an explicit percent, so the
-    # AnnotatedSpectrum path must stay silent.
-    @test_logs min_level=Logging.Warn transmittance_to_absorbance(cs)
-    @test_logs min_level=Logging.Warn absorbance_to_transmittance(a)
+    # a→t without an explicit output scale is a hard error (2.0 semantics)
+    @test_throws UndefKeywordError absorbance_to_transmittance(a)
 
-    # OpticalSpectroscopy guard semantics: nonpositive transmittance throws
-    # (JASCOFiles 1.x silently returned Inf for T = 0)
+    # t→a on a non-transmittance spectrum is rejected (no silent guessing)
+    @test_throws ArgumentError transmittance_to_absorbance(a)
+
+    # Nonpositive transmittance maps to NaN with a warning (saturated bands
+    # are routine in real FTIR data; the conversion must not crash)
     spec_zero = JASCOSpectrum("z", DateTime(2026), "test", "INFRARED SPECTRUM",
                               "1/CM", "TRANSMITTANCE",
                               [1000.0], [0.0], Dict{String,Any}())
     cs_zero = CavitySpectrum(spec_zero, Dict{String,Any}(), "z.csv")
-    @test_throws ArgumentError transmittance_to_absorbance(cs_zero)
+    a_zero = @test_logs (:warn, r"nonpositive") transmittance_to_absorbance(cs_zero)
+    @test isnan(only(ydata(a_zero)))
 end

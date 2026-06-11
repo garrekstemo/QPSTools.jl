@@ -88,7 +88,7 @@ function Base.show(io::IO, ::MIME"text/plain", spec::CavitySpectrum)
     println(io, "  range: $(round(minimum(x), digits=1)) - $(round(maximum(x), digits=1)) $(spec.data.xunits)")
     println(io, "  points: $(length(x))")
     !isempty(spec.data.spectrometer) && println(io, "  instrument: $(spec.data.spectrometer)")
-    println(io, "  date: $(spec.data.date)")
+    println(io, "  date: $(something(spec.data.date, "unknown"))")
 end
 
 # =============================================================================

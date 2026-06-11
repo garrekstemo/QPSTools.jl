@@ -11,7 +11,8 @@
 function _jasco_provenance_body(spec::AnnotatedSpectrum)
     lines = ["## Source", "- **File**: $(basename(spec.path))"]
     !isempty(spec.data.spectrometer) && push!(lines, "- **Instrument**: $(spec.data.spectrometer)")
-    push!(lines, "- **Acquired**: $(spec.data.date)")
+    # date can be nothing (JASCOFiles 2.0): omit rather than log a non-date
+    spec.data.date === nothing || push!(lines, "- **Acquired**: $(spec.data.date)")
     prog = Base.PROGRAM_FILE
     (!isempty(prog) && isfile(prog)) && push!(lines, "- **Script**: $(basename(prog))")
     return join(lines, "\n")
