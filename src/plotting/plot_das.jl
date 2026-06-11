@@ -43,7 +43,7 @@ Plot decay-associated spectra as overlaid line plots, one per exponential compon
 Each line shows the amplitude spectrum for one time constant, revealing which
 spectral regions are associated with each dynamic process.
 
-Requires that `result` was produced by `fit_global(matrix::TAMatrix; ...)` so
+Requires that `result` was produced by `fit_global(matrix::TimeResolvedMatrix; ...)` so
 that wavelength information is available. Errors otherwise.
 
 # Keyword Arguments
@@ -68,7 +68,7 @@ function plot_das(result::GlobalFitResult;
     kwargs...)
 
     isnothing(result.wavelengths) &&
-        error("plot_das requires wavelength axis (use fit_global with TAMatrix input)")
+        error("plot_das requires wavelength axis (use fit_global with TimeResolvedMatrix input)")
 
     with_theme(qps_theme()) do
         fig = Figure()
@@ -102,7 +102,7 @@ plot_das!(ax, result)
 """
 function plot_das!(ax, result::GlobalFitResult; kwargs...)
     isnothing(result.wavelengths) &&
-        error("plot_das! requires wavelength axis (use fit_global with TAMatrix input)")
+        error("plot_das! requires wavelength axis (use fit_global with TimeResolvedMatrix input)")
 
     d = das(result)  # n_exp × n_wavelengths
     n = size(d, 1)

@@ -3,7 +3,7 @@
 @testset "TA trace loading" begin
     trace = load_ta_trace(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/pp_kinetics_esa.lvm"); mode=:OD)
 
-    @test trace isa TATrace
+    @test trace isa KineticTrace
     @test length(trace.time) > 0
     @test length(trace.signal) == length(trace.time)
 

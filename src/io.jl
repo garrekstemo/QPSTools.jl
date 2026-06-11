@@ -27,14 +27,14 @@ function find_peak_time(time::AbstractVector, signal::AbstractVector)
     end
 end
 
-find_peak_time(trace::TATrace) = find_peak_time(trace.time, trace.signal)
+find_peak_time(trace::KineticTrace) = find_peak_time(trace.time, trace.signal)
 
 # =============================================================================
 # Transient Absorption loading (unified API)
 # =============================================================================
 
 """
-    load_ta_trace(filepath; mode=:OD, channel=1, wavelength=NaN, shift_t0=true) -> TATrace
+    load_ta_trace(filepath; mode=:OD, channel=1, wavelength=NaN, shift_t0=true) -> KineticTrace
 
 Load a transient absorption kinetic trace from a single-pixel detector file.
 
@@ -52,7 +52,7 @@ is at t = 0. This is the standard convention for ultrafast spectroscopy.
 - `shift_t0`: Shift time axis so peak is at t=0 (default true)
 
 # Returns
-`TATrace` ready for fitting with `fit_exp_decay`.
+`KineticTrace` ready for fitting with `fit_exp_decay`.
 
 # Example
 ```julia
@@ -81,7 +81,7 @@ function load_ta_trace(filepath::String; mode::Symbol=:OD, channel::Int=1,
         :channel => channel
     )
 
-    return TATrace(time, signal, wavelength, metadata)
+    return KineticTrace(time, signal, wavelength, metadata)
 end
 
 """
@@ -377,12 +377,12 @@ function load_ta_spectrum(filepath::String; mode::Symbol=:OD, channel::Int=1,
 end
 
 # =============================================================================
-# TAMatrix loading (2D broadband TA data)
+# TimeResolvedMatrix loading (2D broadband TA data)
 # =============================================================================
 
 """
     load_ta_matrix(dir; time_file=nothing, wavelength_file=nothing, data_file=nothing,
-                   time=nothing, time_unit=:fs, wavelength_unit=:nm) -> TAMatrix
+                   time=nothing, time_unit=:fs, wavelength_unit=:nm) -> TimeResolvedMatrix
 
 Load 2D transient absorption data (time × wavelength) from separate files.
 
@@ -411,7 +411,7 @@ If files are not specified, looks for common naming patterns:
   A single-integer first line (row count) is automatically skipped.
 
 # Returns
-`TAMatrix` ready for extraction and fitting.
+`TimeResolvedMatrix` ready for extraction and fitting.
 
 # Example
 ```julia
@@ -517,7 +517,7 @@ function load_ta_matrix(dir::String; time_file::Union{String,Nothing}=nothing,
         :wavelength_unit => wavelength_unit
     )
 
-    return TAMatrix(time_vec, wavelength, data, metadata)
+    return TimeResolvedMatrix(time_vec, wavelength, data, metadata)
 end
 
 """
@@ -653,7 +653,7 @@ end
 # =============================================================================
 
 """
-    load_spectroscopy(path; kwargs...) -> Union{TATrace, TASpectrum, TAMatrix}
+    load_spectroscopy(path; kwargs...) -> Union{KineticTrace, TASpectrum, TimeResolvedMatrix}
 
 Auto-detect measurement type and return the appropriate high-level type.
 
@@ -661,8 +661,8 @@ This is the recommended entry point for data viewers and general-purpose tools
 that need to handle any spectroscopy data type uniformly.
 
 # Auto-detection logic
-1. **Directory path** → `TAMatrix` (broadband TA with separate axis files)
-2. **LVM file with time axis** → `TATrace` (kinetics measurement)
+1. **Directory path** → `TimeResolvedMatrix` (broadband TA with separate axis files)
+2. **LVM file with time axis** → `KineticTrace` (kinetics measurement)
 3. **LVM file with wavelength axis** → `TASpectrum` (spectral measurement)
 
 # Keyword arguments
@@ -673,9 +673,9 @@ Passed through to the appropriate loader:
 - `shift_t0::Bool` — Shift time axis so peak is at t=0 (for traces)
 
 # Returns
-- `TATrace` — For kinetics (time vs ΔA)
+- `KineticTrace` — For kinetics (time vs ΔA)
 - `TASpectrum` — For spectra (wavenumber vs ΔA)
-- `TAMatrix` — For broadband data (time × wavelength)
+- `TimeResolvedMatrix` — For broadband data (time × wavelength)
 
 # Example
 ```julia
@@ -696,7 +696,7 @@ end
 ```
 """
 function load_spectroscopy(path::String; kwargs...)
-    # Case 1: Directory → TAMatrix
+    # Case 1: Directory → TimeResolvedMatrix
     if isdir(path)
         return load_ta_matrix(path; kwargs...)
     end

@@ -35,14 +35,21 @@ using OpticalSpectroscopy
 using ElabFTW
 
 # QPSScanFormat owns the canonical HDF5 scan-file reader/writer + Loaded*
-# types. We re-export the user-facing reader API as a documented exception
-# to the no-sibling-re-export rule, because `load_scan` is the analysis
-# entry point students use every day — making them load a separate package
-# for one function call is friction with no real upside (QPSScanFormat will
-# never have an independent identity to a QPSTools user). The exception
-# applies only to the read-side API. Writer + schema constants stay
-# behind the `QPSScanFormat.` prefix.
-using QPSScanFormat
+# types, and returns PLAIN DATA (NamedTuples of vectors/matrices) — the
+# format layer carries no analysis types. QPSTools defines its own
+# `load_scan` (src/scan_loading.jl) that calls QPSScanFormat.load_scan and
+# rebuilds the same Loaded* structs with OpticalSpectroscopy types
+# (KineticTrace, TASpectrum, TimeResolvedMatrix, SweepData), so the daily analysis entry
+# point keeps yielding fit/plot-ready objects. The Loaded* types and the
+# update_scan_*! helpers are re-exported as a documented exception to the
+# no-sibling-re-export rule; writers + schema constants stay behind the
+# `QPSScanFormat.` prefix. Note: `load_scan` is deliberately NOT brought
+# into scope from QPSScanFormat — QPSTools owns that binding (don't
+# blanket-`using QPSScanFormat` alongside QPSTools, or the two `load_scan`
+# exports clash; `import QPSScanFormat` for qualified writer access).
+using QPSScanFormat: QPSScanFormat,
+    LoadedScanResult, LoadedSpectralResult, LoadedCompositeResult, LoadedNoiseResult,
+    update_scan_description!, update_scan_comment!, update_scan_sample_name!
 
 # Functions extended with new method dispatches in this package
 import OpticalSpectroscopy: find_peaks, fit_peaks
@@ -61,6 +68,7 @@ import ElabFTW: tags_from_sample, log_to_elab
 
 include("types.jl")
 include("io.jl")
+include("scan_loading.jl")
 include("streak.jl")
 include("elabftw_glue.jl")
 include("cavity.jl")
@@ -98,10 +106,12 @@ export load_streak_pl
 export find_peak_time
 export load_cavity
 
-# QPSDrive scan-file reader (re-exported from QPSScanFormat; see using
-# block above for the rationale behind this documented exception to
-# the no-re-export rule). Writers and schema constants stay namespace-
-# prefixed under `QPSScanFormat.`.
+# QPSDrive scan-file reader. `load_scan` is QPSTools' own typed wrapper
+# (src/scan_loading.jl) over QPSScanFormat's plain-data reader; the
+# Loaded* types and update_scan_*! helpers are re-exported from
+# QPSScanFormat (see using block above for the rationale behind this
+# documented exception to the no-re-export rule). Writers and schema
+# constants stay namespace-prefixed under `QPSScanFormat.`.
 export load_scan
 export LoadedScanResult, LoadedSpectralResult, LoadedCompositeResult, LoadedNoiseResult
 export update_scan_description!, update_scan_comment!, update_scan_sample_name!

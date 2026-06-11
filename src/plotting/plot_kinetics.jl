@@ -1,4 +1,4 @@
-# Kinetics plotting, TAMatrix visualization (heatmap, spectra extraction)
+# Kinetics plotting, TimeResolvedMatrix visualization (heatmap, spectra extraction)
 
 # ============================================================================
 # KINETICS PLOTTING
@@ -24,7 +24,7 @@ end
 const TAFitResult = Union{ExpDecayFit,MultiexpDecayFit}
 
 """
-    plot_kinetics(trace::TATrace; fit=nothing, residuals=true, kwargs...)
+    plot_kinetics(trace::KineticTrace; fit=nothing, residuals=true, kwargs...)
 
 Plot a transient absorption kinetic trace, optionally with fit overlay and residuals.
 
@@ -32,7 +32,7 @@ When a fit is provided, automatically shows a two-panel layout with data+fit on 
 and residuals below (can be disabled with `residuals=false`).
 
 # Arguments
-- `trace`: TATrace from `load_ta_trace`
+- `trace`: KineticTrace from `load_ta_trace`
 - `fit`: Optional fit result (`ExpDecayFit`, `MultiexpDecayFit`, or `GlobalFitResult`)
 - `residuals`: Show residuals panel when fit provided (default: true)
 - `xlabel`, `ylabel`, `title`: Axis labels
@@ -51,7 +51,7 @@ fig, ax, ax_res = plot_kinetics(trace; fit=result)
 save("kinetics.pdf", fig)
 ```
 """
-function plot_kinetics(trace::TATrace; fit::Union{TAFitResult,Nothing}=nothing,
+function plot_kinetics(trace::KineticTrace; fit::Union{TAFitResult,Nothing}=nothing,
     residuals::Bool=true,
     xlabel="Time (ps)", ylabel="ΔA", title="", kwargs...)
 
@@ -104,16 +104,16 @@ function _kinetics_fit_mask(fit, trace)
 end
 
 # =============================================================================
-# TAMatrix plotting
+# TimeResolvedMatrix plotting
 # =============================================================================
 
 """
-    plot_ta_heatmap(matrix::TAMatrix; colormap=:RdBu, colorrange=nothing, kwargs...)
+    plot_ta_heatmap(matrix::TimeResolvedMatrix; colormap=:RdBu, colorrange=nothing, kwargs...)
 
 Create a 2D heatmap of transient absorption data (time x wavelength).
 
 # Arguments
-- `matrix`: TAMatrix from `load_ta_matrix`
+- `matrix`: TimeResolvedMatrix from `load_ta_matrix`
 - `colormap`: Colormap for heatmap (default: `:RdBu`, diverging red-blue)
 - `colorrange`: Symmetric color range tuple, e.g., `(-0.02, 0.02)`. Auto-detected if not specified.
 - `xlabel`: X-axis label (default: auto-detected based on wavelength units)
@@ -131,7 +131,7 @@ fig, ax, hm = plot_ta_heatmap(matrix; colorrange=(-0.02, 0.02))
 save("ta_heatmap.pdf", fig)
 ```
 """
-function plot_ta_heatmap(matrix::TAMatrix; colormap=:RdBu, colorrange=nothing,
+function plot_ta_heatmap(matrix::TimeResolvedMatrix; colormap=:RdBu, colorrange=nothing,
     xlabel=nothing, ylabel=nothing, title="ΔA(t, λ)", kwargs...)
     with_theme(qps_theme()) do
         fig = Figure(size=(900, 500))
@@ -160,12 +160,12 @@ function plot_ta_heatmap(matrix::TAMatrix; colormap=:RdBu, colorrange=nothing,
 end
 
 """
-    plot_kinetics(matrix::TAMatrix; λ, kwargs...)
+    plot_kinetics(matrix::TimeResolvedMatrix; λ, kwargs...)
 
-Plot kinetic traces extracted from a TAMatrix at one or more wavelengths.
+Plot kinetic traces extracted from a TimeResolvedMatrix at one or more wavelengths.
 
 # Arguments
-- `matrix`: TAMatrix from `load_ta_matrix`
+- `matrix`: TimeResolvedMatrix from `load_ta_matrix`
 - `λ`: Single wavelength or vector of wavelengths to extract
 - `xlabel`, `ylabel`, `title`: Axis labels
 - `kwargs...`: Additional arguments passed to `lines!`
@@ -180,7 +180,7 @@ fig, ax = plot_kinetics(matrix; λ=[700, 750, 800, 850])
 save("kinetics.pdf", fig)
 ```
 """
-function plot_kinetics(matrix::TAMatrix; λ::Union{Real,AbstractVector},
+function plot_kinetics(matrix::TimeResolvedMatrix; λ::Union{Real,AbstractVector},
     xlabel="Time (ps)", ylabel="ΔA", title="", kwargs...)
     with_theme(qps_theme()) do
         fig = Figure()
@@ -206,12 +206,12 @@ function plot_kinetics(matrix::TAMatrix; λ::Union{Real,AbstractVector},
 end
 
 """
-    plot_spectra(matrix::TAMatrix; t, kwargs...)
+    plot_spectra(matrix::TimeResolvedMatrix; t, kwargs...)
 
-Plot transient spectra extracted from a TAMatrix at one or more time delays.
+Plot transient spectra extracted from a TimeResolvedMatrix at one or more time delays.
 
 # Arguments
-- `matrix`: TAMatrix from `load_ta_matrix`
+- `matrix`: TimeResolvedMatrix from `load_ta_matrix`
 - `t`: Single time delay or vector of time delays to extract (ps)
 - `xlabel`, `ylabel`, `title`: Axis labels
 - `kwargs...`: Additional arguments passed to `lines!`
@@ -226,7 +226,7 @@ fig, ax = plot_spectra(matrix; t=[-0.5, 0.1, 0.5, 1.0, 3.0])
 save("spectra.pdf", fig)
 ```
 """
-function plot_spectra(matrix::TAMatrix; t::Union{Real,AbstractVector},
+function plot_spectra(matrix::TimeResolvedMatrix; t::Union{Real,AbstractVector},
     xlabel=nothing, ylabel="ΔA", title="", kwargs...)
     with_theme(qps_theme()) do
         fig = Figure()

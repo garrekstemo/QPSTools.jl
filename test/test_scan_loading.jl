@@ -8,7 +8,7 @@ using Makie: Figure
 #
 # This pins the behavior students have always seen. QPSScanFormat itself
 # returns plain data (NamedTuples of vectors/matrices); QPSTools wraps
-# those into TATrace / TASpectrum / TAMatrix / SweepData. The assertions
+# those into KineticTrace / TASpectrum / TimeResolvedMatrix / SweepData. The assertions
 # below were recorded against the pre-decoupling QPSScanFormat (which
 # returned the typed objects directly) and must keep passing verbatim
 # against the plain-data QPSScanFormat + QPSTools wrapper.
@@ -28,7 +28,7 @@ using Makie: Figure
 
     mktempdir() do dir
         kinetic_path = joinpath(dir, "kinetic.h5")
-        QPSScanFormat.save_kinetic_scan(TATrace(t, decay), kinetic_path;
+        QPSScanFormat.save_kinetic_scan(KineticTrace(t, decay), kinetic_path;
             sweeps = sweeps_k,
             scan_params = Dict{String,Any}(
                 "averages" => 100,
@@ -59,7 +59,7 @@ using Makie: Figure
                  duration_seconds = 10.0, delay_ps = 0.5),
             ],
             kinetics = [
-                (trace = TATrace(t, decay), sweeps = sweeps_k,
+                (trace = KineticTrace(t, decay), sweeps = sweeps_k,
                  description = "@2050nm", comment = "", timestamp = ts,
                  duration_seconds = 15.0, wavelength_nm = 2050.0),
             ],
@@ -70,7 +70,7 @@ using Makie: Figure
 
         broadband_path = joinpath(dir, "broadband.h5")
         mat_data = decay * sspec'   # 60 × 24, rank-1 TA matrix
-        QPSScanFormat.save_broadband_scan(TAMatrix(t, wl, mat_data), broadband_path;
+        QPSScanFormat.save_broadband_scan(TimeResolvedMatrix(t, wl, mat_data), broadband_path;
             description = "broadband for wrapper test",
             timestamp = ts,
             duration_seconds = 2.0,
@@ -89,11 +89,11 @@ using Makie: Figure
             duration_seconds = 30.0,
         )
 
-        # ─── Kinetic: trace is a TATrace, sweeps a SweepData ─────────
+        # ─── Kinetic: trace is a KineticTrace, sweeps a SweepData ─────────
         @testset "kinetic" begin
             r = load_scan(kinetic_path)
             @test r isa LoadedScanResult
-            @test r.trace isa TATrace
+            @test r.trace isa KineticTrace
             @test isnan(r.trace.wavelength)
             @test r.trace.time ≈ t
             @test r.trace.signal ≈ decay
@@ -143,17 +143,17 @@ using Makie: Figure
             @test r.spectra[1].scan_params["delay_ps"] ≈ 0.5
             @test r.spectra[1].scan_params["sub_path"] == "data/spectra/spectrum_001"
             @test r.traces[1] isa LoadedScanResult
-            @test r.traces[1].trace isa TATrace
+            @test r.traces[1].trace isa KineticTrace
             @test r.traces[1].sweeps isa SweepData
             @test r.traces[1].scan_params["wavelength_nm"] ≈ 2050.0
             @test r.traces[1].scan_params["sub_path"] == "data/kinetics/trace_001"
             @test r.description == "composite for wrapper test"
         end
 
-        # ─── Broadband: a TAMatrix, as always ────────────────────────
+        # ─── Broadband: a TimeResolvedMatrix, as always ────────────────────────
         @testset "broadband" begin
             r = load_scan(broadband_path)
-            @test r isa TAMatrix
+            @test r isa TimeResolvedMatrix
             @test r.time ≈ t
             @test r.wavelength ≈ wl
             @test r.data ≈ mat_data
@@ -172,7 +172,7 @@ using Makie: Figure
             update_scan_description!(kinetic_path, "renamed")
             r = load_scan(kinetic_path)
             @test r.description == "renamed"
-            @test r.trace isa TATrace
+            @test r.trace isa KineticTrace
         end
     end
 end

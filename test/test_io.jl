@@ -15,9 +15,9 @@
 end
 
 @testset "load_spectroscopy auto-detection" begin
-    # Kinetics file -> TATrace
+    # Kinetics file -> KineticTrace
     trace = load_spectroscopy(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/pp_kinetics_esa.lvm"))
-    @test trace isa TATrace
+    @test trace isa KineticTrace
     @test xlabel(trace) == "Time (ps)"
 
     # Spectrum file -> TASpectrum
@@ -25,9 +25,9 @@ end
     @test spec isa TASpectrum
     @test xlabel(spec) == "Wavenumber (cm⁻¹)"
 
-    # Directory -> TAMatrix
+    # Directory -> TimeResolvedMatrix
     matrix = load_spectroscopy(joinpath(PROJECT_ROOT, "data/CCD"))
-    @test matrix isa TAMatrix
+    @test matrix isa TimeResolvedMatrix
     @test is_matrix(matrix) == true
 
     # Non-existent path should error

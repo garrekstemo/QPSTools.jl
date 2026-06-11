@@ -38,11 +38,11 @@ using Statistics: std
         end
 
         metadata = Dict{Symbol,Any}(:source => "synthetic")
-        matrix = TAMatrix(time, wavelength, data, metadata)
+        matrix = TimeResolvedMatrix(time, wavelength, data, metadata)
 
         # subtract_background
         bg = subtract_background(matrix)
-        @test bg isa TAMatrix
+        @test bg isa TimeResolvedMatrix
 
         # detect_chirp
         cal = detect_chirp(bg; order=2, reference=ref_λ, smooth_window=7, bin_width=4)
@@ -51,7 +51,7 @@ using Statistics: std
 
         # correct_chirp
         corrected = correct_chirp(bg, cal)
-        @test corrected isa TAMatrix
+        @test corrected isa TimeResolvedMatrix
         @test corrected.metadata[:chirp_corrected] == true
 
         # save/load round-trip

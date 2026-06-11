@@ -22,10 +22,14 @@ using OpticalSpectroscopy    # types, fitting, baseline, peak detection
 using JASCOFiles             # JASCOSpectrum + isftir/israman/isuvvis
 using HamamatsuStreakFiles   # StreakImage (raw streak-camera .img reader)
 using ElabFTW                # eLabFTW CRUD
-using QPSScanFormat          # QPSDrive scan-file I/O (load_scan, Loaded* types)
+import QPSScanFormat         # writers (save_*_scan) + schema constants, qualified
 ```
 
-`using QPSTools` brings in only names QPSTools itself defines, with one documented exception: the read-side API of [QPSScanFormat](https://github.com/garrekstemo/QPSScanFormat.jl) (`load_scan`, `update_scan_description!`, `update_scan_comment!`, `update_scan_sample_name!`, and the `Loaded*` result types) is re-exported here because `load_scan` is the daily analysis entry point and forcing a second `using QPSScanFormat` for one function call is friction with no upside. Writers (`save_*_scan`) and schema constants (`FORMAT_VERSION`, `is_hdf5_path`, etc.) stay behind the `QPSScanFormat.` prefix — those are for the writer side (QPSDrive) and schema introspection, not student analysis.
+`using QPSTools` brings in only names QPSTools itself defines, with one documented exception around scan files:
+
+- **`load_scan` is QPSTools' own function** (`src/scan_loading.jl`): a typed wrapper over `QPSScanFormat.load_scan`. The format layer returns `Loaded*` results carrying plain NamedTuple data (it has no analysis dependencies); QPSTools rebuilds them with OpticalSpectroscopy types (`KineticTrace`, `TASpectrum`, `TimeResolvedMatrix`, `SweepData`) so results feed `fit_exp_decay`/`fit_peaks`/`plot_kinetics` directly.
+- The `Loaded*` result types and `update_scan_description!`/`update_scan_comment!`/`update_scan_sample_name!` are re-exported from QPSScanFormat as a documented exception to the no-sibling-re-export rule.
+- Do NOT blanket-`using QPSScanFormat` alongside QPSTools — both export a `load_scan` and the bindings clash. `import QPSScanFormat` for qualified writer/schema access.
 
 Sibling re-export remains the exception, not the rule. Method dispatch threads the rest of the layers together.
 
@@ -50,6 +54,7 @@ src/
   QPSTools.jl         # Module: imports, includes, exports
   types.jl            # AnnotatedSpectrum, AxisType, PumpProbeData
   io.jl               # LVM/TA loaders, load_spectroscopy auto-detect
+  scan_loading.jl     # load_scan: typed wrapper over QPSScanFormat's plain-data reader
   spectroscopy.jl     # JASCOSpectrum/AnnotatedSpectrum dispatches, cavity_transmittance
   peakdetection.jl    # find_peaks(::AnnotatedSpectrum)
   peakfitting.jl      # fit_peaks(::AnnotatedSpectrum, …)

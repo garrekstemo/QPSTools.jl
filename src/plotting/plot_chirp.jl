@@ -5,7 +5,7 @@
 # =============================================================================
 
 """
-    plot_chirp(matrix::TAMatrix, cal::ChirpCalibration; kwargs...) -> (Figure, Axis)
+    plot_chirp(matrix::TimeResolvedMatrix, cal::ChirpCalibration; kwargs...) -> (Figure, Axis)
 
 Create a diagnostic plot: TA heatmap with the detected chirp curve overlaid.
 
@@ -27,7 +27,7 @@ fig, ax = plot_chirp(matrix_bg, cal)
 save("chirp_diagnostic.png", fig)
 ```
 """
-function plot_chirp(matrix::TAMatrix, cal::ChirpCalibration;
+function plot_chirp(matrix::TimeResolvedMatrix, cal::ChirpCalibration;
     colormap=:RdBu, colorrange=nothing, title="Chirp Detection")
 
     with_theme(qps_theme()) do

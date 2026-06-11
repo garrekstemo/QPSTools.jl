@@ -1,7 +1,7 @@
 @isdefined(PROJECT_ROOT) || include("testsetup.jl")
 
-@testset "TAMatrix loading and indexing" begin
-    # Load TAMatrix
+@testset "TimeResolvedMatrix loading and indexing" begin
+    # Load TimeResolvedMatrix
     data_dir = joinpath(PROJECT_ROOT, "data/CCD")
     matrix = load_ta_matrix(data_dir;
         time_file="time_axis.txt",
@@ -9,14 +9,14 @@
         data_file="ta_matrix.lvm",
         time_unit=:fs)
 
-    @test matrix isa TAMatrix
+    @test matrix isa TimeResolvedMatrix
     @test length(matrix.time) > 0
     @test length(matrix.wavelength) > 0
     @test size(matrix.data) == (length(matrix.time), length(matrix.wavelength))
 
-    # Extract TATrace at wavelength
+    # Extract KineticTrace at wavelength
     trace = matrix[λ=600]
-    @test trace isa TATrace
+    @test trace isa KineticTrace
     @test length(trace.time) == length(matrix.time)
     @test length(trace.signal) == length(trace.time)
     @test haskey(trace.metadata, :actual_wavelength)
@@ -34,7 +34,7 @@
     @test_throws ErrorException matrix[λ=600, t=1.0]  # Both specified
 end
 
-@testset "TAMatrix fitting" begin
+@testset "TimeResolvedMatrix fitting" begin
     data_dir = joinpath(PROJECT_ROOT, "data/CCD")
     matrix = load_ta_matrix(data_dir;
         time_file="time_axis.txt",

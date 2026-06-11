@@ -4,12 +4,15 @@ using OpticalSpectroscopy
 using JASCOFiles
 using HamamatsuStreakFiles
 using ElabFTW
-using QPSScanFormat
+# Qualified access only (QPSScanFormat.save_*_scan in fixtures). NOT
+# blanket-`using`: both QPSTools and QPSScanFormat export a `load_scan`
+# (QPSTools' is the typed wrapper) and the bindings would clash.
+import QPSScanFormat
 
 import OpticalSpectroscopy: format_results, n_exp, weights
 # Disambiguate: both OpticalSpectroscopy and JASCOFiles export xlabel/ylabel.
-# Tests in this suite operate on OpticalSpectroscopy types (TATrace, TASpectrum,
-# TAMatrix), so resolve the bare names to OpticalSpectroscopy's methods.
+# Tests in this suite operate on OpticalSpectroscopy types (KineticTrace, TASpectrum,
+# TimeResolvedMatrix), so resolve the bare names to OpticalSpectroscopy's methods.
 import OpticalSpectroscopy: xlabel, ylabel
 
 const PROJECT_ROOT = dirname(@__DIR__)

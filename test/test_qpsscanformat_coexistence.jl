@@ -3,12 +3,14 @@
 # Student workflow this should make work:
 #
 #     using QPSTools
-#     result = load_scan("foo.h5")   # reader re-exported from QPSScanFormat
+#     result = load_scan("foo.h5")   # QPSTools' typed wrapper over QPSScanFormat
 #     QPSScanFormat.save_kinetic_scan(...)   # writers stay namespace-prefixed
 #
-# Read-side names are explicitly re-exported as a documented exception to the
-# no-sibling-re-export rule (see QPSTools/CLAUDE.md). Writers and schema
-# constants are NOT re-exported.
+# `load_scan` is QPSTools' own function (returns OpticalSpectroscopy-typed
+# results; see test_scan_loading.jl for the full contract). The Loaded*
+# types and update_scan_*! helpers are re-exported from QPSScanFormat as a
+# documented exception to the no-sibling-re-export rule (see
+# QPSTools/CLAUDE.md). Writers and schema constants are NOT re-exported.
 
 @testset "QPSScanFormat coexistence + re-exports" begin
     @testset "both packages load alongside QPSTools" begin
@@ -43,7 +45,7 @@
     end
 
     @testset "round-trip: write via QPSScanFormat, read via QPSTools.load_scan" begin
-        trace = TATrace(collect(0.0:0.5:5.0), randn(11))
+        trace = KineticTrace(collect(0.0:0.5:5.0), randn(11))
         sweeps = SweepData(randn(11, 3), randn(11, 3), zeros(11, 3))
 
         mktempdir() do dir
@@ -54,7 +56,7 @@
                 duration_seconds = 1.0,
             )
             # Reader called without the QPSScanFormat. prefix — this is the
-            # ergonomic win of the re-export.
+            # ergonomic win of the wrapper + re-exports.
             r = load_scan(path)
             @test r isa LoadedScanResult
             @test r.description == "QPSTools coexistence smoke"
