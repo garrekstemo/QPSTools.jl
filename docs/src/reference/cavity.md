@@ -1,33 +1,19 @@
 # Cavity Spectroscopy
 
-Polariton dispersion fitting, Hopfield coefficients, and cavity transmittance modelling. See [`src/cavity.jl`](https://github.com/garrekstemo/QPSTools.jl/blob/main/src/cavity.jl).
+The lab-side cavity layer: a JASCO-backed [`CavitySpectrum`](@ref), [`load_cavity`](@ref), and a metadata-aware [`fit_cavity_spectrum`](@ref) dispatch. See [`src/cavity.jl`](https://github.com/garrekstemo/QPSTools.jl/blob/main/src/cavity.jl).
+
+The physics and fitting (`fit_dispersion`, `cavity_mode_energy`, `polariton_branches`, `polariton_eigenvalues`, `hopfield_coefficients`, `compute_cavity_transmittance`, `cavity_transmittance`, `refractive_index`, `extinction_coeff`, and the `CavityFitResult` / `DispersionFitResult` types) live in [CavitySpectroscopy.jl](https://github.com/garrekstemo/CavitySpectroscopy.jl) and are re-exported here. See the [CavitySpectroscopy.jl documentation](https://garrekstemo.github.io/CavitySpectroscopy.jl/) for those.
 
 ## Types
 
 ```@docs
 CavitySpectrum
-CavityFitResult
-DispersionFitResult
 ```
 
 ## Fitting
 
 ```@docs
 fit_cavity_spectrum
-fit_dispersion
-```
-
-## Cavity Physics
-
-```@docs
-compute_cavity_transmittance
-cavity_transmittance
-cavity_mode_energy
-polariton_branches
-polariton_eigenvalues
-hopfield_coefficients
-refractive_index
-extinction_coeff
 ```
 
 ## Plotting
