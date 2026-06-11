@@ -57,10 +57,16 @@ The raw image is available as `.data` (a `StreakImage` from
 HamamatsuStreakFiles.jl); wavelength order on disk (commonly descending)
 is preserved.
 
+To convert to an analysis-ready [`TimeResolvedMatrix`](@ref) (wavelength
+sorted ascending, data transposed to time × wavelength), use the
+[`TimeResolvedMatrix(::StreakPL)`](@ref) converter:
+
 # Example
 ```julia
 pl = load_streak_pl("data/PL/15K.img"; temperature="15K", material="NH4SCN")
 plot_streak_pl(pl)
+m = TimeResolvedMatrix(pl)   # analysis-ready: time × wavelength, ascending λ
+trace = kinetic_trace(m; wavelength=530.0, band=10.0)
 ```
 """
 function load_streak_pl(path::String; kwargs...)
@@ -69,4 +75,48 @@ function load_streak_pl(path::String; kwargs...)
     img = StreakImage(full_path)
     sample = Dict{String, Any}(string(k) => v for (k, v) in kwargs)
     return StreakPL(img, sample, full_path)
+end
+
+"""
+    TimeResolvedMatrix(s::StreakPL) -> TimeResolvedMatrix
+
+Convert a streak-camera PL measurement into an analysis-ready
+`TimeResolvedMatrix`: counts are transposed from the on-disk
+(wavelength × time) orientation to (time × wavelength) and the wavelength
+axis is sorted ascending.
+
+Metadata carries display semantics (`:signal_label` from `zunits`,
+`:time_unit` from `yunits`), provenance (`:source`), the instrument fields
+hoisted by HamamatsuStreakFiles (camera, streak device, sweep range, grating,
+exposure, accumulation count, acquisition date, center wavelength), and the
+sample dict from [`load_streak_pl`](@ref) under `:sample`.
+
+# Example
+```julia
+pl = load_streak_pl("data/PL/15K.img"; temperature="15K")
+m = TimeResolvedMatrix(pl)
+trace = kinetic_trace(m; wavelength=530.0, band=10.0)
+fit = fit_exp_decay(trace; model=:stretched)
+```
+"""
+function OpticalSpectroscopy.TimeResolvedMatrix(s::StreakPL)
+    img = s.data
+    order = sortperm(img.wavelength)
+    data = permutedims(img.counts)[:, order]   # (wl, t) → (t, wl), ascending wl
+    metadata = Dict{Symbol,Any}(
+        :source => s.path,
+        :signal_label => isempty(img.zunits) ? "Counts" : img.zunits,
+        :time_unit => isempty(img.yunits) ? "ns" : img.yunits,
+        :wavelength_unit => img.xunits,
+        :camera => img.camera,
+        :streak_device => img.streak_device,
+        :time_range => img.time_range,
+        :center_wavelength => img.center_wavelength,
+        :grating => img.grating,
+        :exposure => img.exposure,
+        :n_exposures => img.n_exposures,
+        :acquired => img.date,
+        :sample => copy(s.sample),
+    )
+    return TimeResolvedMatrix(copy(img.time), img.wavelength[order], data, metadata)
 end

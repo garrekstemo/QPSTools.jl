@@ -88,6 +88,41 @@ end
     @test ax2.title[] == "Streak PL"
 end
 
+@testset "TimeResolvedMatrix(::StreakPL) converter" begin
+    pl = load_streak_pl(STREAK_FIXTURE; temperature="15K")
+    m = TimeResolvedMatrix(pl)
+
+    @test m isa TimeResolvedMatrix
+    @test size(m.data) == (3, 4)                       # time × wavelength
+    @test m.time == [0.0, 2.0, 4.0]
+    @test m.wavelength == [670.0, 680.0, 690.0, 700.0] # ascending
+    @test issorted(m.wavelength)
+
+    # data mapping: img.counts[w, t] → m.data[t, ascending-sorted w]
+    img = pl.data
+    for (wi, w) in enumerate(img.wavelength), (ti, t) in enumerate(img.time)
+        col = findfirst(==(w), m.wavelength)
+        @test m.data[ti, col] == img.counts[wi, ti]
+    end
+
+    # metadata mapping
+    @test m.metadata[:signal_label] == img.zunits
+    @test m.metadata[:time_unit] == img.yunits
+    @test m.metadata[:source] == pl.path
+    @test m.metadata[:sample]["temperature"] == "15K"
+    @test haskey(m.metadata, :camera)
+    @test haskey(m.metadata, :center_wavelength)
+
+    # labels flow through OpticalSpectroscopy display
+    @test zlabel(m) == img.zunits
+    @test occursin(img.yunits, ylabel(m))
+
+    # converted matrix feeds the analysis chain
+    g = integrate_time(m)
+    @test g isa GatedSpectrum
+    @test issorted(g.wavelength)
+end
+
 # Real instrument file (data/ is not in version control — guard with isfile)
 real_img = joinpath(PROJECT_ROOT, "data", "PL", "15K.img")
 if isfile(real_img)
@@ -103,6 +138,13 @@ if isfile(real_img)
 
         fig, ax, hm = plot_streak_pl(pl)
         @test fig isa Figure
+
+        m = TimeResolvedMatrix(pl)
+        @test size(m.data) == (1072, 1408)
+        @test issorted(m.wavelength)
+        @test m.wavelength[1] ≈ 395.2 atol=0.1
+        @test m.wavelength[end] ≈ 662.4 atol=0.1
+        @test m.time[end] ≈ 47.24 atol=0.01
     end
 else
     @info "Skipping real streak-file tests (data/PL/15K.img not present)"
