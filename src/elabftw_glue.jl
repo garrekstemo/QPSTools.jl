@@ -101,7 +101,7 @@ function _streak_provenance_body(s::StreakPL)
     !isempty(img.streak_device) && push!(lines, "- **Streak unit**: $(img.streak_device)")
     !isempty(img.time_range) && push!(lines, "- **Time range**: $(img.time_range)")
     img.center_wavelength > 0 && push!(lines, "- **Center wavelength**: $(img.center_wavelength) nm")
-    img.date != DateTime(1) && push!(lines, "- **Acquired**: $(img.date)")
+    img.date === nothing || push!(lines, "- **Acquired**: $(img.date)")
     prog = Base.PROGRAM_FILE
     (!isempty(prog) && isfile(prog)) && push!(lines, "- **Script**: $(basename(prog))")
     return join(lines, "\n")
