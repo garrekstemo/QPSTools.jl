@@ -25,4 +25,5 @@ using Aqua
     include("test_plotting.jl")
     include("test_format_results.jl")
     include("test_qpsscanformat_coexistence.jl")
+    include("test_scan_loading.jl")
 end
