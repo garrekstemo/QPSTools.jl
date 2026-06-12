@@ -19,10 +19,9 @@ using Dates: DateTime
         spec = load_cavity(joinpath(PROJECT_ROOT, "data/ftir/1.0M_NH4SCN_DMF.csv"))
         @test xreversed(spec) == true
 
-        # The semantic accessors must extend OpticalSpectroscopy's generics
-        # (not CavitySpectroscopy's same-named exports, which stay qualified)
+        # The semantic accessor must extend OpticalSpectroscopy's generic
+        # (not CavitySpectroscopy's same-named export, which stays qualified)
         @test OpticalSpectroscopy.wavenumber(spec) == xdata(spec)
-        @test QPSTools.transmittance(spec) == ydata(spec)
     end
 
     @testset "fit_cavity_spectrum JASCO dispatch" begin

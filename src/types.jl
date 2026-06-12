@@ -43,12 +43,6 @@ struct PumpProbeData
     axis_type::AxisType
 end
 
-"""Return the x-axis data from raw pump-probe data."""
-xaxis(d::PumpProbeData) = d.time
-
-"""Return an appropriate x-axis label based on axis type."""
-xaxis_label(d::PumpProbeData) = d.axis_type == time_axis ? "Time (ps)" : "Wavelength (nm)"
-
 # =============================================================================
 # Abstract type for JASCO-backed spectra with sample metadata
 # =============================================================================
