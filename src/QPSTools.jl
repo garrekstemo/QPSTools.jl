@@ -6,7 +6,7 @@ Lab-specific glue for the QPS spectroscopy ecosystem. QPSTools defines:
 - LabVIEW pump-probe loaders (`load_ta_trace`, `load_ta_spectrum`, `load_ta_matrix`, `load_lvm`, `load_pl_map`)
 - Streak-camera PL loader (`load_streak_pl` → `StreakPL`)
 - Cavity polariton spectroscopy (`CavitySpectrum`, `fit_cavity_spectrum`, `fit_dispersion`)
-- Makie plotting themes and layouts (`plot_spectrum`, `plot_kinetics`, `plot_cavity`, …)
+- Makie plotting themes and layouts (`plot_spectrum`, `plot_kinetics`, `plot_dispersion`, …)
 - eLabFTW provenance (`log_to_elab`, `tags_from_sample` dispatched on `AnnotatedSpectrum` and `StreakPL`)
 
 `using QPSTools` brings in only names QPSTools itself defines. General-purpose
@@ -74,7 +74,6 @@ import OpticalSpectroscopy: xdata, ydata, xlabel, ylabel, source_file, wavenumbe
 import OpticalSpectroscopy: savitzky_golay_smooth, derivative
 import OpticalSpectroscopy: band_area, normalize_area, normalize_to_peak, estimate_snr
 import OpticalSpectroscopy: average_spectra
-import OpticalSpectroscopy: dielectric_real, dielectric_imag
 import ElabFTW: tags_from_sample, log_to_elab
 
 # ============================================================================
@@ -141,7 +140,6 @@ export refractive_index, extinction_coeff
 
 # Plotting
 export plot_spectrum, plot_kinetics
-export plot_cavity
 export plot_ta_heatmap, plot_spectra
 export plot_data
 export plot_peak_decomposition!, plot_peaks!
@@ -159,6 +157,6 @@ export lab_colors, lab_linewidths
 export setup_poster_plot
 
 # Accessors
-export xreversed, xaxis, xaxis_label
+export xreversed
 
 end # module QPSTools

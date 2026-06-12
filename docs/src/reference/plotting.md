@@ -45,6 +45,4 @@ plot_peak_decomposition!
 
 ```@docs
 xreversed
-xaxis
-xaxis_label
 ```

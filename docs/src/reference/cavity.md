@@ -19,7 +19,6 @@ fit_cavity_spectrum
 ## Plotting
 
 ```@docs
-plot_cavity
 plot_dispersion
 plot_dispersion!
 plot_hopfield

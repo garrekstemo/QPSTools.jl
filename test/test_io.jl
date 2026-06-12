@@ -4,14 +4,10 @@
     # Load kinetics file (should be time_axis)
     kinetics = load_lvm(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/pp_kinetics_esa.lvm"))
     @test kinetics.axis_type == time_axis
-    @test xaxis_label(kinetics) == "Time (ps)"
-    @test xaxis(kinetics) === kinetics.time
 
     # Load spectrum file (should be wavelength_axis)
     spectrum = load_lvm(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/spectra/bare_1M_1ps.lvm"))
     @test spectrum.axis_type == wavelength_axis
-    @test xaxis_label(spectrum) == "Wavelength (nm)"
-    @test xaxis(spectrum) === spectrum.time
 end
 
 @testset "load_spectroscopy auto-detection" begin

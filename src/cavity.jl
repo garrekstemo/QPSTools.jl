@@ -43,20 +43,13 @@ source_file(s::CavitySpectrum) = basename(s.path)
 # FTIR convention: high wavenumber on left
 xreversed(::CavitySpectrum) = true
 
-# Semantic accessors
+# Semantic accessor (extends OpticalSpectroscopy's generic)
 """
     wavenumber(s::CavitySpectrum) -> Vector{Float64}
 
 Return the wavenumber axis (cm⁻¹).
 """
 wavenumber(s::CavitySpectrum) = xdata(s)
-
-"""
-    transmittance(s::CavitySpectrum) -> Vector{Float64}
-
-Return the transmittance signal (%).
-"""
-transmittance(s::CavitySpectrum) = ydata(s)
 
 function Base.show(io::IO, spec::CavitySpectrum)
     label = get(spec.sample, "_id", basename(spec.path))
@@ -140,19 +133,6 @@ spec = load_cavity("data/cavity/Au_0deg.csv"; mirror="Au", angle=0, cavity_lengt
 ```
 """
 load_cavity(path::String; kwargs...) = _load_annotated_path(path, CavitySpectrum; kwargs...)
-
-# =============================================================================
-# Plotting alias
-# =============================================================================
-
-"""
-    plot_cavity(spec::CavitySpectrum; kwargs...)
-
-Convenience alias for `plot_spectrum(spec; kwargs...)`.
-
-See `plot_spectrum(::AnnotatedSpectrum)` for full documentation.
-"""
-plot_cavity(spec::CavitySpectrum; kwargs...) = plot_spectrum(spec; kwargs...)
 
 # =============================================================================
 # Internal helpers
