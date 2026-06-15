@@ -1,6 +1,6 @@
 # Cavity Spectroscopy
 
-The lab-side cavity layer: a JASCO-backed [`CavitySpectrum`](@ref), [`load_cavity`](@ref), and a metadata-aware [`fit_cavity_spectrum`](@ref) dispatch. See [`src/cavity.jl`](https://github.com/garrekstemo/QPSTools.jl/blob/main/src/cavity.jl).
+The lab-side cavity layer: a JASCO-backed [`CavitySpectrum`](@ref), [`load_cavity`](@ref), and a metadata-aware `fit_cavity_spectrum` dispatch. See [`src/cavity.jl`](https://github.com/garrekstemo/QPSTools.jl/blob/main/src/cavity.jl).
 
 The physics and fitting (`fit_dispersion`, `cavity_mode_energy`, `polariton_branches`, `polariton_eigenvalues`, `hopfield_coefficients`, `compute_cavity_transmittance`, `cavity_transmittance`, `refractive_index`, `extinction_coeff`, and the `CavityFitResult` / `DispersionFitResult` types) live in [OpticalSpectroscopy.jl](https://garrekstemo.github.io/OpticalSpectroscopy.jl/) — see its Cavity & Polaritons reference page.
 
@@ -13,7 +13,7 @@ CavitySpectrum
 ## Fitting
 
 ```@docs
-fit_cavity_spectrum
+QPSTools.fit_cavity_spectrum(::QPSTools.CavitySpectrum)
 ```
 
 ## Plotting
