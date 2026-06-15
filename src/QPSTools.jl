@@ -51,20 +51,11 @@ using QPSScanFormat: QPSScanFormat,
     LoadedScanResult, LoadedSpectralResult, LoadedCompositeResult, LoadedNoiseResult,
     update_scan_description!, update_scan_comment!, update_scan_sample_name!
 
-# Cavity physics + fitting live in the public CavitySpectroscopy.jl package.
-# The physics names and result types are re-exported below (a documented
-# exception to the no-sibling-re-export rule: they are the daily polariton
-# vocabulary and predate the extraction); src/cavity.jl adds the JASCO-aware
-# dispatches. CavitySpectroscopy's own generic CavitySpectrum and its
-# wavenumber/transmittance/format_results accessors are deliberately NOT
-# brought in — QPSTools keeps its JASCO-backed CavitySpectrum and
-# OpticalSpectroscopy's accessor generics (bridged in cavity.jl).
-using CavitySpectroscopy: CavitySpectroscopy,
-    cavity_transmittance, compute_cavity_transmittance,
-    refractive_index, extinction_coeff,
-    cavity_mode_energy, polariton_branches, polariton_eigenvalues,
-    hopfield_coefficients, CavityFitResult, DispersionFitResult
-import CavitySpectroscopy: fit_cavity_spectrum, fit_dispersion
+# Cavity physics + fitting live in OpticalSpectroscopy (its src/cavity.jl);
+# the blanket `using OpticalSpectroscopy` above brings the polariton
+# vocabulary into scope. QPSTools owns only the JASCO-backed CavitySpectrum
+# and the JASCO-aware dispatches in src/cavity.jl.
+import OpticalSpectroscopy: fit_cavity_spectrum, fit_dispersion
 
 # Functions extended with new method dispatches in this package
 import OpticalSpectroscopy: find_peaks, fit_peaks
@@ -130,13 +121,9 @@ export load_scan
 export LoadedScanResult, LoadedSpectralResult, LoadedCompositeResult, LoadedNoiseResult
 export update_scan_description!, update_scan_comment!, update_scan_sample_name!
 
-# Cavity types and analysis
-export CavitySpectrum, CavityFitResult, DispersionFitResult
-export fit_cavity_spectrum, fit_dispersion
-export compute_cavity_transmittance, cavity_transmittance
-export cavity_mode_energy, polariton_branches, polariton_eigenvalues
-export hopfield_coefficients
-export refractive_index, extinction_coeff
+# Cavity (QPSTools owns the JASCO-backed type; physics + fitting names
+# come from OpticalSpectroscopy, which students load alongside)
+export CavitySpectrum
 
 # Plotting
 export plot_spectrum, plot_kinetics

@@ -2,11 +2,10 @@
 
 using Dates: DateTime
 
-# The cavity physics (cavity_transmittance, polariton branches/eigenvalues,
-# Hopfield coefficients) and the fitting numerics are tested in
-# CavitySpectroscopy.jl's own suite. This file covers only the QPSTools
-# layer: the JASCO-backed CavitySpectrum, load_cavity, the JASCO-aware
-# fit_cavity_spectrum dispatch, the format_results bridge, and plotting.
+# The cavity physics and fitting numerics are tested in OpticalSpectroscopy's
+# suite. This file covers only the QPSTools layer: the JASCO-backed
+# CavitySpectrum, load_cavity, the JASCO-aware fit_cavity_spectrum dispatch,
+# format_results on cavity result types, and plotting.
 
 @testset "Cavity spectroscopy" begin
 
@@ -20,14 +19,14 @@ using Dates: DateTime
         @test xreversed(spec) == true
 
         # The semantic accessor must extend OpticalSpectroscopy's generic
-        # (not CavitySpectroscopy's same-named export, which stays qualified)
+        # (the single wavenumber generic, shared with the cavity fit results)
         @test OpticalSpectroscopy.wavenumber(spec) == xdata(spec)
     end
 
     @testset "fit_cavity_spectrum JASCO dispatch" begin
         # The CavitySpectrum method extracts wavenumber/transmittance,
         # normalizes percent transmittance to fractional, and pulls L from
-        # sample metadata; the numerics run in CavitySpectroscopy.
+        # sample metadata; the numerics run in OpticalSpectroscopy.
         nu = collect(1900.0:0.5:2200.0)
         L = 12.0e-4
         T = compute_cavity_transmittance(nu, [2055.0], [23.0], [3000.0],
@@ -53,10 +52,9 @@ using Dates: DateTime
             oscillators=[(nu0=2055.0, Gamma=23.0)], n_bg=1.4)
     end
 
-    @testset "format_results bridge" begin
-        # Bare format_results here is OpticalSpectroscopy's generic (imported
-        # in testsetup.jl); cavity.jl routes it to CavitySpectroscopy's
-        # methods for the cavity result types.
+    @testset "format_results on cavity results" begin
+        # format_results is one generic in OpticalSpectroscopy; the cavity
+        # result methods moved there with the merge.
         nu = collect(1900.0:1.0:2200.0)
         T = compute_cavity_transmittance(nu, [2055.0], [23.0], [3000.0],
                                           0.92, 12.0e-4, 1.4, 0.3)
