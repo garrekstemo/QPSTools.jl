@@ -2,10 +2,8 @@
 Lab-side cavity spectroscopy layer.
 
 QPSTools owns the JASCO-backed `CavitySpectrum` type, `load_cavity`, and the
-JASCO-aware `fit_cavity_spectrum` dispatch. The physics chain (dielectric
-function → refractive index → Fabry-Perot transmittance), polariton
-branches/Hopfield coefficients, and the fitting numerics live in the public
-CavitySpectroscopy.jl package.
+JASCO-aware `fit_cavity_spectrum` dispatch. The physics chain, polariton
+models, and fitting numerics live in OpticalSpectroscopy (its src/cavity.jl).
 """
 
 # =============================================================================
@@ -79,13 +77,12 @@ function Base.show(io::IO, ::MIME"text/plain", spec::CavitySpectrum)
     println(io, "  date: $(something(spec.data.date, "unknown"))")
 end
 # =============================================================================
-# Physics + fitting: CavitySpectroscopy.jl
+# Physics + fitting: OpticalSpectroscopy
 # =============================================================================
 # The cavity physics (cavity_transmittance, polariton branches/eigenvalues,
 # Hopfield coefficients, dispersion model) and the fitting layer
 # (fit_cavity_spectrum, fit_dispersion, CavityFitResult, DispersionFitResult)
-# live in the public CavitySpectroscopy.jl package. QPSTools re-exports those
-# names (see QPSTools.jl) and adds the JASCO-aware dispatches below.
+# live in OpticalSpectroscopy. QPSTools adds the JASCO-aware dispatch below.
 
 """
     fit_cavity_spectrum(spec::CavitySpectrum; kwargs...)
@@ -93,7 +90,7 @@ end
 Fit a JASCO-backed `CavitySpectrum`. Extracts wavenumber/transmittance,
 auto-normalizes percent transmittance (0–100) to fractional, and pulls the
 cavity length from sample metadata (`"cavity_length"`) when `L` is not
-given. Numerics from `CavitySpectroscopy`.
+given. Numerics from `OpticalSpectroscopy`.
 """
 function fit_cavity_spectrum(spec::CavitySpectrum; kwargs...)
     nu = xdata(spec)
@@ -107,14 +104,6 @@ function fit_cavity_spectrum(spec::CavitySpectrum; kwargs...)
     end
     return fit_cavity_spectrum(nu, T; kw...)
 end
-
-# Markdown reporting: route OpticalSpectroscopy's format_results generic
-# (the one QPSTools users have loaded) to CavitySpectroscopy's methods.
-OpticalSpectroscopy.format_results(r::CavityFitResult) =
-    CavitySpectroscopy.format_results(r)
-OpticalSpectroscopy.format_results(r::DispersionFitResult) =
-    CavitySpectroscopy.format_results(r)
-
 
 # =============================================================================
 # Loading

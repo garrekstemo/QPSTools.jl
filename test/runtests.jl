@@ -7,16 +7,8 @@ using Aqua
         Aqua.test_all(QPSTools;
             deps_compat=(ignore=[
                 :Dates, :DelimitedFiles, :LinearAlgebra, :Statistics,
-                :CavitySpectroscopy, :ElabFTW, :HamamatsuStreakFiles,
+                :ElabFTW, :HamamatsuStreakFiles,
                 :JASCOFiles, :QPSScanFormat, :OpticalSpectroscopy,
-            ],),
-            # Deliberate glue: cavity.jl routes OpticalSpectroscopy's
-            # format_results generic to CavitySpectroscopy's result types so
-            # one reporting vocabulary covers the whole stack. QPSTools is
-            # the integration layer; these types are treated as its own.
-            piracies=(treat_as_own=[
-                CavitySpectroscopy.CavityFitResult,
-                CavitySpectroscopy.DispersionFitResult,
             ],),
         )
     end

@@ -34,15 +34,13 @@ CurveFit.jl ────────── fitting backend (NonlinearCurveFitPro
        │
 OpticalSpectroscopy.jl ── base types + algorithms (public, registerable)
        │                  KineticTrace, TASpectrum, TimeResolvedMatrix, PLMap
-       │                  fit_peaks, fit_exp_decay, fit_ta_spectrum
+       │                  fit_peaks, fit_exp_decay, fit_ta_spectrum, fit_cavity_spectrum
        │                  baseline, smoothing, normalize
-       │
-       ├── CavitySpectroscopy.jl ── polariton analysis (independent, public)
        │
 QPSTools.jl ──────────── lab layer (this package)
                           load_ftir, load_raman, load_ta_*, load_pl_map
                           plot_spectrum, plot_kinetics, Makie themes
-                          eLabFTW integration, cavity polariton physics
+                          eLabFTW integration, lab cavity layer
 ```
 
 ## Package Overview

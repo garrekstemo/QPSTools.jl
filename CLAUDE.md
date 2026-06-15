@@ -10,7 +10,7 @@ QPSTools is the lab-specific integration layer for the QPS spectroscopy ecosyste
 
 - LabVIEW pump-probe loaders (`load_ta_trace`, `load_ta_spectrum`, `load_ta_matrix`, `load_lvm`, `load_pl_map`, `load_wavelength_file`)
 - Streak-camera PL wrapper (`load_streak_pl` → `StreakPL`, wrapping HamamatsuStreakFiles' `StreakImage`); converter `TimeResolvedMatrix(::StreakPL)` transposes to time × wavelength, sorts wavelength ascending, and maps display metadata for downstream slicing, binning, cosmic-ray removal, and decay fitting
-- Lab-side cavity polariton layer: JASCO-backed `CavitySpectrum`, `load_cavity`, JASCO-aware `fit_cavity_spectrum` dispatch. The physics + fitting numerics live in the public [CavitySpectroscopy.jl](https://github.com/garrekstemo/CavitySpectroscopy.jl) (re-exported here as a documented exception)
+- Lab-side cavity polariton layer: JASCO-backed `CavitySpectrum`, `load_cavity`, JASCO-aware `fit_cavity_spectrum` dispatch. The physics + fitting numerics live in [OpticalSpectroscopy.jl](https://github.com/garrekstemo/OpticalSpectroscopy.jl)'s cavity layer (no re-export — students load OpticalSpectroscopy alongside)
 - Makie themes and plot layouts (`plot_spectrum`, `plot_kinetics`, `plot_ta_heatmap`, `plot_dispersion`, `plot_hopfield`, `plot_pl_map`, `plot_streak_pl`, `print_theme`, `poster_theme`)
 - eLabFTW provenance dispatches (`log_to_elab(::AnnotatedSpectrum, …)`, `tags_from_sample(::AnnotatedSpectrum)`, ditto for `StreakPL`)
 
@@ -55,10 +55,10 @@ src/
   types.jl            # AnnotatedSpectrum, AxisType, PumpProbeData
   io.jl               # LVM/TA loaders, load_spectroscopy auto-detect
   scan_loading.jl     # load_scan: typed wrapper over QPSScanFormat's plain-data reader
-  spectroscopy.jl     # JASCOSpectrum/AnnotatedSpectrum dispatches, cavity_transmittance
+  spectroscopy.jl     # JASCOSpectrum/AnnotatedSpectrum dispatches
   peakdetection.jl    # find_peaks(::AnnotatedSpectrum)
   peakfitting.jl      # fit_peaks(::AnnotatedSpectrum, …)
-  cavity.jl           # JASCO-backed CavitySpectrum + dispatches into CavitySpectroscopy.jl
+  cavity.jl           # JASCO-backed CavitySpectrum + dispatches into OpticalSpectroscopy's cavity layer
   plmap.jl            # load_pl_map, load_wavelength_file
   streak.jl           # StreakPL, load_streak_pl (wraps HamamatsuStreakFiles)
   elabftw_glue.jl     # log_to_elab/tags_from_sample dispatches on AnnotatedSpectrum + StreakPL
