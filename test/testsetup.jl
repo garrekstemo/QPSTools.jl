@@ -11,7 +11,7 @@ import QPSScanFormat
 
 import OpticalSpectroscopy: format_results, n_exp, weights
 # Disambiguate: both OpticalSpectroscopy and JASCOFiles export xlabel/ylabel.
-# Tests in this suite operate on OpticalSpectroscopy types (KineticTrace, TASpectrum,
+# Tests in this suite operate on OpticalSpectroscopy types (KineticTrace, Spectrum,
 # TimeResolvedMatrix), so resolve the bare names to OpticalSpectroscopy's methods.
 import OpticalSpectroscopy: xlabel, ylabel
 

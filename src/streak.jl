@@ -85,8 +85,9 @@ Convert a streak-camera PL measurement into an analysis-ready
 (wavelength × time) orientation to (time × wavelength) and the wavelength
 axis is sorted ascending.
 
-Metadata carries display semantics (`:signal_label` from `zunits`,
-`:time_unit` from `yunits`), provenance (`:source`), the instrument fields
+Metadata carries display tokens (`:yquantity`=`:intensity` / `:yunit` from
+`zunits`, `:xquantity`=`:wavelength` / `:xunit` from `xunits`, `:time_unit`
+from `yunits`), provenance (`:source`), the instrument fields
 hoisted by HamamatsuStreakFiles (camera, streak device, sweep range, grating,
 exposure, accumulation count, acquisition date, center wavelength), and the
 sample dict from [`load_streak_pl`](@ref) under `:sample`.
@@ -105,9 +106,12 @@ function OpticalSpectroscopy.TimeResolvedMatrix(s::StreakPL)
     data = permutedims(img.counts)[:, order]   # (wl, t) → (t, wl), ascending wl
     metadata = Dict{Symbol,Any}(
         :source => s.path,
-        :signal_label => isempty(img.zunits) ? "Counts" : img.zunits,
-        :time_unit => isempty(img.yunits) ? "ns" : img.yunits,
-        :wavelength_unit => img.xunits,
+        :technique => :pl,
+        :xquantity => :wavelength,
+        :xunit => isempty(img.xunits) ? :nm : normalize_unit(img.xunits),
+        :yquantity => :intensity,
+        :yunit => isempty(img.zunits) ? :counts : normalize_unit(img.zunits),
+        :time_unit => isempty(img.yunits) ? :ns : normalize_unit(img.yunits),
         :camera => img.camera,
         :streak_device => img.streak_device,
         :time_range => img.time_range,

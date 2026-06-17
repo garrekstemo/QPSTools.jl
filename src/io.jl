@@ -292,7 +292,7 @@ end
 # =============================================================================
 
 """
-    load_ta_spectrum(filepath; mode=:OD, channel=1, calibration=0.0, time_delay=NaN) -> TASpectrum
+    load_ta_spectrum(filepath; mode=:OD, channel=1, calibration=0.0, time_delay=NaN) -> Spectrum
 
 Load a transient absorption spectrum from a MIR pump-probe spectrometer file.
 
@@ -307,13 +307,14 @@ Load a transient absorption spectrum from a MIR pump-probe spectrometer file.
 - `time_delay`: Time delay in ps (default NaN = unknown)
 
 # Returns
-`TASpectrum` with wavenumber and ΔA signal.
+`Spectrum` (wavenumber axis, ΔA signal; tokens `:xquantity=:wavenumber`,
+`:yquantity=:delta_absorbance`, so labels derive to "Wavenumber (cm⁻¹)" / "ΔA").
 
 # Example
 ```julia
 spec = load_ta_spectrum("bare_1M_1ps.lvm"; mode=:OD, calibration=-19.0)
-spec.wavenumber  # cm⁻¹ (calibrated)
-spec.signal      # ΔA values
+xdata(spec)  # wavenumber, cm⁻¹ (calibrated)
+ydata(spec)  # ΔA values
 ```
 """
 function load_ta_spectrum(filepath::String; mode::Symbol=:OD, channel::Int=1,
@@ -370,10 +371,18 @@ function load_ta_spectrum(filepath::String; mode::Symbol=:OD, channel::Int=1,
         :timestamp => timestamp,
         :mode => mode,
         :channel => channel,
-        :calibration => calibration
+        :calibration => calibration,
+        :technique => :ta,
+        :xquantity => :wavenumber,
+        :xunit => :per_cm,
+        :yquantity => :delta_absorbance,
     )
+    if !isnan(time_delay)
+        metadata[:time_delay] = time_delay
+        metadata[:time_delay_unit] = :ps
+    end
 
-    return TASpectrum(wavenumber, signal, time_delay, metadata)
+    return Spectrum(wavenumber, signal, metadata)
 end
 
 # =============================================================================
@@ -508,13 +517,17 @@ function load_ta_matrix(dir::String; time_file::Union{String,Nothing}=nothing,
         data = data[:, 1:n]
     end
 
+    xunit = normalize_unit(string(wavelength_unit))
     metadata = Dict{Symbol,Any}(
         :source => dir,
         :time_file => something(time_file, "direct"),
         :wavelength_file => wavelength_file,
         :data_file => data_file,
+        :technique => :ta,
         :time_unit => time_unit,
-        :wavelength_unit => wavelength_unit
+        :xquantity => xunit === :per_cm ? :wavenumber : :wavelength,
+        :xunit => xunit,
+        :yquantity => :delta_absorbance,
     )
 
     return TimeResolvedMatrix(time_vec, wavelength, data, metadata)
@@ -653,7 +666,7 @@ end
 # =============================================================================
 
 """
-    load_spectroscopy(path; kwargs...) -> Union{KineticTrace, TASpectrum, TimeResolvedMatrix}
+    load_spectroscopy(path; kwargs...) -> Union{KineticTrace, Spectrum, TimeResolvedMatrix}
 
 Auto-detect measurement type and return the appropriate high-level type.
 
@@ -663,7 +676,7 @@ that need to handle any spectroscopy data type uniformly.
 # Auto-detection logic
 1. **Directory path** → `TimeResolvedMatrix` (broadband TA with separate axis files)
 2. **LVM file with time axis** → `KineticTrace` (kinetics measurement)
-3. **LVM file with wavelength axis** → `TASpectrum` (spectral measurement)
+3. **LVM file with wavelength axis** → `Spectrum` (spectral measurement)
 
 # Keyword arguments
 Passed through to the appropriate loader:
@@ -674,7 +687,7 @@ Passed through to the appropriate loader:
 
 # Returns
 - `KineticTrace` — For kinetics (time vs ΔA)
-- `TASpectrum` — For spectra (wavenumber vs ΔA)
+- `Spectrum` — For spectra (wavenumber vs ΔA)
 - `TimeResolvedMatrix` — For broadband data (time × wavelength)
 
 # Example

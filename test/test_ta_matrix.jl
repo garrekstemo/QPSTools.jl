@@ -22,12 +22,12 @@
     @test haskey(trace.metadata, :actual_wavelength)
     @test abs(trace.wavelength - 600) < 10  # Within 10 nm of requested
 
-    # Extract TASpectrum at time
+    # Extract Spectrum at time
     spec = matrix[t=1.0]
-    @test spec isa TASpectrum
-    @test length(spec.wavenumber) == length(matrix.wavelength)
-    @test length(spec.signal) == length(spec.wavenumber)
-    @test haskey(spec.metadata, :actual_time)
+    @test spec isa Spectrum
+    @test length(xdata(spec)) == length(matrix.wavelength)
+    @test length(ydata(spec)) == length(xdata(spec))
+    @test haskey(spec.metadata, :time_delay)
 
     # Error cases
     @test_throws ErrorException matrix[]  # No index specified

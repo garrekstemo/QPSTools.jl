@@ -361,12 +361,12 @@ function plot_spectrum(spec::AnnotatedSpectrum;
 end
 
 """
-    plot_spectrum(spec::TASpectrum; fit=nothing, residuals=true, kwargs...)
+    plot_spectrum(spec::Spectrum; fit=nothing, residuals=true, kwargs...)
 
 Plot a transient absorption spectrum, optionally with fit and residuals.
 
 # Arguments
-- `spec`: TASpectrum from `load_ta_spectrum`
+- `spec`: `Spectrum` from `load_ta_spectrum`
 - `fit`: Optional `TASpectrumFit` from `fit_ta_spectrum`
 - `residuals`: Show residuals panel when fit provided (default: true)
 - `xlabel`, `ylabel`, `title`: Axis labels
@@ -384,12 +384,13 @@ fig, ax, ax_res = plot_spectrum(spec; fit=result)
 save("spectrum.pdf", fig)
 ```
 """
-function plot_spectrum(spec::TASpectrum;
+function plot_spectrum(spec::Spectrum;
     fit::Union{TASpectrumFit,Nothing}=nothing,
     residuals::Bool=true,
-    xlabel::String="Wavenumber (cm⁻¹)", ylabel::String="ΔA",
+    xlabel::String=OpticalSpectroscopy.xlabel(spec),
+    ylabel::String=OpticalSpectroscopy.ylabel(spec),
     title::String="", kwargs...)
-    return _plot_spectrum_impl(spec.wavenumber, spec.signal;
+    return _plot_spectrum_impl(xdata(spec), ydata(spec);
         xlabel=xlabel, ylabel=ylabel, title=title,
         fit=fit, residuals=(!isnothing(fit) && residuals),
         kwargs...)
@@ -456,15 +457,15 @@ end
 
 # Helper to extract x, y from various spectrum types
 _spec_xy(spec::AnnotatedSpectrum) = (xdata(spec), ydata(spec))
-_spec_xy(spec::TASpectrum) = (spec.wavenumber, spec.signal)
+_spec_xy(spec::Spectrum) = (xdata(spec), ydata(spec))
 _spec_xy((x, y)::Tuple{AbstractVector,AbstractVector}) = (x, y)
 
 _spec_xlabel(spec::AnnotatedSpectrum) = QPSTools.xlabel(spec)
-_spec_xlabel(::TASpectrum) = "Wavenumber (cm⁻¹)"
+_spec_xlabel(spec::Spectrum) = OpticalSpectroscopy.xlabel(spec)
 _spec_xlabel(::Tuple) = "X"
 
 _spec_ylabel(spec::AnnotatedSpectrum) = QPSTools.ylabel(spec)
-_spec_ylabel(::TASpectrum) = "ΔA"
+_spec_ylabel(spec::Spectrum) = OpticalSpectroscopy.ylabel(spec)
 _spec_ylabel(::Tuple) = "Y"
 
 _spec_xreversed(spec::AnnotatedSpectrum) = xreversed(spec)
@@ -475,7 +476,7 @@ _spec_xreversed(::Any) = false
 
 Plot multiple spectra overlaid on a single axis for comparison.
 
-Accepts a vector of `AnnotatedSpectrum`, `TASpectrum`, or `(x, y)` tuples.
+Accepts a vector of `AnnotatedSpectrum`, `Spectrum`, or `(x, y)` tuples.
 Uses Makie's wong color cycle for automatic coloring.
 
 # Arguments

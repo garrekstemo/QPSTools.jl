@@ -241,9 +241,9 @@ function plot_spectra(matrix::TimeResolvedMatrix; t::Union{Real,AbstractVector},
 
         for (i, time_val) in enumerate(times)
             spec = matrix[t=time_val]
-            actual_t = spec.time_delay
+            actual_t = get(spec.metadata, :time_delay, time_val)
             color = colors[mod1(i, length(colors))]
-            lines!(ax, spec.wavenumber, spec.signal; color=color,
+            lines!(ax, xdata(spec), ydata(spec); color=color,
                 label="$(round(actual_t, digits=2)) ps", kwargs...)
         end
 

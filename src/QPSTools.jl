@@ -39,7 +39,7 @@ using ElabFTW
 # format layer carries no analysis types. QPSTools defines its own
 # `load_scan` (src/scan_loading.jl) that calls QPSScanFormat.load_scan and
 # rebuilds the same Loaded* structs with OpticalSpectroscopy types
-# (KineticTrace, TASpectrum, TimeResolvedMatrix, SweepData), so the daily analysis entry
+# (KineticTrace, Spectrum, TimeResolvedMatrix, SweepData), so the daily analysis entry
 # point keeps yielding fit/plot-ready objects. The Loaded* types and the
 # update_scan_*! helpers are re-exported as a documented exception to the
 # no-sibling-re-export rule; writers + schema constants stay behind the

@@ -18,7 +18,7 @@ import OpticalSpectroscopy: transmittance_to_absorbance, absorbance_to_transmitt
     # TA types implement AbstractSpectroscopyData (re-checked here so the
     # boundary stays explicit)
     @test KineticTrace <: AbstractSpectroscopyData
-    @test TASpectrum <: AbstractSpectroscopyData
+    @test Spectrum <: AbstractSpectroscopyData
     @test TimeResolvedMatrix <: AbstractSpectroscopyData
 end
 

@@ -16,9 +16,9 @@ end
     @test trace isa KineticTrace
     @test xlabel(trace) == "Time (ps)"
 
-    # Spectrum file -> TASpectrum
+    # Spectrum file -> Spectrum
     spec = load_spectroscopy(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/spectra/bare_1M_1ps.lvm"))
-    @test spec isa TASpectrum
+    @test spec isa Spectrum
     @test xlabel(spec) == "Wavenumber (cm⁻¹)"
 
     # Directory -> TimeResolvedMatrix

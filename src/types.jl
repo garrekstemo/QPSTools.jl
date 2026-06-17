@@ -1,7 +1,7 @@
 """
 QPS-specific data types.
 
-General-purpose types (`AbstractSpectroscopyData`, `KineticTrace`, `TASpectrum`,
+General-purpose types (`AbstractSpectroscopyData`, `KineticTrace`, `Spectrum`,
 `TimeResolvedMatrix`, fit result types, etc.) are provided by OpticalSpectroscopy.jl.
 
 This file defines QPS-specific types:
@@ -24,7 +24,7 @@ Raw pump-probe data from the LabVIEW spectrometer (LVM files).
 
 This is an intermediate container used by `load_lvm`. Users typically don't
 interact with this directly — use `load_ta_trace` or `load_ta_spectrum` instead,
-which return `KineticTrace` / `TASpectrum`.
+which return `KineticTrace` / `Spectrum`.
 
 # Fields
 - `time::Vector{Float64}` — Time axis (ps) or wavelength axis (nm)

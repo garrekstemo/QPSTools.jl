@@ -106,21 +106,22 @@ end
     end
 
     # metadata mapping
-    @test m.metadata[:signal_label] == img.zunits
-    @test m.metadata[:time_unit] == img.yunits
+    @test m.metadata[:yquantity] == :intensity
+    @test m.metadata[:xquantity] == :wavelength
+    @test m.metadata[:time_unit] == (isempty(img.yunits) ? :ns : normalize_unit(img.yunits))
     @test m.metadata[:source] == pl.path
     @test m.metadata[:sample]["temperature"] == "15K"
     @test haskey(m.metadata, :camera)
     @test haskey(m.metadata, :center_wavelength)
 
     # labels flow through OpticalSpectroscopy display
-    @test zlabel(m) == img.zunits
-    @test occursin(img.yunits, ylabel(m))
+    @test occursin("Intensity", zlabel(m))
+    @test occursin("Time", ylabel(m))
 
     # converted matrix feeds the analysis chain
     g = integrate_time(m)
-    @test g isa GatedSpectrum
-    @test issorted(g.wavelength)
+    @test g isa Spectrum
+    @test issorted(xdata(g))
 end
 
 # Real instrument file (data/ is not in version control — guard with isfile)
