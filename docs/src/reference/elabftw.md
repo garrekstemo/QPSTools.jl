@@ -1,6 +1,6 @@
 # eLabFTW Integration
 
-Dispatches that extend [ElabFTW.jl](https://github.com/garrekstemo/ElabFTW.jl) with lab-specific behaviour for `AnnotatedSpectrum` values. See [`src/elabftw_glue.jl`](https://github.com/garrekstemo/QPSTools.jl/blob/main/src/elabftw_glue.jl).
+Dispatches that extend [ElabFTW.jl](https://github.com/garrekstemo/ElabFTW.jl) with lab-specific behaviour for token-stamped `Spectrum` and `StreakPL` values. See [`src/elabftw_glue.jl`](https://github.com/garrekstemo/QPSTools.jl/blob/main/src/elabftw_glue.jl).
 
 `log_to_elab` and `tags_from_sample` are imported from ElabFTW.jl and extended here with new methods — load both packages to access them.
 

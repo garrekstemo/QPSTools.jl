@@ -9,9 +9,9 @@
 
 Streak-camera PL measurement with attached sample metadata.
 
-The 2D analogue of [`AnnotatedSpectrum`](@ref): wraps the raw `StreakImage`
-from HamamatsuStreakFiles.jl together with the sample kwargs passed to
-[`load_streak_pl`](@ref).
+A lab provenance wrapper: the raw `StreakImage` from HamamatsuStreakFiles.jl
+together with the sample kwargs passed to [`load_streak_pl`](@ref). Convert to a
+`TimeResolvedMatrix` for analysis.
 
 # Fields
 - `data::StreakImage` — raw image from HamamatsuStreakFiles.jl
@@ -25,7 +25,7 @@ struct StreakPL
     path::String
 end
 
-# Same accessor interface as AnnotatedSpectrum subtypes
+# Lab provenance accessors (shared generic names; the Spectrum methods live in cavity.jl)
 spectrum_data(s::StreakPL) = s.data
 sample_metadata(s::StreakPL) = s.sample
 sample_id(s::StreakPL) = get(s.sample, "_id", "unknown")

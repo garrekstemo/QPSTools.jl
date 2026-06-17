@@ -48,9 +48,9 @@ QPSTools.jl ──────────── lab layer (this package)
 | Module | What it does |
 |--------|-------------|
 | **File loaders** | LabVIEW LVM, pump-probe (`.dat`), PL/Raman maps, cavity transmission |
-| **Cavity spectroscopy** | `CavitySpectrum`, `fit_cavity_spectrum`, dispersion + Hopfield |
+| **Steady-state + cavity** | `load_spectrum` (FTIR/Raman/UV-Vis → `Spectrum`), `fit_cavity_spectrum`, dispersion + Hopfield |
 | **Plotting** | Makie themes (`qps_theme`, `print_theme`, `poster_theme`) and layouts |
-| **eLabFTW provenance** | `log_to_elab` / `tags_from_sample` dispatches on `AnnotatedSpectrum` |
+| **eLabFTW provenance** | `log_to_elab` / `tags_from_sample` dispatches on `Spectrum` and `StreakPL` |
 
 ## Documentation Layout
 

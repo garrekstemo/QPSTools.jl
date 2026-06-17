@@ -386,6 +386,75 @@ function load_ta_spectrum(filepath::String; mode::Symbol=:OD, channel::Int=1,
 end
 
 # =============================================================================
+# JASCO steady-state spectra (FTIR, Raman, UV-Vis, cavity)
+# =============================================================================
+
+# JASCO datatype → (technique, xquantity, xreversed) for token stamping.
+const _JASCO_DATATYPE = Dict{String,Tuple{Symbol,Symbol,Bool}}(
+    "INFRARED SPECTRUM"   => (:ftir,  :wavenumber,  true),
+    "RAMAN SPECTRUM"      => (:raman, :raman_shift, false),
+    "UV/VISIBLE SPECTRUM" => (:uvvis, :wavelength,  false),
+)
+
+# JASCO yunits string → (yquantity, yunit) tokens. The "%T = TRANSMITTANCE,
+# fractional = TRANSMITTANCE_FRAC" convention is JASCO's; everything else falls
+# back to the generic OpticalSpectroscopy normalizers.
+function _jasco_signal_tokens(yunits::AbstractString)
+    u = uppercase(strip(yunits))
+    u == "TRANSMITTANCE"      && return (:transmittance, :percent)
+    u == "TRANSMITTANCE_FRAC" && return (:transmittance, :fraction)
+    u == "ABSORBANCE"         && return (:absorbance, :OD)
+    return (normalize_quantity(yunits), normalize_unit(yunits))
+end
+
+"""
+    load_spectrum(path::String; kwargs...) -> Spectrum
+
+Load a steady-state spectrum from a JASCO file (FTIR, Raman, or UV-Vis) into a
+token-stamped [`Spectrum`](@ref). Technique and axis tokens are derived from the
+JASCO header (`:technique`, `:xquantity`/`:xunit`, `:yquantity`/`:yunit`,
+`:xreversed`); provenance (`:source_file`, `:instrument`, `:date`) is stamped for
+eLabFTW logging; any keyword arguments are stored as sample metadata under
+`metadata[:sample]` for display and tagging.
+
+This replaces the former `load_cavity`/`CavitySpectrum` pair — a cavity
+transmission spectrum is just an FTIR `Spectrum` carrying cavity sample metadata.
+
+# Examples
+```julia
+spec = load_spectrum("data/ftir/sample.csv")
+spec = load_spectrum("data/ftir/cavity.csv"; mirror="Au", angle=0, cavity_length=12e-4)
+```
+"""
+function load_spectrum(path::String; kwargs...)
+    full_path = abspath(path)
+    isfile(full_path) || error("File not found: $full_path")
+    j = JASCOSpectrum(full_path)
+
+    technique, xquantity, xrev = get(_JASCO_DATATYPE, uppercase(strip(j.datatype)),
+                                     (:spectroscopy, normalize_quantity(j.xunits), false))
+    yquantity, yunit = _jasco_signal_tokens(j.yunits)
+
+    metadata = Dict{Symbol,Any}(
+        :source_file => basename(full_path),
+        :filepath    => full_path,
+        :technique   => technique,
+        :xquantity   => xquantity,
+        :xunit       => normalize_unit(j.xunits),
+        :yquantity   => yquantity,
+        :yunit       => yunit,
+        :xreversed   => xrev,
+        :datatype    => j.datatype,
+        :sample      => Dict{String,Any}(string(k) => v for (k, v) in kwargs),
+    )
+    isempty(j.spectrometer) || (metadata[:instrument] = j.spectrometer)
+    isnothing(j.date) || (metadata[:date] = j.date)
+    isempty(j.title) || (metadata[:title] = j.title)
+
+    return Spectrum(j.x, j.y, metadata)
+end
+
+# =============================================================================
 # TimeResolvedMatrix loading (2D broadband TA data)
 # =============================================================================
 

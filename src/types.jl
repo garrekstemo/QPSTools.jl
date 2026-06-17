@@ -3,11 +3,12 @@ QPS-specific data types.
 
 General-purpose types (`AbstractSpectroscopyData`, `KineticTrace`, `Spectrum`,
 `TimeResolvedMatrix`, fit result types, etc.) are provided by OpticalSpectroscopy.jl.
+Steady-state spectra (FTIR, Raman, UV-Vis, cavity) are loaded as token-stamped
+`Spectrum`s by `load_spectrum` — QPSTools no longer defines a spectrum type.
 
-This file defines QPS-specific types:
+This file defines QPS-specific raw-instrument types:
 - `AxisType` — enum for raw LVM axis detection (time vs wavelength)
 - `PumpProbeData` — raw LabVIEW LVM pump-probe container
-- `AnnotatedSpectrum` — abstract type for JASCO spectra with sample metadata
 """
 
 # =============================================================================
@@ -42,111 +43,3 @@ struct PumpProbeData
     timestamp::String
     axis_type::AxisType
 end
-
-# =============================================================================
-# Abstract type for JASCO-backed spectra with sample metadata
-# =============================================================================
-
-"""
-    AnnotatedSpectrum <: AbstractSpectroscopyData
-
-Abstract base type for spectra with attached sample metadata.
-
-Subtypes share common structure:
-- `data::JASCOSpectrum` — Raw spectrum from JASCOFiles.jl
-- `sample::Dict{String,Any}` — Sample metadata (kwargs from loader)
-- `path::String` — File path
-
-This enables shared fitting and analysis code while allowing
-technique-specific defaults (axis labels, metadata display, etc.).
-
-Inherits default implementations of `zdata` (returns nothing) and
-`is_matrix` (returns false) from AbstractSpectroscopyData.
-"""
-abstract type AnnotatedSpectrum <: AbstractSpectroscopyData end
-
-# Common interface for all AnnotatedSpectrum subtypes
-spectrum_data(s::AnnotatedSpectrum) = s.data
-sample_metadata(s::AnnotatedSpectrum) = s.sample
-sample_id(s::AnnotatedSpectrum) = get(s.sample, "_id", "unknown")
-
-"""
-    xreversed(spec::AnnotatedSpectrum) -> Bool
-
-Whether the x-axis should be reversed when plotting.
-Default is `false`. `CavitySpectrum` overrides to `true` (high wavenumber on left).
-"""
-xreversed(::AnnotatedSpectrum) = false
-
-# =============================================================================
-# Shared processing for AnnotatedSpectrum subtypes
-# =============================================================================
-
-# Helper: reconstruct a JASCOSpectrum with new x,y from a subtract_spectrum NamedTuple
-function _reconstruct_jasco(original::JASCOSpectrum, subtracted::NamedTuple)
-    return JASCOSpectrum(original.title, original.date, original.spectrometer,
-                         original.datatype, original.xunits, original.yunits,
-                         subtracted.x, subtracted.y, original.metadata)
-end
-
-"""
-    subtract_spectrum(spec::T, ref::T; scale=1.0, interpolate=false) where T<:AnnotatedSpectrum
-
-Subtract a reference spectrum from a sample spectrum. Preserves sample metadata.
-Returns a new spectrum of the same type with subtracted data.
-"""
-function subtract_spectrum(spec::T, ref::T; scale::Real=1.0, interpolate::Bool=false) where T<:AnnotatedSpectrum
-    subtracted = subtract_spectrum(spec.data, ref.data; scale=scale, interpolate=interpolate)
-    new_data = _reconstruct_jasco(spec.data, subtracted)
-    return T(new_data, spec.sample, spec.path)
-end
-
-"""
-    subtract_spectrum(spec::AnnotatedSpectrum, ref::JASCOSpectrum; scale=1.0, interpolate=false)
-
-Subtract a raw JASCOSpectrum reference from an annotated spectrum.
-"""
-function subtract_spectrum(spec::T, ref::JASCOSpectrum; scale::Real=1.0, interpolate::Bool=false) where T<:AnnotatedSpectrum
-    subtracted = subtract_spectrum(spec.data, ref; scale=scale, interpolate=interpolate)
-    new_data = _reconstruct_jasco(spec.data, subtracted)
-    return T(new_data, spec.sample, spec.path)
-end
-
-"""
-    correct_baseline(spec::AnnotatedSpectrum; method=:arpls, kwargs...) -> NamedTuple
-
-Apply baseline correction to an annotated spectrum.
-
-Returns NamedTuple with fields `x`, `y` (corrected), and `baseline`.
-"""
-function correct_baseline(spec::AnnotatedSpectrum; method::Symbol=:arpls, kwargs...)
-    return correct_baseline(spec.data.x, spec.data.y; method=method, kwargs...)
-end
-
-# =============================================================================
-# Path-based loading helpers
-# =============================================================================
-
-"""
-    _load_annotated_path(path::String, ::Type{T}; kwargs...) where T<:AnnotatedSpectrum
-
-Load a JASCO file from path into an AnnotatedSpectrum subtype.
-Any kwargs are stored in the sample dict for display and eLabFTW tagging.
-"""
-function _load_annotated_path(path::String, ::Type{T}; kwargs...) where T<:AnnotatedSpectrum
-    full_path = abspath(path)
-    isfile(full_path) || error("File not found: $full_path")
-    spectrum = JASCOSpectrum(full_path)
-    sample = Dict{String, Any}(string(k) => v for (k, v) in kwargs)
-    return T(spectrum, sample, full_path)
-end
-
-# JASCO datatype → technique tag (used by eLabFTW auto-tagging)
-const _JASCO_TECHNIQUE_TAG = Dict(
-    "INFRARED SPECTRUM" => "ftir",
-    "RAMAN SPECTRUM"    => "raman",
-    "UV/VISIBLE SPECTRUM" => "uvvis",
-)
-
-_jasco_technique_tag(spec::JASCOSpectrum) = get(_JASCO_TECHNIQUE_TAG, spec.datatype, "spectroscopy")
-_jasco_technique_tag(spec::AnnotatedSpectrum) = _jasco_technique_tag(spec.data)

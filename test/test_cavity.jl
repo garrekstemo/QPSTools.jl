@@ -3,39 +3,33 @@
 using Dates: DateTime
 
 # The cavity physics and fitting numerics are tested in OpticalSpectroscopy's
-# suite. This file covers only the QPSTools layer: the JASCO-backed
-# CavitySpectrum, load_cavity, the JASCO-aware fit_cavity_spectrum dispatch,
-# format_results on cavity result types, and plotting.
+# suite. This file covers only the QPSTools layer: load_spectrum stamping FTIR
+# tokens, the Spectrum-aware fit_cavity_spectrum dispatch, format_results on
+# cavity result types, and plotting.
 
 @testset "Cavity spectroscopy" begin
 
-    @testset "Type hierarchy" begin
-        @test CavitySpectrum <: QPSTools.AnnotatedSpectrum
-        @test CavitySpectrum <: AbstractSpectroscopyData
-    end
-
-    @testset "Interface accessors" begin
-        spec = load_cavity(joinpath(PROJECT_ROOT, "data/ftir/1.0M_NH4SCN_DMF.csv"))
+    @testset "load_spectrum stamps FTIR tokens" begin
+        spec = load_spectrum(joinpath(PROJECT_ROOT, "data/ftir/1.0M_NH4SCN_DMF.csv"))
+        @test spec isa Spectrum
+        @test spec.metadata[:technique] == :ftir
+        @test spec.metadata[:xquantity] == :wavenumber
+        # FTIR convention: high wavenumber on the left
         @test xreversed(spec) == true
-
-        # The semantic accessor must extend OpticalSpectroscopy's generic
-        # (the single wavenumber generic, shared with the cavity fit results)
-        @test OpticalSpectroscopy.wavenumber(spec) == xdata(spec)
     end
 
-    @testset "fit_cavity_spectrum JASCO dispatch" begin
-        # The CavitySpectrum method extracts wavenumber/transmittance,
-        # normalizes percent transmittance to fractional, and pulls L from
-        # sample metadata; the numerics run in OpticalSpectroscopy.
+    @testset "fit_cavity_spectrum Spectrum dispatch" begin
+        # The Spectrum method extracts wavenumber/transmittance, normalizes
+        # percent transmittance to fractional, and pulls L from sample
+        # metadata; the numerics run in OpticalSpectroscopy.
         nu = collect(1900.0:0.5:2200.0)
         L = 12.0e-4
         T = compute_cavity_transmittance(nu, [2055.0], [23.0], [3000.0],
                                           0.92, L, 1.4, 0.3)
-        jasco = JASCOSpectrum("synthetic cavity", DateTime(2026), "test",
-                              "INFRARED SPECTRUM", "1/CM", "TRANSMITTANCE",
-                              nu, 100 .* T, Dict{String,Any}())
-        spec = CavitySpectrum(jasco, Dict{String,Any}("cavity_length" => L),
-                              "synthetic.csv")
+        spec = Spectrum(nu, 100 .* T;
+            technique=:ftir, xquantity=:wavenumber, xunit=:per_cm,
+            yquantity=:transmittance, yunit=:percent,
+            sample=Dict{String,Any}("cavity_length" => L))
 
         # No L kwarg: comes from sample metadata. %T: auto-normalized.
         result = fit_cavity_spectrum(spec;
@@ -46,8 +40,9 @@ using Dates: DateTime
         @test result.rsquared > 0.99
         @test isapprox(result.R, 0.92, atol=0.05)
 
-        # Without metadata and without L the required kwarg is missing
-        spec_bare = CavitySpectrum(jasco, Dict{String,Any}(), "synthetic.csv")
+        # Without sample metadata and without L the required kwarg is missing
+        spec_bare = Spectrum(nu, 100 .* T;
+            yquantity=:transmittance, yunit=:percent)
         @test_throws UndefKeywordError fit_cavity_spectrum(spec_bare;
             oscillators=[(nu0=2055.0, Gamma=23.0)], n_bg=1.4)
     end

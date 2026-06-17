@@ -4,11 +4,20 @@ using Aqua
 @testset "QPSTools.jl" begin
 
     @testset "Code quality (Aqua.jl)" begin
+        # QPSTools is the top-level lab-integration layer (nothing depends on
+        # it), so it intentionally extends sibling functions with methods on
+        # OpticalSpectroscopy's `Spectrum`: the cavity-fit dispatch and the
+        # eLabFTW provenance glue. Aqua flags these as piracy — allowlist them.
         Aqua.test_all(QPSTools;
             deps_compat=(ignore=[
                 :Dates, :DelimitedFiles, :LinearAlgebra, :Statistics,
                 :ElabFTW, :HamamatsuStreakFiles,
                 :JASCOFiles, :QPSScanFormat, :OpticalSpectroscopy,
+            ],),
+            piracies=(treat_as_own=[
+                QPSTools.fit_cavity_spectrum,
+                QPSTools.tags_from_sample,
+                QPSTools.log_to_elab,
             ],),
         )
     end

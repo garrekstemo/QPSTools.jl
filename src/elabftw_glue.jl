@@ -1,60 +1,65 @@
-# eLabFTW glue: AnnotatedSpectrum and StreakPL dispatches for ElabFTW.jl
+# eLabFTW glue: Spectrum and StreakPL dispatches for ElabFTW.jl
 #
 # These methods extend ElabFTW.tags_from_sample and ElabFTW.log_to_elab
-# with QPSTools-specific types (AnnotatedSpectrum, JASCO metadata, StreakPL).
+# with QPSTools data (token-stamped Spectrum provenance, StreakPL).
 
 # =============================================================================
 # Auto-provenance helpers
 # =============================================================================
 
-"""Build a provenance body section from JASCO header fields."""
-function _jasco_provenance_body(spec::AnnotatedSpectrum)
-    lines = ["## Source", "- **File**: $(basename(spec.path))"]
-    !isempty(spec.data.spectrometer) && push!(lines, "- **Instrument**: $(spec.data.spectrometer)")
-    # date can be nothing (JASCOFiles 2.0): omit rather than log a non-date
-    spec.data.date === nothing || push!(lines, "- **Acquired**: $(spec.data.date)")
+"""Technique tag from the `:technique` token (`"ftir"`, `"raman"`, …)."""
+_technique_tag(spec::Spectrum) = string(get(spec.metadata, :technique, "spectroscopy"))
+
+"""Build a provenance body section from a Spectrum's stamped header metadata."""
+function _spectrum_provenance_body(spec::Spectrum)
+    lines = ["## Source", "- **File**: $(get(spec.metadata, :source_file, "unknown"))"]
+    inst = get(spec.metadata, :instrument, "")
+    isempty(inst) || push!(lines, "- **Instrument**: $inst")
+    # date can be absent (no JASCO date): omit rather than log a non-date
+    d = get(spec.metadata, :date, nothing)
+    isnothing(d) || push!(lines, "- **Acquired**: $d")
     prog = Base.PROGRAM_FILE
     (!isempty(prog) && isfile(prog)) && push!(lines, "- **Script**: $(basename(prog))")
     return join(lines, "\n")
 end
 
-"""Auto-generate tags from JASCO header + sample kwargs."""
-function _jasco_auto_tags(spec::AnnotatedSpectrum)
-    tags = [_jasco_technique_tag(spec)]
+"""Auto-generate tags from the technique token + sample kwargs."""
+function _spectrum_auto_tags(spec::Spectrum)
+    tags = [_technique_tag(spec)]
     append!(tags, tags_from_sample(spec))
     return unique(filter(!isempty, tags))
 end
 
 # =============================================================================
-# AnnotatedSpectrum dispatches
+# Spectrum dispatches
 # =============================================================================
 
 """
-    tags_from_sample(spec::AnnotatedSpectrum; kwargs...) -> Vector{String}
+    tags_from_sample(spec::Spectrum; kwargs...) -> Vector{String}
 
-Extract tags from an AnnotatedSpectrum's sample metadata.
+Extract tags from a Spectrum's sample metadata (`metadata[:sample]`).
 
 # Example
 ```julia
-spec = load_cavity("data/ftir/sample.csv"; solute="NH4SCN", concentration="1.0M")
+spec = load_spectrum("data/ftir/sample.csv"; solute="NH4SCN", concentration="1.0M")
 tags = tags_from_sample(spec)
 # => ["NH4SCN", "DMF", "1.0M", "CaF2"]
 ```
 """
-tags_from_sample(spec::AnnotatedSpectrum; kwargs...) = tags_from_sample(spec.sample; kwargs...)
+tags_from_sample(spec::Spectrum; kwargs...) = tags_from_sample(sample_metadata(spec); kwargs...)
 
 """
-    log_to_elab(spec::AnnotatedSpectrum, result; title, body, attachments, extra_tags, category) -> Int
+    log_to_elab(spec::Spectrum, result; title, body, attachments, extra_tags, category) -> Int
 
-Log analysis results with auto-provenance from JASCO header and auto-tags from
-sample kwargs. Inherits idempotency from the keyword-only form.
+Log analysis results with auto-provenance from the Spectrum's stamped metadata
+and auto-tags from sample kwargs. Inherits idempotency from the keyword-only form.
 
-Tags are auto-generated from: JASCO technique type + kwargs passed to the loader.
+Tags are auto-generated from: the `:technique` token + sample kwargs.
 Body includes: provenance (file, instrument, date, script) + user body + formatted results.
 
 # Example
 ```julia
-spec = load_cavity("data/ftir/1.0M_NH4SCN_DMF.csv"; solute="NH4SCN", concentration="1.0M")
+spec = load_spectrum("data/ftir/1.0M_NH4SCN_DMF.csv"; solute="NH4SCN", concentration="1.0M")
 result = fit_peaks(spec, (2000, 2100))
 
 log_to_elab(spec, result;
@@ -64,17 +69,17 @@ log_to_elab(spec, result;
 )
 ```
 """
-function log_to_elab(spec::AnnotatedSpectrum, result;
+function log_to_elab(spec::Spectrum, result;
     title::String,
     body::String = "",
     attachments::Vector{String} = String[],
     extra_tags::Vector{String} = String[],
     category::Union{Int, Nothing} = nothing
 )
-    auto_tags = _jasco_auto_tags(spec)
+    auto_tags = _spectrum_auto_tags(spec)
     all_tags = unique(vcat(auto_tags, extra_tags))
 
-    full_body = _jasco_provenance_body(spec)
+    full_body = _spectrum_provenance_body(spec)
     if !isempty(body)
         full_body *= "\n\n" * body
     end
