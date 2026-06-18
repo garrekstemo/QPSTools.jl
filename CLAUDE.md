@@ -1,80 +1,45 @@
 # QPSTools.jl — QPS Lab Integration Layer
 
+Private lab-specific glue layer of the spectroscopy ecosystem (see global CLAUDE.md for the models→analysis→lab map). General-purpose spectroscopy lives in the sibling packages; QPSTools owns only lab-side loaders, Makie themes/plots, and eLabFTW provenance glue.
+
 ## Status
 
-**This package has not shipped yet.** Breaking changes to APIs, struct fields, and function signatures are acceptable. Prioritize clean, correct design over maintaining legacy interfaces.
+Pre-ship (v0.2.0, unregistered). Breaking changes to APIs, struct fields, and signatures are fine — prioritize clean design over legacy compatibility.
 
 ## Scope
 
-QPSTools is the lab-specific integration layer for the QPS spectroscopy ecosystem. It owns:
+- **Pump-probe loaders** (LabVIEW LVM): `load_ta_trace`, `load_ta_spectrum`, `load_ta_matrix`, `load_lvm`, `load_pl_map`, `load_wavelength_file`
+- **Steady-state loader**: `load_spectrum` → token-stamped OpticalSpectroscopy `Spectrum` (FTIR/Raman/UV-Vis/cavity transmission). This replaced the old `load_cavity`/`CavitySpectrum` pair, which no longer exist. (`load_spectroscopy` is a separate auto-detect entry point.)
+- **Streak PL**: `load_streak_pl` → `StreakPL` (wraps HamamatsuStreakFiles' `StreakImage`); `TimeResolvedMatrix(::StreakPL)` transposes to time × wavelength, sorts λ ascending, maps display metadata for downstream slicing/binning/cosmic-ray/decay-fitting.
+- **Makie plots/themes**: `plot_spectrum`, `plot_kinetics`, `plot_ta_heatmap`, `plot_dispersion`, `plot_hopfield`, `plot_pl_map`, `plot_streak_pl`, `print_theme`, `poster_theme`, …
 
-- LabVIEW pump-probe loaders (`load_ta_trace`, `load_ta_spectrum`, `load_ta_matrix`, `load_lvm`, `load_pl_map`, `load_wavelength_file`)
-- Streak-camera PL wrapper (`load_streak_pl` → `StreakPL`, wrapping HamamatsuStreakFiles' `StreakImage`); converter `TimeResolvedMatrix(::StreakPL)` transposes to time × wavelength, sorts wavelength ascending, and maps display metadata for downstream slicing, binning, cosmic-ray removal, and decay fitting
-- Lab-side cavity polariton layer: JASCO-backed `CavitySpectrum`, `load_cavity`, JASCO-aware `fit_cavity_spectrum` dispatch. The physics + fitting numerics live in [OpticalSpectroscopy.jl](https://github.com/garrekstemo/OpticalSpectroscopy.jl)'s cavity layer (no re-export — students load OpticalSpectroscopy alongside)
-- Makie themes and plot layouts (`plot_spectrum`, `plot_kinetics`, `plot_ta_heatmap`, `plot_dispersion`, `plot_hopfield`, `plot_pl_map`, `plot_streak_pl`, `print_theme`, `poster_theme`)
-- eLabFTW provenance dispatches (`log_to_elab(::AnnotatedSpectrum, …)`, `tags_from_sample(::AnnotatedSpectrum)`, ditto for `StreakPL`)
+`using QPSTools` brings in only names QPSTools defines. Students load siblings alongside (`OpticalSpectroscopy`, `JASCOFiles`, `HamamatsuStreakFiles`, `ElabFTW`).
 
-General-purpose spectroscopy lives in sibling packages — load them alongside:
+## Cavity / polariton
 
-```julia
-using QPSTools
-using OpticalSpectroscopy    # types, fitting, baseline, peak detection
-using JASCOFiles             # JASCOSpectrum + isftir/israman/isuvvis
-using HamamatsuStreakFiles   # StreakImage (raw streak-camera .img reader)
-using ElabFTW                # eLabFTW CRUD
-import QPSScanFormat         # writers (save_*_scan) + schema constants, qualified
-```
+QPSTools' `src/cavity.jl` holds **only lab accessors** over the generic `Spectrum` (`sample_metadata`, `xreversed`, `_sample_title`). All cavity/polariton numerics — `fit_cavity_spectrum(::Spectrum)` (reads `:cavity_length` and `:yunit` tokens), `fit_dispersion`, `polariton_branches`, `hopfield_coefficients` — live in **OpticalSpectroscopy.jl** (its `src/cavity.jl`) and reach lab users via `using OpticalSpectroscopy` (not re-exported). `load_spectrum`'s `cavity_length` kwarg is promoted to the `:cavity_length` token so that dispatch can find it.
 
-`using QPSTools` brings in only names QPSTools itself defines, with one documented exception around scan files:
+Note: the standalone CavitySpectroscopy.jl was merged into OpticalSpectroscopy and archived (June 2026); its local dir is frozen. The unrelated `CavitySpectroscopy` module inside the Variable-Rabi-Splitting-VSC-Project repo is a different thing — never conflate them.
 
-- **`load_scan` is QPSTools' own function** (`src/scan_loading.jl`): a typed wrapper over `QPSScanFormat.load_scan`. The format layer returns `Loaded*` results carrying plain NamedTuple data (it has no analysis dependencies); QPSTools rebuilds them with OpticalSpectroscopy types (`KineticTrace`, `TASpectrum`, `TimeResolvedMatrix`, `SweepData`) so results feed `fit_exp_decay`/`fit_peaks`/`plot_kinetics` directly.
-- The `Loaded*` result types and `update_scan_description!`/`update_scan_comment!`/`update_scan_sample_name!` are re-exported from QPSScanFormat as a documented exception to the no-sibling-re-export rule.
-- Do NOT blanket-`using QPSScanFormat` alongside QPSTools — both export a `load_scan` and the bindings clash. `import QPSScanFormat` for qualified writer/schema access.
+## eLabFTW glue (weakdep extension)
 
-Sibling re-export remains the exception, not the rule. Method dispatch threads the rest of the layers together.
+`ElabFTW` is a **weak dependency**. The typed `log_to_elab` / `tags_from_sample` dispatches for `Spectrum` and `StreakPL` live in `ext/QPSToolsElabFTWExt.jl` and load only under `using ElabFTW`. The extension is the blessed home for this join (ElabFTW knows nothing of spectra; OpticalSpectroscopy knows nothing of eLabFTW) — keeps it out of type-piracy territory.
 
-## Package Dependencies
+## The `load_scan` exception
 
-Compat policy follows global CLAUDE.md: let `Pkg.add()` auto-add lower bounds, don't remove them.
+`load_scan` is **QPSTools' own** function (`src/scan_loading.jl`): a typed wrapper over `QPSScanFormat.load_scan`. The format layer returns `Loaded*` results carrying plain NamedTuple data (no analysis deps); QPSTools rebuilds them with OpticalSpectroscopy types (`KineticTrace`, `Spectrum`, `TimeResolvedMatrix`, `SweepData`) so results feed `fit_*`/`plot_*` directly.
 
-### Examples Environment
+- **`import QPSScanFormat`, NOT `using`** — both export `load_scan` and the bindings clash. QPSTools owns that binding; use the `QPSScanFormat.` prefix for qualified writer/schema access.
+- The `Loaded*` types (`LoadedScanResult`, `LoadedSpectralResult`, `LoadedCompositeResult`, `LoadedNoiseResult`) and `update_scan_description!` / `update_scan_comment!` / `update_scan_sample_name!` are re-exported from QPSScanFormat — the documented exception to the no-sibling-re-export rule.
 
-Examples have their own environment at `examples/Project.toml` with additional deps NOT in the main package. Students load the Makie backend themselves — QPSTools only depends on `Makie` (the abstract interface).
+## Examples environment
 
-**Example-only deps** (do NOT add to root `Project.toml`): `CairoMakie`, `GLMakie`, `FileIO`, `CurveFit`, `CurveFitModels`, `Revise`
+`examples/` has its own env (`examples/Project.toml`) with deps NOT in root: `CairoMakie`, `GLMakie`, `FileIO`, `CurveFit`, `CurveFitModels`, `Revise`. Root QPSTools depends only on abstract `Makie`; students load the backend themselves. Do NOT add these to root `Project.toml`.
 
-## Figure Output Convention
+## Figure output
 
-All figures saved to `figures/` subfolders. `figures/EXAMPLES/` for example script output. Never save to project root or alongside scripts. PNG for saved output, PDF for publication (`manuscript/` figures only).
+Figures save to `figures/` subfolders (`figures/EXAMPLES/` for example-script output). Never save to project root or alongside scripts. PNG for saved output, PDF for publication.
 
-## Package Structure
+## Layout
 
-```
-src/
-  QPSTools.jl         # Module: imports, includes, exports
-  types.jl            # AnnotatedSpectrum, AxisType, PumpProbeData
-  io.jl               # LVM/TA loaders, load_spectroscopy auto-detect
-  scan_loading.jl     # load_scan: typed wrapper over QPSScanFormat's plain-data reader
-  spectroscopy.jl     # JASCOSpectrum/AnnotatedSpectrum dispatches
-  peakdetection.jl    # find_peaks(::AnnotatedSpectrum)
-  peakfitting.jl      # fit_peaks(::AnnotatedSpectrum, …)
-  cavity.jl           # JASCO-backed CavitySpectrum + dispatches into OpticalSpectroscopy's cavity layer
-  plmap.jl            # load_pl_map, load_wavelength_file
-  streak.jl           # StreakPL, load_streak_pl (wraps HamamatsuStreakFiles)
-  elabftw_glue.jl     # log_to_elab/tags_from_sample dispatches on AnnotatedSpectrum + StreakPL
-  plotting/
-    themes.jl         # qps_theme, print_theme, poster_theme, lab_colors, lab_linewidths
-    layers.jl         # _draw_*! helpers, plot_peaks!, plot_peak_decomposition!
-    plot_spectrum.jl  # plot_spectrum, plot_data, plot_comparison, plot_waterfall
-    plot_kinetics.jl  # plot_kinetics, plot_ta_heatmap, plot_spectra
-    plot_chirp.jl     # plot_chirp, plot_chirp!
-    plot_das.jl       # plot_das, plot_das!
-    plot_cavity.jl    # plot_dispersion, plot_hopfield (+ !-variants)
-    plot_plmap.jl     # plot_pl_map, plot_pl_spectra
-    plot_streak.jl    # plot_streak_pl
-examples/             # Example scripts (own environment)
-bootstrap/            # Student onboarding script + analysis templates
-figures/              # Generated figures
-data/                 # Raw instrument data (gitignored)
-notes/                # Internal notes
-```
+Entry point: `src/QPSTools.jl` (imports, includes, exports). Loaders in `src/io.jl` / `scan_loading.jl` / `streak.jl` / `plmap.jl`; lab accessors in `cavity.jl`; raw types (`AxisType`, `PumpProbeData`) in `types.jl`; plots under `src/plotting/`. Browse `src/` for the rest.
