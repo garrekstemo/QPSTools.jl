@@ -38,14 +38,14 @@ end
     spec = load_ta_spectrum(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/spectra/bare_1M_1ps.lvm");
                             mode=:OD, calibration=-19.0, time_delay=1.0)
 
-    @test spec isa TASpectrum
-    @test length(spec.wavenumber) > 0
-    @test length(spec.signal) == length(spec.wavenumber)
-    @test spec.time_delay == 1.0
+    @test spec isa Spectrum
+    @test length(xdata(spec)) > 0
+    @test length(ydata(spec)) == length(xdata(spec))
+    @test spec.metadata[:time_delay] == 1.0
 
     # Wavenumber should be in reasonable range for MIR
-    @test minimum(spec.wavenumber) > 1800
-    @test maximum(spec.wavenumber) < 2300
+    @test minimum(xdata(spec)) > 1800
+    @test maximum(xdata(spec)) < 2300
 
     # Check metadata
     @test haskey(spec.metadata, :filename)
@@ -55,8 +55,8 @@ end
     # Test different modes
     spec_diff = load_ta_spectrum(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/spectra/bare_1M_1ps.lvm");
                                  mode=:diff)
-    @test spec_diff isa TASpectrum
-    @test length(spec_diff.signal) == length(spec_diff.wavenumber)
+    @test spec_diff isa Spectrum
+    @test length(ydata(spec_diff)) == length(xdata(spec_diff))
 end
 
 @testset "fit_ta_spectrum" begin
@@ -85,7 +85,7 @@ end
 
     # Test predict
     y_fit = predict(result, spec)
-    @test length(y_fit) == length(spec.wavenumber)
+    @test length(y_fit) == length(xdata(spec))
 end
 
 @testset "fit_exp_decay with IRF" begin

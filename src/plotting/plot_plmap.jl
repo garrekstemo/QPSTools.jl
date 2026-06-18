@@ -26,8 +26,8 @@ function plot_pl_map(m::PLMap; colormap=:hot, colorrange=nothing,
                      title="PL Intensity Map", kwargs...)
     with_theme(qps_theme()) do
         fig = Figure()
-        xl = something(xlabel, QPSTools.xlabel(m))
-        yl = something(ylabel, QPSTools.ylabel(m))
+        xl = something(xlabel, OpticalSpectroscopy.xlabel(m))
+        yl = something(ylabel, OpticalSpectroscopy.ylabel(m))
         ax = Axis(fig[1, 1], xlabel=xl, ylabel=yl, title=title,
                   aspect=DataAspect())
 

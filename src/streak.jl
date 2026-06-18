@@ -9,9 +9,9 @@
 
 Streak-camera PL measurement with attached sample metadata.
 
-The 2D analogue of [`AnnotatedSpectrum`](@ref): wraps the raw `StreakImage`
-from HamamatsuStreakFiles.jl together with the sample kwargs passed to
-[`load_streak_pl`](@ref).
+A lab provenance wrapper: the raw `StreakImage` from HamamatsuStreakFiles.jl
+together with the sample kwargs passed to [`load_streak_pl`](@ref). Convert to a
+`TimeResolvedMatrix` for analysis.
 
 # Fields
 - `data::StreakImage` — raw image from HamamatsuStreakFiles.jl
@@ -25,7 +25,7 @@ struct StreakPL
     path::String
 end
 
-# Same accessor interface as AnnotatedSpectrum subtypes
+# Lab provenance accessors (shared generic names; the Spectrum methods live in cavity.jl)
 spectrum_data(s::StreakPL) = s.data
 sample_metadata(s::StreakPL) = s.sample
 sample_id(s::StreakPL) = get(s.sample, "_id", "unknown")
@@ -85,8 +85,9 @@ Convert a streak-camera PL measurement into an analysis-ready
 (wavelength × time) orientation to (time × wavelength) and the wavelength
 axis is sorted ascending.
 
-Metadata carries display semantics (`:signal_label` from `zunits`,
-`:time_unit` from `yunits`), provenance (`:source`), the instrument fields
+Metadata carries display tokens (`:yquantity`=`:intensity` / `:yunit` from
+`zunits`, `:xquantity`=`:wavelength` / `:xunit` from `xunits`, `:time_unit`
+from `yunits`), provenance (`:source`), the instrument fields
 hoisted by HamamatsuStreakFiles (camera, streak device, sweep range, grating,
 exposure, accumulation count, acquisition date, center wavelength), and the
 sample dict from [`load_streak_pl`](@ref) under `:sample`.
@@ -105,9 +106,12 @@ function OpticalSpectroscopy.TimeResolvedMatrix(s::StreakPL)
     data = permutedims(img.counts)[:, order]   # (wl, t) → (t, wl), ascending wl
     metadata = Dict{Symbol,Any}(
         :source => s.path,
-        :signal_label => isempty(img.zunits) ? "Counts" : img.zunits,
-        :time_unit => isempty(img.yunits) ? "ns" : img.yunits,
-        :wavelength_unit => img.xunits,
+        :technique => :pl,
+        :xquantity => :wavelength,
+        :xunit => isempty(img.xunits) ? :nm : normalize_unit(img.xunits),
+        :yquantity => :intensity,
+        :yunit => isempty(img.zunits) ? :counts : normalize_unit(img.zunits),
+        :time_unit => isempty(img.yunits) ? :ns : normalize_unit(img.yunits),
         :camera => img.camera,
         :streak_device => img.streak_device,
         :time_range => img.time_range,

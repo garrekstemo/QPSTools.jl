@@ -18,16 +18,15 @@ load_ta_matrix
 find_peak_time
 ```
 
-## Cavity Transmission
+## Steady-State Spectra (JASCO)
 
 ```@docs
-load_cavity
+load_spectrum
 ```
 
-## Annotated Spectrum Types
+## Raw Instrument Types
 
 ```@docs
-AnnotatedSpectrum
 AxisType
 PumpProbeData
 ```

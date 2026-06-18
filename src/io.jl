@@ -292,7 +292,7 @@ end
 # =============================================================================
 
 """
-    load_ta_spectrum(filepath; mode=:OD, channel=1, calibration=0.0, time_delay=NaN) -> TASpectrum
+    load_ta_spectrum(filepath; mode=:OD, channel=1, calibration=0.0, time_delay=NaN) -> Spectrum
 
 Load a transient absorption spectrum from a MIR pump-probe spectrometer file.
 
@@ -307,13 +307,14 @@ Load a transient absorption spectrum from a MIR pump-probe spectrometer file.
 - `time_delay`: Time delay in ps (default NaN = unknown)
 
 # Returns
-`TASpectrum` with wavenumber and ΔA signal.
+`Spectrum` (wavenumber axis, ΔA signal; tokens `:xquantity=:wavenumber`,
+`:yquantity=:delta_absorbance`, so labels derive to "Wavenumber (cm⁻¹)" / "ΔA").
 
 # Example
 ```julia
 spec = load_ta_spectrum("bare_1M_1ps.lvm"; mode=:OD, calibration=-19.0)
-spec.wavenumber  # cm⁻¹ (calibrated)
-spec.signal      # ΔA values
+xdata(spec)  # wavenumber, cm⁻¹ (calibrated)
+ydata(spec)  # ΔA values
 ```
 """
 function load_ta_spectrum(filepath::String; mode::Symbol=:OD, channel::Int=1,
@@ -370,10 +371,92 @@ function load_ta_spectrum(filepath::String; mode::Symbol=:OD, channel::Int=1,
         :timestamp => timestamp,
         :mode => mode,
         :channel => channel,
-        :calibration => calibration
+        :calibration => calibration,
+        :technique => :ta,
+        :xquantity => :wavenumber,
+        :xunit => :per_cm,
+        :yquantity => :delta_absorbance,
     )
+    if !isnan(time_delay)
+        metadata[:time_delay] = time_delay
+        metadata[:time_delay_unit] = :ps
+    end
 
-    return TASpectrum(wavenumber, signal, time_delay, metadata)
+    return Spectrum(wavenumber, signal, metadata)
+end
+
+# =============================================================================
+# JASCO steady-state spectra (FTIR, Raman, UV-Vis, cavity)
+# =============================================================================
+
+# JASCO datatype → (technique, xquantity, xreversed) for token stamping.
+const _JASCO_DATATYPE = Dict{String,Tuple{Symbol,Symbol,Bool}}(
+    "INFRARED SPECTRUM"   => (:ftir,  :wavenumber,  true),
+    "RAMAN SPECTRUM"      => (:raman, :raman_shift, false),
+    "UV/VISIBLE SPECTRUM" => (:uvvis, :wavelength,  false),
+)
+
+# JASCO yunits string → (yquantity, yunit) tokens. The "%T = TRANSMITTANCE,
+# fractional = TRANSMITTANCE_FRAC" convention is JASCO's; everything else falls
+# back to the generic OpticalSpectroscopy normalizers.
+function _jasco_signal_tokens(yunits::AbstractString)
+    u = uppercase(strip(yunits))
+    u == "TRANSMITTANCE"      && return (:transmittance, :percent)
+    u == "TRANSMITTANCE_FRAC" && return (:transmittance, :fraction)
+    u == "ABSORBANCE"         && return (:absorbance, :OD)
+    return (normalize_quantity(yunits), normalize_unit(yunits))
+end
+
+"""
+    load_spectrum(path::String; kwargs...) -> Spectrum
+
+Load a steady-state spectrum from a JASCO file (FTIR, Raman, or UV-Vis) into a
+token-stamped [`Spectrum`](@ref). Technique and axis tokens are derived from the
+JASCO header (`:technique`, `:xquantity`/`:xunit`, `:yquantity`/`:yunit`,
+`:xreversed`); provenance (`:source_file`, `:instrument`, `:date`) is stamped for
+eLabFTW logging; any keyword arguments are stored as sample metadata under
+`metadata[:sample]` for display and tagging.
+
+`cavity_length`, if given, is promoted to the top-level `:cavity_length` token
+(not buried in `:sample`) so OpticalSpectroscopy's `fit_cavity_spectrum(::Spectrum)`
+can pick it up as the cavity length `L`.
+
+This replaces the former `load_cavity`/`CavitySpectrum` pair — a cavity
+transmission spectrum is just an FTIR `Spectrum` carrying cavity sample metadata.
+
+# Examples
+```julia
+spec = load_spectrum("data/ftir/sample.csv")
+spec = load_spectrum("data/ftir/cavity.csv"; mirror="Au", angle=0, cavity_length=12e-4)
+```
+"""
+function load_spectrum(path::String; cavity_length=nothing, kwargs...)
+    full_path = abspath(path)
+    isfile(full_path) || error("File not found: $full_path")
+    j = JASCOSpectrum(full_path)
+
+    technique, xquantity, xrev = get(_JASCO_DATATYPE, uppercase(strip(j.datatype)),
+                                     (:spectroscopy, normalize_quantity(j.xunits), false))
+    yquantity, yunit = _jasco_signal_tokens(j.yunits)
+
+    metadata = Dict{Symbol,Any}(
+        :source_file => basename(full_path),
+        :filepath    => full_path,
+        :technique   => technique,
+        :xquantity   => xquantity,
+        :xunit       => normalize_unit(j.xunits),
+        :yquantity   => yquantity,
+        :yunit       => yunit,
+        :xreversed   => xrev,
+        :datatype    => j.datatype,
+        :sample      => Dict{String,Any}(string(k) => v for (k, v) in kwargs),
+    )
+    isnothing(cavity_length) || (metadata[:cavity_length] = cavity_length)
+    isempty(j.spectrometer) || (metadata[:instrument] = j.spectrometer)
+    isnothing(j.date) || (metadata[:date] = j.date)
+    isempty(j.title) || (metadata[:title] = j.title)
+
+    return Spectrum(j.x, j.y, metadata)
 end
 
 # =============================================================================
@@ -508,13 +591,17 @@ function load_ta_matrix(dir::String; time_file::Union{String,Nothing}=nothing,
         data = data[:, 1:n]
     end
 
+    xunit = normalize_unit(string(wavelength_unit))
     metadata = Dict{Symbol,Any}(
         :source => dir,
         :time_file => something(time_file, "direct"),
         :wavelength_file => wavelength_file,
         :data_file => data_file,
+        :technique => :ta,
         :time_unit => time_unit,
-        :wavelength_unit => wavelength_unit
+        :xquantity => xunit === :per_cm ? :wavenumber : :wavelength,
+        :xunit => xunit,
+        :yquantity => :delta_absorbance,
     )
 
     return TimeResolvedMatrix(time_vec, wavelength, data, metadata)
@@ -653,7 +740,7 @@ end
 # =============================================================================
 
 """
-    load_spectroscopy(path; kwargs...) -> Union{KineticTrace, TASpectrum, TimeResolvedMatrix}
+    load_spectroscopy(path; kwargs...) -> Union{KineticTrace, Spectrum, TimeResolvedMatrix}
 
 Auto-detect measurement type and return the appropriate high-level type.
 
@@ -663,7 +750,7 @@ that need to handle any spectroscopy data type uniformly.
 # Auto-detection logic
 1. **Directory path** → `TimeResolvedMatrix` (broadband TA with separate axis files)
 2. **LVM file with time axis** → `KineticTrace` (kinetics measurement)
-3. **LVM file with wavelength axis** → `TASpectrum` (spectral measurement)
+3. **LVM file with wavelength axis** → `Spectrum` (spectral measurement)
 
 # Keyword arguments
 Passed through to the appropriate loader:
@@ -674,7 +761,7 @@ Passed through to the appropriate loader:
 
 # Returns
 - `KineticTrace` — For kinetics (time vs ΔA)
-- `TASpectrum` — For spectra (wavenumber vs ΔA)
+- `Spectrum` — For spectra (wavenumber vs ΔA)
 - `TimeResolvedMatrix` — For broadband data (time × wavelength)
 
 # Example

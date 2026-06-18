@@ -4,13 +4,12 @@
 # SPECTRUM PLOTTING: implementation + dispatch
 # ============================================================================
 
-# Title dispatch for AnnotatedSpectrum subtypes
-_annotated_title(spec::CavitySpectrum) = _cavity_title(spec)
-_annotated_title(::AnnotatedSpectrum) = nothing
-
-# Units dispatch for annotations
-_annotated_units(::CavitySpectrum) = "cm⁻¹"
-_annotated_units(::AnnotatedSpectrum) = ""
+# Annotation units: the x-axis unit string, parsed from the derived xlabel
+# (e.g. "Wavenumber (cm⁻¹)" → "cm⁻¹"), used to label peak positions.
+function _annotation_units(xlabel::AbstractString)
+    m = match(r"\(([^)]*)\)\s*$", xlabel)
+    return m === nothing ? "" : String(m.captures[1])
+end
 
 """
     _plot_spectrum_impl(x, y; xlabel, ylabel, title, xreversed,
@@ -260,19 +259,23 @@ function plot_spectrum(x::AbstractVector, y::AbstractVector;
 end
 
 """
-    plot_spectrum(spec::AnnotatedSpectrum; kwargs...)
+    plot_spectrum(spec::Spectrum; fit=nothing, peaks=nothing, residuals=false,
+                  context=false, title="", kwargs...)
 
-Plot an annotated spectrum (FTIR, Raman, etc.) with automatic axis labels and orientation.
+Plot a token-stamped `Spectrum` (FTIR, Raman, cavity transmission, TA, …) with
+axis labels, orientation, and title derived from its metadata. Works for any
+`Spectrum`: steady-state spectra from `load_spectrum` and TA spectra from
+`load_ta_spectrum` alike.
 
 # Keyword Arguments
-- `fit`: Optional `MultiPeakFitResult` from `fit_peaks`
+- `fit`: Optional fit result (`MultiPeakFitResult`, `TASpectrumFit`, or `CavityFitResult`)
 - `peaks`: Pre-computed peaks from `find_peaks`
 - `residuals::Bool=false`: Show residuals panel (requires `fit`)
-- `context::Bool=false`: Three-panel view with full spectrum context
-- `title`: Override auto-generated title
-- `kwargs...`: Passed to data drawing function
+- `context::Bool=false`: Three-panel view with full spectrum context (`MultiPeakFitResult`)
+- `title`: Override the auto-generated title (from sample metadata)
+- `kwargs...`: Passed to the data drawing function
 
-# Layout selection
+# Layout selection (for a `MultiPeakFitResult`)
 - `peaks` only → full spectrum + peak markers
 - `fit` only → zoomed to fit region (scatter + fit + decomposition)
 - `fit + peaks` → full spectrum with fit overlaid + all peaks
@@ -281,31 +284,19 @@ Plot an annotated spectrum (FTIR, Raman, etc.) with automatic axis labels and or
 
 # Examples
 ```julia
-spec = load_cavity("data/ftir/sample.csv"; solute="NH4SCN", concentration="1.0M")
+spec = load_spectrum("data/ftir/sample.csv"; solute="NH4SCN", concentration="1.0M")
 
-# Survey view
-fig, ax = plot_spectrum(spec)
-
-# With pre-computed peaks
+fig, ax = plot_spectrum(spec)                              # survey view
 peaks = find_peaks(spec)
-fig, ax = plot_spectrum(spec; peaks=peaks)
-
-# With fit overlay (zoomed to fit region)
+fig, ax = plot_spectrum(spec; peaks=peaks)                 # with peak markers
 result = fit_peaks(spec, (1950, 2150))
-fig, ax = plot_spectrum(spec; fit=result)
-
-# Fit + peaks (full spectrum with fit overlaid)
-fig, ax = plot_spectrum(spec; fit=result, peaks=peaks)
-
-# With fit and residuals
+fig, ax = plot_spectrum(spec; fit=result)                  # zoomed to fit region
 fig, ax, ax_res = plot_spectrum(spec; fit=result, residuals=true)
-
-# Three-panel publication view
 fig, ax_ctx, ax_fit, ax_res = plot_spectrum(spec; fit=result, context=true)
 ```
 """
-function plot_spectrum(spec::AnnotatedSpectrum;
-    fit::Union{MultiPeakFitResult,CavityFitResult,Nothing}=nothing,
+function plot_spectrum(spec::Spectrum;
+    fit::Union{MultiPeakFitResult,TASpectrumFit,CavityFitResult,Nothing}=nothing,
     peaks::Union{Vector{PeakInfo},Nothing}=nothing,
     residuals::Bool=false,
     context::Bool=false,
@@ -314,20 +305,19 @@ function plot_spectrum(spec::AnnotatedSpectrum;
 
     x = xdata(spec)
     y = ydata(spec)
-    xl = QPSTools.xlabel(spec)
-    yl = QPSTools.ylabel(spec)
+    xl = OpticalSpectroscopy.xlabel(spec)
+    yl = OpticalSpectroscopy.ylabel(spec)
     rev = xreversed(spec)
-    units = _annotated_units(spec)
+    units = _annotation_units(xl)
 
     if context && isnothing(fit)
         @warn "`context=true` requires a `fit` result — ignoring. Pass `fit=result` to use three-panel view."
     end
 
-    # Auto-title from metadata if not provided
-    t = isempty(title) ? something(_annotated_title(spec), "") : title
+    # Auto-title from sample metadata if not provided
+    t = isempty(title) ? something(_sample_title(spec), "") : title
 
     # Build context tuple for three-panel view
-    ctx = nothing
     if context && !isnothing(fit) && fit isa MultiPeakFitResult
         region = (minimum(fit._x), maximum(fit._x))
         ctx = (x, y, region)
@@ -354,45 +344,11 @@ function plot_spectrum(spec::AnnotatedSpectrum;
             annotation_units=units, scatter_data=true, kwargs...)
     end
 
+    # Simple fits (TASpectrumFit / CavityFitResult) and no-fit views
     return _plot_spectrum_impl(x, y;
         xlabel=xl, ylabel=yl, title=t, xreversed=rev,
         fit=fit, peaks=peaks, residuals=residuals,
         annotation_units=units, kwargs...)
-end
-
-"""
-    plot_spectrum(spec::TASpectrum; fit=nothing, residuals=true, kwargs...)
-
-Plot a transient absorption spectrum, optionally with fit and residuals.
-
-# Arguments
-- `spec`: TASpectrum from `load_ta_spectrum`
-- `fit`: Optional `TASpectrumFit` from `fit_ta_spectrum`
-- `residuals`: Show residuals panel when fit provided (default: true)
-- `xlabel`, `ylabel`, `title`: Axis labels
-- `kwargs...`: Additional arguments passed to data drawing
-
-# Returns
-Tuple of (figure, axis) or (figure, axis, residuals_axis) when residuals shown.
-
-# Example
-```julia
-spec = load_ta_spectrum("data.lvm"; mode=:OD)
-result = fit_ta_spectrum(spec)
-
-fig, ax, ax_res = plot_spectrum(spec; fit=result)
-save("spectrum.pdf", fig)
-```
-"""
-function plot_spectrum(spec::TASpectrum;
-    fit::Union{TASpectrumFit,Nothing}=nothing,
-    residuals::Bool=true,
-    xlabel::String="Wavenumber (cm⁻¹)", ylabel::String="ΔA",
-    title::String="", kwargs...)
-    return _plot_spectrum_impl(spec.wavenumber, spec.signal;
-        xlabel=xlabel, ylabel=ylabel, title=title,
-        fit=fit, residuals=(!isnothing(fit) && residuals),
-        kwargs...)
 end
 
 # =============================================================================
@@ -425,7 +381,7 @@ function plot_data(data::AbstractSpectroscopyData; colormap=:RdBu, colorrange=no
         if is_matrix(data)
             # 2D heatmap
             fig = Figure(size=(800, 500))
-            ax = Axis(fig[1, 1], xlabel=QPSTools.xlabel(data), ylabel=QPSTools.ylabel(data))
+            ax = Axis(fig[1, 1], xlabel=OpticalSpectroscopy.xlabel(data), ylabel=OpticalSpectroscopy.ylabel(data))
 
             z = zdata(data)
             if isnothing(colorrange)
@@ -442,7 +398,7 @@ function plot_data(data::AbstractSpectroscopyData; colormap=:RdBu, colorrange=no
         else
             # 1D line plot
             fig = Figure()
-            ax = Axis(fig[1, 1], xlabel=QPSTools.xlabel(data), ylabel=QPSTools.ylabel(data))
+            ax = Axis(fig[1, 1], xlabel=OpticalSpectroscopy.xlabel(data), ylabel=OpticalSpectroscopy.ylabel(data))
             lines!(ax, xdata(data), ydata(data); kwargs...)
 
             return fig, ax
@@ -454,20 +410,17 @@ end
 # MULTI-SPECTRUM VIEWS
 # =============================================================================
 
-# Helper to extract x, y from various spectrum types
-_spec_xy(spec::AnnotatedSpectrum) = (xdata(spec), ydata(spec))
-_spec_xy(spec::TASpectrum) = (spec.wavenumber, spec.signal)
+# Helper to extract x, y from spectra or raw tuples
+_spec_xy(spec::Spectrum) = (xdata(spec), ydata(spec))
 _spec_xy((x, y)::Tuple{AbstractVector,AbstractVector}) = (x, y)
 
-_spec_xlabel(spec::AnnotatedSpectrum) = QPSTools.xlabel(spec)
-_spec_xlabel(::TASpectrum) = "Wavenumber (cm⁻¹)"
+_spec_xlabel(spec::Spectrum) = OpticalSpectroscopy.xlabel(spec)
 _spec_xlabel(::Tuple) = "X"
 
-_spec_ylabel(spec::AnnotatedSpectrum) = QPSTools.ylabel(spec)
-_spec_ylabel(::TASpectrum) = "ΔA"
+_spec_ylabel(spec::Spectrum) = OpticalSpectroscopy.ylabel(spec)
 _spec_ylabel(::Tuple) = "Y"
 
-_spec_xreversed(spec::AnnotatedSpectrum) = xreversed(spec)
+_spec_xreversed(spec::Spectrum) = xreversed(spec)
 _spec_xreversed(::Any) = false
 
 """
@@ -475,7 +428,7 @@ _spec_xreversed(::Any) = false
 
 Plot multiple spectra overlaid on a single axis for comparison.
 
-Accepts a vector of `AnnotatedSpectrum`, `TASpectrum`, or `(x, y)` tuples.
+Accepts a vector of `Spectrum` or `(x, y)` tuples.
 Uses Makie's wong color cycle for automatic coloring.
 
 # Arguments

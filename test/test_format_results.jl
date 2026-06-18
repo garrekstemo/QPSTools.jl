@@ -2,7 +2,7 @@
 
 @testset "format_results" begin
     # MultiPeakFitResult
-    spec = load_cavity(joinpath(PROJECT_ROOT, "data/ftir/1.0M_NH4SCN_DMF.csv"))
+    spec = load_spectrum(joinpath(PROJECT_ROOT, "data/ftir/1.0M_NH4SCN_DMF.csv"))
     result = fit_peaks(spec, (2000, 2100))
     md = format_results(result)
     @test md isa String

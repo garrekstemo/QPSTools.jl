@@ -15,7 +15,7 @@ Load a QPSDrive HDF5 scan file (written by QPSScanFormat / QPSDrive) and
 return analysis-ready results:
 
 - `kinetic` → `LoadedScanResult` with `trace::KineticTrace`, `sweeps::SweepData`
-- `spectrum` → `LoadedSpectralResult` with `spectrum::TASpectrum`
+- `spectrum` → `LoadedSpectralResult` with `spectrum::Spectrum`
 - `composite` → `LoadedCompositeResult` with typed sub-results
 - `broadband` → `TimeResolvedMatrix`
 - `noise` → `LoadedNoiseResult` (plain vectors; no analysis type exists)
@@ -43,7 +43,8 @@ end
 
 function _with_analysis_types(r::LoadedSpectralResult)
     LoadedSpectralResult(
-        TASpectrum(r.spectrum.wavenumber, r.spectrum.signal),
+        Spectrum(r.spectrum.wavenumber, r.spectrum.signal;
+                 axis=:wavenumber, yquantity=:delta_absorbance, technique=:ta),
         _sweep_data(r.sweeps),
         r.wavelengths,
         r.timestamp, r.duration_seconds,

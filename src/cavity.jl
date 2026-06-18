@@ -1,148 +1,67 @@
 """
-Lab-side cavity spectroscopy layer.
+Lab-side helpers for steady-state spectra.
 
-QPSTools owns the JASCO-backed `CavitySpectrum` type, `load_cavity`, and the
-JASCO-aware `fit_cavity_spectrum` dispatch. The physics chain, polariton
-models, and fitting numerics live in OpticalSpectroscopy (its src/cavity.jl).
+Steady-state spectra (FTIR, Raman, UV-Vis, cavity transmission) are loaded as
+token-stamped `Spectrum`s by `load_spectrum` (src/io.jl) — QPSTools no longer
+defines a `CavitySpectrum`/`AnnotatedSpectrum` type. This file holds the lab-side
+helpers over OpticalSpectroscopy's generic `Spectrum`: the sample-metadata
+accessor, the FTIR plotting orientation, and the auto-title.
+
+The cavity physics, polariton models, and fitting (including the
+`fit_cavity_spectrum(::Spectrum)` dispatch, which reads the `:cavity_length` and
+`:yunit` tokens) all live in OpticalSpectroscopy (its src/cavity.jl). The
+`load_spectrum` loader promotes a `cavity_length` keyword to the top-level
+`:cavity_length` token so that dispatch can find it.
 """
 
 # =============================================================================
-# Type: CavitySpectrum
+# Lab accessors over a token-stamped Spectrum
 # =============================================================================
 
 """
-    CavitySpectrum <: AnnotatedSpectrum
+    sample_metadata(s::Spectrum) -> Dict
 
-Cavity FTIR transmission spectrum with sample metadata.
-
-# Fields
-- `data::JASCOSpectrum` - Raw spectrum from JASCOFiles.jl
-- `sample::Dict{String,Any}` - Sample metadata (mirror, cavity_length, angle, etc.)
-- `path::String` - File path
-
-# Accessing data
-- Wavenumber: `spec.data.x`
-- Transmittance: `spec.data.y`
-- Sample info: `spec.sample["mirror"]`, `spec.sample["angle"]`
+Sample metadata attached at load time (the loader kwargs), stored under
+`metadata[:sample]`. Empty for spectra loaded without sample kwargs.
 """
-struct CavitySpectrum <: AnnotatedSpectrum
-    data::JASCOSpectrum
-    sample::Dict{String, Any}
-    path::String
-end
+sample_metadata(s::Spectrum) = get(s.metadata, :sample, Dict{String,Any}())
 
-# AbstractSpectroscopyData interface
-xdata(s::CavitySpectrum) = s.data.x
-ydata(s::CavitySpectrum) = s.data.y
-xlabel(::CavitySpectrum) = "Wavenumber (cm⁻¹)"
-ylabel(::CavitySpectrum) = "Transmittance (%)"
-source_file(s::CavitySpectrum) = basename(s.path)
-
-# FTIR convention: high wavenumber on left
-xreversed(::CavitySpectrum) = true
-
-# Semantic accessor (extends OpticalSpectroscopy's generic)
 """
-    wavenumber(s::CavitySpectrum) -> Vector{Float64}
+    xreversed(s::Spectrum) -> Bool
 
-Return the wavenumber axis (cm⁻¹).
+Whether the x-axis should be drawn reversed (FTIR convention: high wavenumber on
+the left). Read from `metadata[:xreversed]`; defaults to `false`.
 """
-wavenumber(s::CavitySpectrum) = xdata(s)
+xreversed(s::Spectrum) = get(s.metadata, :xreversed, false)
 
-function Base.show(io::IO, spec::CavitySpectrum)
-    label = get(spec.sample, "_id", basename(spec.path))
-    n = length(spec.data.x)
-    print(io, "CavitySpectrum(\"$label\", $n points)")
-end
-
-function Base.show(io::IO, ::MIME"text/plain", spec::CavitySpectrum)
-    println(io, "CavitySpectrum:")
-
-    id = get(spec.sample, "_id", nothing)
-    if !isnothing(id)
-        println(io, "  id: $id")
-    else
-        println(io, "  file: $(basename(spec.path))")
-    end
-
-    for key in ["sample", "mirror", "cavity_length", "angle", "solute", "concentration", "solvent"]
-        val = get(spec.sample, key, nothing)
-        !isnothing(val) && println(io, "  $key: $val")
-    end
-
-    x = spec.data.x
-    println(io, "  range: $(round(minimum(x), digits=1)) - $(round(maximum(x), digits=1)) $(spec.data.xunits)")
-    println(io, "  points: $(length(x))")
-    !isempty(spec.data.spectrometer) && println(io, "  instrument: $(spec.data.spectrometer)")
-    println(io, "  date: $(something(spec.data.date, "unknown"))")
-end
 # =============================================================================
 # Physics + fitting: OpticalSpectroscopy
 # =============================================================================
 # The cavity physics (cavity_transmittance, polariton branches/eigenvalues,
 # Hopfield coefficients, dispersion model) and the fitting layer
-# (fit_cavity_spectrum, fit_dispersion, CavityFitResult, DispersionFitResult)
-# live in OpticalSpectroscopy. QPSTools adds the JASCO-aware dispatch below.
-
-"""
-    fit_cavity_spectrum(spec::CavitySpectrum; kwargs...)
-
-Fit a JASCO-backed `CavitySpectrum`. Extracts wavenumber/transmittance,
-auto-normalizes percent transmittance (0–100) to fractional, and pulls the
-cavity length from sample metadata (`"cavity_length"`) when `L` is not
-given. Numerics from `OpticalSpectroscopy`.
-"""
-function fit_cavity_spectrum(spec::CavitySpectrum; kwargs...)
-    nu = xdata(spec)
-    T = ydata(spec)
-    if maximum(T) > 1.5
-        T = T ./ 100.0
-    end
-    kw = Dict{Symbol, Any}(kwargs)
-    if !haskey(kw, :L) && haskey(spec.sample, "cavity_length")
-        kw[:L] = spec.sample["cavity_length"]
-    end
-    return fit_cavity_spectrum(nu, T; kw...)
-end
-
-# =============================================================================
-# Loading
-# =============================================================================
-
-"""
-    load_cavity(path::String; kwargs...) -> CavitySpectrum
-
-Load a cavity spectrum from a JASCO CSV file. Optional kwargs
-(e.g., `mirror="Au"`, `angle=10`) are stored as metadata for display and eLabFTW.
-
-# Examples
-```julia
-spec = load_cavity("data/cavity/Au_0deg.csv")
-spec = load_cavity("data/cavity/Au_0deg.csv"; mirror="Au", angle=0, cavity_length=12e-4)
-```
-"""
-load_cavity(path::String; kwargs...) = _load_annotated_path(path, CavitySpectrum; kwargs...)
+# (fit_cavity_spectrum — including its Spectrum dispatch — fit_dispersion,
+# CavityFitResult, DispersionFitResult) all live in OpticalSpectroscopy and
+# reach lab users through `using OpticalSpectroscopy`. A cavity transmission
+# Spectrum carries L as the `:cavity_length` token (stamped by load_spectrum)
+# and percent transmittance via the `:yunit` token, both of which the
+# OpticalSpectroscopy dispatch reads.
 
 # =============================================================================
 # Internal helpers
 # =============================================================================
 
-function _cavity_title(spec::CavitySpectrum)
+"""Auto-title from sample metadata (`sample - mirror - angle`), or `nothing`."""
+function _sample_title(spec::Spectrum)
+    sample = sample_metadata(spec)
     parts = String[]
 
-    sample = get(spec.sample, "sample", nothing)
-    mirror = get(spec.sample, "mirror", nothing)
-    angle = get(spec.sample, "angle", nothing)
+    s = get(sample, "sample", nothing)
+    m = get(sample, "mirror", nothing)
+    a = get(sample, "angle", nothing)
 
-    if !isnothing(sample)
-        push!(parts, sample)
-    end
-    if !isnothing(mirror)
-        push!(parts, "$mirror mirror")
-    end
-    if !isnothing(angle)
-        push!(parts, "$(angle) deg")
-    end
+    isnothing(s) || push!(parts, s)
+    isnothing(m) || push!(parts, "$m mirror")
+    isnothing(a) || push!(parts, "$(a) deg")
 
     return isempty(parts) ? nothing : join(parts, " - ")
 end

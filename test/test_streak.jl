@@ -49,17 +49,20 @@ end
 end
 
 @testset "StreakPL eLabFTW glue" begin
+    # The provenance helpers live in the weak-dep extension (loaded via
+    # `using ElabFTW` in testsetup.jl).
+    ext = Base.get_extension(QPSTools, :QPSToolsElabFTWExt)
     pl = load_streak_pl(STREAK_FIXTURE; material="NH4SCN", temperature="15K")
 
     tags = tags_from_sample(pl)
     @test "NH4SCN" in tags
     @test "15K" in tags
 
-    auto = QPSTools._streak_auto_tags(pl)
+    auto = ext._streak_auto_tags(pl)
     @test auto[1] == "pl"
     @test "NH4SCN" in auto
 
-    body = QPSTools._streak_provenance_body(pl)
+    body = ext._streak_provenance_body(pl)
     @test occursin(basename(STREAK_FIXTURE), body)
     @test occursin("C11440-36U", body)       # camera
     @test occursin("C10910", body)           # streak unit
@@ -69,7 +72,7 @@ end
 
     # No kwargs → technique tag only
     bare = load_streak_pl(STREAK_FIXTURE)
-    @test QPSTools._streak_auto_tags(bare) == ["pl"]
+    @test ext._streak_auto_tags(bare) == ["pl"]
 end
 
 @testset "plot_streak_pl" begin
@@ -106,21 +109,22 @@ end
     end
 
     # metadata mapping
-    @test m.metadata[:signal_label] == img.zunits
-    @test m.metadata[:time_unit] == img.yunits
+    @test m.metadata[:yquantity] == :intensity
+    @test m.metadata[:xquantity] == :wavelength
+    @test m.metadata[:time_unit] == (isempty(img.yunits) ? :ns : normalize_unit(img.yunits))
     @test m.metadata[:source] == pl.path
     @test m.metadata[:sample]["temperature"] == "15K"
     @test haskey(m.metadata, :camera)
     @test haskey(m.metadata, :center_wavelength)
 
     # labels flow through OpticalSpectroscopy display
-    @test zlabel(m) == img.zunits
-    @test occursin(img.yunits, ylabel(m))
+    @test occursin("Intensity", zlabel(m))
+    @test occursin("Time", ylabel(m))
 
     # converted matrix feeds the analysis chain
     g = integrate_time(m)
-    @test g isa GatedSpectrum
-    @test issorted(g.wavelength)
+    @test g isa Spectrum
+    @test issorted(xdata(g))
 end
 
 # Real instrument file (data/ is not in version control — guard with isfile)

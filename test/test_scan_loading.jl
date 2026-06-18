@@ -8,7 +8,7 @@ using Makie: Figure
 #
 # This pins the behavior students have always seen. QPSScanFormat itself
 # returns plain data (NamedTuples of vectors/matrices); QPSTools wraps
-# those into KineticTrace / TASpectrum / TimeResolvedMatrix / SweepData. The assertions
+# those into KineticTrace / Spectrum / TimeResolvedMatrix / SweepData. The assertions
 # below were recorded against the pre-decoupling QPSScanFormat (which
 # returned the typed objects directly) and must keep passing verbatim
 # against the plain-data QPSScanFormat + QPSTools wrapper.
@@ -44,7 +44,7 @@ using Makie: Figure
         )
 
         spectral_path = joinpath(dir, "spectral.h5")
-        QPSScanFormat.save_spectral_scan(TASpectrum(wn, sspec), wl, spectral_path;
+        QPSScanFormat.save_spectral_scan((wavenumber=wn, signal=sspec), wl, spectral_path;
             scan_params = Dict{String,Any}("delay_ps" => 1.5),
             description = "spectrum for wrapper test",
             timestamp = ts,
@@ -54,7 +54,7 @@ using Makie: Figure
         composite_path = joinpath(dir, "composite.h5")
         QPSScanFormat.save_composite_scan(composite_path;
             spectra = [
-                (spectrum = TASpectrum(wn, sspec), wavelengths = wl, sweeps = nothing,
+                (spectrum = (wavenumber=wn, signal=sspec), wavelengths = wl, sweeps = nothing,
                  description = "early", comment = "", timestamp = ts,
                  duration_seconds = 10.0, delay_ps = 0.5),
             ],
@@ -116,14 +116,14 @@ using Makie: Figure
             @test fig isa Figure
         end
 
-        # ─── Spectral: spectrum is a TASpectrum ──────────────────────
+        # ─── Spectral: spectrum is a Spectrum ──────────────────────
         @testset "spectral" begin
             r = load_scan(spectral_path)
             @test r isa LoadedSpectralResult
-            @test r.spectrum isa TASpectrum
-            @test isnan(r.spectrum.time_delay)
-            @test r.spectrum.wavenumber ≈ wn
-            @test r.spectrum.signal ≈ sspec
+            @test r.spectrum isa Spectrum
+            @test !haskey(r.spectrum.metadata, :time_delay)
+            @test xdata(r.spectrum) ≈ wn
+            @test ydata(r.spectrum) ≈ sspec
             @test r.wavelengths ≈ wl
             @test r.scan_params["delay_ps"] ≈ 1.5
 
@@ -138,7 +138,7 @@ using Makie: Figure
             @test length(r.spectra) == 1
             @test length(r.traces) == 1
             @test r.spectra[1] isa LoadedSpectralResult
-            @test r.spectra[1].spectrum isa TASpectrum
+            @test r.spectra[1].spectrum isa Spectrum
             @test r.spectra[1].sweeps === nothing
             @test r.spectra[1].scan_params["delay_ps"] ≈ 0.5
             @test r.spectra[1].scan_params["sub_path"] == "data/spectra/spectrum_001"

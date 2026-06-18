@@ -139,8 +139,8 @@ function plot_ta_heatmap(matrix::TimeResolvedMatrix; colormap=:RdBu, colorrange=
         # Convention: wavelength on x-axis, time on y-axis (standard TA literature)
         # data is (n_time, n_wavelength); transpose to (n_wavelength, n_time)
         # interpolate=true prevents sub-pixel aliasing when n_wavelength >> pixel width
-        xl = something(xlabel, QPSTools.xlabel(matrix))  # "Wavelength (nm)"
-        yl = something(ylabel, QPSTools.ylabel(matrix))  # "Time (ps)"
+        xl = something(xlabel, OpticalSpectroscopy.xlabel(matrix))  # "Wavelength (nm)"
+        yl = something(ylabel, OpticalSpectroscopy.ylabel(matrix))  # "Time (ps)"
 
         ax = Axis(fig[1, 1], xlabel=xl, ylabel=yl, title=title)
 
@@ -232,7 +232,7 @@ function plot_spectra(matrix::TimeResolvedMatrix; t::Union{Real,AbstractVector},
         fig = Figure()
 
         # Use interface function for default x-label
-        xl = something(xlabel, QPSTools.xlabel(matrix))
+        xl = something(xlabel, OpticalSpectroscopy.xlabel(matrix))
 
         ax = Axis(fig[1, 1], xlabel=xl, ylabel=ylabel, title=title)
 
@@ -241,9 +241,9 @@ function plot_spectra(matrix::TimeResolvedMatrix; t::Union{Real,AbstractVector},
 
         for (i, time_val) in enumerate(times)
             spec = matrix[t=time_val]
-            actual_t = spec.time_delay
+            actual_t = get(spec.metadata, :time_delay, time_val)
             color = colors[mod1(i, length(colors))]
-            lines!(ax, spec.wavenumber, spec.signal; color=color,
+            lines!(ax, xdata(spec), ydata(spec); color=color,
                 label="$(round(actual_t, digits=2)) ps", kwargs...)
         end
 
