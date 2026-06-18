@@ -49,17 +49,20 @@ end
 end
 
 @testset "StreakPL eLabFTW glue" begin
+    # The provenance helpers live in the weak-dep extension (loaded via
+    # `using ElabFTW` in testsetup.jl).
+    ext = Base.get_extension(QPSTools, :QPSToolsElabFTWExt)
     pl = load_streak_pl(STREAK_FIXTURE; material="NH4SCN", temperature="15K")
 
     tags = tags_from_sample(pl)
     @test "NH4SCN" in tags
     @test "15K" in tags
 
-    auto = QPSTools._streak_auto_tags(pl)
+    auto = ext._streak_auto_tags(pl)
     @test auto[1] == "pl"
     @test "NH4SCN" in auto
 
-    body = QPSTools._streak_provenance_body(pl)
+    body = ext._streak_provenance_body(pl)
     @test occursin(basename(STREAK_FIXTURE), body)
     @test occursin("C11440-36U", body)       # camera
     @test occursin("C10910", body)           # streak unit
@@ -69,7 +72,7 @@ end
 
     # No kwargs → technique tag only
     bare = load_streak_pl(STREAK_FIXTURE)
-    @test QPSTools._streak_auto_tags(bare) == ["pl"]
+    @test ext._streak_auto_tags(bare) == ["pl"]
 end
 
 @testset "plot_streak_pl" begin

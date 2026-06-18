@@ -1,13 +1,17 @@
 """
-Lab-side dispatch for steady-state spectra.
+Lab-side helpers for steady-state spectra.
 
 Steady-state spectra (FTIR, Raman, UV-Vis, cavity transmission) are loaded as
 token-stamped `Spectrum`s by `load_spectrum` (src/io.jl) — QPSTools no longer
-defines a `CavitySpectrum`/`AnnotatedSpectrum` type. This file adds the lab-side
-dispatch on top of OpticalSpectroscopy's generic `Spectrum`: the sample-metadata
-accessor, FTIR plotting orientation, and the cavity-aware `fit_cavity_spectrum`.
-The physics chain, polariton models, and fitting numerics live in
-OpticalSpectroscopy (its src/cavity.jl).
+defines a `CavitySpectrum`/`AnnotatedSpectrum` type. This file holds the lab-side
+helpers over OpticalSpectroscopy's generic `Spectrum`: the sample-metadata
+accessor, the FTIR plotting orientation, and the auto-title.
+
+The cavity physics, polariton models, and fitting (including the
+`fit_cavity_spectrum(::Spectrum)` dispatch, which reads the `:cavity_length` and
+`:yunit` tokens) all live in OpticalSpectroscopy (its src/cavity.jl). The
+`load_spectrum` loader promotes a `cavity_length` keyword to the top-level
+`:cavity_length` token so that dispatch can find it.
 """
 
 # =============================================================================
@@ -35,30 +39,12 @@ xreversed(s::Spectrum) = get(s.metadata, :xreversed, false)
 # =============================================================================
 # The cavity physics (cavity_transmittance, polariton branches/eigenvalues,
 # Hopfield coefficients, dispersion model) and the fitting layer
-# (fit_cavity_spectrum, fit_dispersion, CavityFitResult, DispersionFitResult)
-# live in OpticalSpectroscopy. QPSTools adds the Spectrum-aware dispatch below.
-
-"""
-    fit_cavity_spectrum(spec::Spectrum; kwargs...)
-
-Fit a cavity transmission `Spectrum`. Extracts wavenumber/transmittance,
-auto-normalizes percent transmittance (0–100) to fractional, and pulls the
-cavity length from sample metadata (`metadata[:sample]["cavity_length"]`) when
-`L` is not given. Numerics from `OpticalSpectroscopy`.
-"""
-function fit_cavity_spectrum(spec::Spectrum; kwargs...)
-    nu = xdata(spec)
-    T = ydata(spec)
-    if maximum(T) > 1.5
-        T = T ./ 100.0
-    end
-    kw = Dict{Symbol, Any}(kwargs)
-    sample = sample_metadata(spec)
-    if !haskey(kw, :L) && haskey(sample, "cavity_length")
-        kw[:L] = sample["cavity_length"]
-    end
-    return fit_cavity_spectrum(nu, T; kw...)
-end
+# (fit_cavity_spectrum — including its Spectrum dispatch — fit_dispersion,
+# CavityFitResult, DispersionFitResult) all live in OpticalSpectroscopy and
+# reach lab users through `using OpticalSpectroscopy`. A cavity transmission
+# Spectrum carries L as the `:cavity_length` token (stamped by load_spectrum)
+# and percent transmittance via the `:yunit` token, both of which the
+# OpticalSpectroscopy dispatch reads.
 
 # =============================================================================
 # Internal helpers

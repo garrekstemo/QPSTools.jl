@@ -381,7 +381,7 @@ function plot_data(data::AbstractSpectroscopyData; colormap=:RdBu, colorrange=no
         if is_matrix(data)
             # 2D heatmap
             fig = Figure(size=(800, 500))
-            ax = Axis(fig[1, 1], xlabel=QPSTools.xlabel(data), ylabel=QPSTools.ylabel(data))
+            ax = Axis(fig[1, 1], xlabel=OpticalSpectroscopy.xlabel(data), ylabel=OpticalSpectroscopy.ylabel(data))
 
             z = zdata(data)
             if isnothing(colorrange)
@@ -398,7 +398,7 @@ function plot_data(data::AbstractSpectroscopyData; colormap=:RdBu, colorrange=no
         else
             # 1D line plot
             fig = Figure()
-            ax = Axis(fig[1, 1], xlabel=QPSTools.xlabel(data), ylabel=QPSTools.ylabel(data))
+            ax = Axis(fig[1, 1], xlabel=OpticalSpectroscopy.xlabel(data), ylabel=OpticalSpectroscopy.ylabel(data))
             lines!(ax, xdata(data), ydata(data); kwargs...)
 
             return fig, ax

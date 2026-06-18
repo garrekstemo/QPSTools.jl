@@ -7,7 +7,7 @@ Lab-specific glue for the QPS spectroscopy ecosystem. QPSTools defines:
 - Streak-camera PL loader (`load_streak_pl` → `StreakPL`)
 - Steady-state spectrum loader (`load_spectrum` → token-stamped `Spectrum`) + cavity fitting (`fit_cavity_spectrum`, `fit_dispersion`)
 - Makie plotting themes and layouts (`plot_spectrum`, `plot_kinetics`, `plot_dispersion`, …)
-- eLabFTW provenance (`log_to_elab`, `tags_from_sample` dispatched on `Spectrum` and `StreakPL`)
+- eLabFTW provenance (`log_to_elab`, `tags_from_sample` dispatched on `Spectrum` and `StreakPL`) — a package extension that activates only under `using ElabFTW` (ElabFTW is a weak dependency)
 
 `using QPSTools` brings in only names QPSTools itself defines. General-purpose
 spectroscopy lives in the sibling packages — load them alongside:
@@ -32,7 +32,6 @@ using HamamatsuStreakFiles
 using Makie
 
 using OpticalSpectroscopy
-using ElabFTW
 
 # QPSScanFormat owns the canonical HDF5 scan-file reader/writer + Loaded*
 # types, and returns PLAIN DATA (NamedTuples of vectors/matrices) — the
@@ -51,23 +50,21 @@ using QPSScanFormat: QPSScanFormat,
     LoadedScanResult, LoadedSpectralResult, LoadedCompositeResult, LoadedNoiseResult,
     update_scan_description!, update_scan_comment!, update_scan_sample_name!
 
-# Cavity physics + fitting live in OpticalSpectroscopy (its src/cavity.jl);
-# the blanket `using OpticalSpectroscopy` above brings the polariton
-# vocabulary into scope. QPSTools owns only the Spectrum-aware lab dispatch
-# in src/cavity.jl (the cavity fit) and the load_spectrum loader (src/io.jl).
-import OpticalSpectroscopy: fit_cavity_spectrum, fit_dispersion
+# QPSTools defines no methods on OpticalSpectroscopy's generics, so it imports
+# none of them — the cavity/polariton vocabulary, the spectrum accessors, and
+# the `fit_cavity_spectrum(::Spectrum)` dispatch all come into scope through the
+# blanket `using OpticalSpectroscopy` above. The plotting layer still qualifies
+# the spectrum accessors as `OpticalSpectroscopy.xlabel`/`.ylabel`: QPSTools owns
+# no method of those generic names, so naming the owner keeps the call honest and
+# immune to any same-named accessor a reader package might export.
 
-# These accessors are exported by BOTH OpticalSpectroscopy and JASCOFiles, so a
-# bare `using` leaves them ambiguous — they must be explicitly imported to make
-# `xlabel`/`ylabel`/… resolve inside QPSTools (qualified as `QPSTools.xlabel` in
-# the plotting layer, and called unqualified elsewhere).
-import OpticalSpectroscopy: xdata, ydata, xlabel, ylabel, source_file
-
-# tags_from_sample / log_to_elab gain Spectrum + StreakPL dispatches (src/elabftw_glue.jl).
-# Everything QPSTools used to extend on the now-deleted CavitySpectrum/AnnotatedSpectrum
-# (peak fitting, T↔A, baseline, spectral math) now lives on Spectrum in
+# eLabFTW provenance is a WEAK dependency: the typed `log_to_elab`/`tags_from_sample`
+# dispatches for `Spectrum`/`StreakPL` live in ext/QPSToolsElabFTWExt.jl and load
+# only when the user does `using ElabFTW`. QPSTools proper carries no ElabFTW
+# dependency and extends none of its functions — so it pirates nothing. Everything
+# QPSTools used to extend on the deleted CavitySpectrum/AnnotatedSpectrum (peak
+# fitting, T↔A, baseline, spectral math, the cavity fit) now lives on Spectrum in
 # OpticalSpectroscopy and reaches lab users through `using OpticalSpectroscopy`.
-import ElabFTW: tags_from_sample, log_to_elab
 
 # ============================================================================
 # Source files
@@ -77,7 +74,6 @@ include("types.jl")
 include("io.jl")
 include("scan_loading.jl")
 include("streak.jl")
-include("elabftw_glue.jl")
 include("cavity.jl")
 include("plmap.jl")
 

@@ -16,35 +16,35 @@ using Dates: DateTime
         @test spec.metadata[:xquantity] == :wavenumber
         # FTIR convention: high wavenumber on the left
         @test xreversed(spec) == true
+
+        # cavity_length is promoted to the top-level :cavity_length token (where
+        # OpticalSpectroscopy's fit_cavity_spectrum(::Spectrum) reads L), not
+        # buried in :sample alongside descriptive kwargs.
+        cav = load_spectrum(joinpath(PROJECT_ROOT, "data/ftir/1.0M_NH4SCN_DMF.csv");
+            mirror="Au", cavity_length=12.0e-4)
+        @test cav.metadata[:cavity_length] == 12.0e-4
+        @test !haskey(cav.metadata[:sample], "cavity_length")
+        @test cav.metadata[:sample]["mirror"] == "Au"
     end
 
-    @testset "fit_cavity_spectrum Spectrum dispatch" begin
-        # The Spectrum method extracts wavenumber/transmittance, normalizes
-        # percent transmittance to fractional, and pulls L from sample
-        # metadata; the numerics run in OpticalSpectroscopy.
+    @testset "fit_cavity_spectrum reachable from a token-stamped Spectrum" begin
+        # The Spectrum dispatch lives in OpticalSpectroscopy (tested there); this
+        # is an integration smoke that a Spectrum carrying the tokens load_spectrum
+        # stamps (percent :yunit, :cavity_length) threads through to a fit.
         nu = collect(1900.0:0.5:2200.0)
         L = 12.0e-4
         T = compute_cavity_transmittance(nu, [2055.0], [23.0], [3000.0],
                                           0.92, L, 1.4, 0.3)
         spec = Spectrum(nu, 100 .* T;
             technique=:ftir, xquantity=:wavenumber, xunit=:per_cm,
-            yquantity=:transmittance, yunit=:percent,
-            sample=Dict{String,Any}("cavity_length" => L))
+            yquantity=:transmittance, yunit=:percent, cavity_length=L)
 
-        # No L kwarg: comes from sample metadata. %T: auto-normalized.
         result = fit_cavity_spectrum(spec;
-            oscillators=[(nu0=2055.0, Gamma=23.0)],
-            n_bg=1.4)
+            oscillators=[(nu0=2055.0, Gamma=23.0)], n_bg=1.4)
 
         @test result isa CavityFitResult
         @test result.rsquared > 0.99
         @test isapprox(result.R, 0.92, atol=0.05)
-
-        # Without sample metadata and without L the required kwarg is missing
-        spec_bare = Spectrum(nu, 100 .* T;
-            yquantity=:transmittance, yunit=:percent)
-        @test_throws UndefKeywordError fit_cavity_spectrum(spec_bare;
-            oscillators=[(nu0=2055.0, Gamma=23.0)], n_bg=1.4)
     end
 
     @testset "format_results on cavity results" begin

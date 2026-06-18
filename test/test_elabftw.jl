@@ -17,9 +17,14 @@
 end
 
 @testset "technique tag from token" begin
+    # The provenance helpers live in the weak-dep extension, which `using ElabFTW`
+    # (testsetup.jl) loads. Reaching it confirms the extension is wired up.
+    ext = Base.get_extension(QPSTools, :QPSToolsElabFTWExt)
+    @test ext !== nothing
+
     spec = load_spectrum(joinpath(PROJECT_ROOT, "data/ftir/1.0M_NH4SCN_DMF.csv"))
-    @test QPSTools._technique_tag(spec) == "ftir"
+    @test ext._technique_tag(spec) == "ftir"
 
     raman = load_spectrum(joinpath(PROJECT_ROOT, "data/raman/ZIF62_crystal_1.csv"))
-    @test QPSTools._technique_tag(raman) == "raman"
+    @test ext._technique_tag(raman) == "raman"
 end

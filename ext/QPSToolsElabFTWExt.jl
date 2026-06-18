@@ -1,7 +1,17 @@
-# eLabFTW glue: Spectrum and StreakPL dispatches for ElabFTW.jl
+module QPSToolsElabFTWExt
+
+# eLabFTW provenance glue: typed `log_to_elab` / `tags_from_sample` dispatches for
+# QPSTools' `Spectrum` and `StreakPL` objects. ElabFTW is a *weak* dependency of
+# QPSTools, so this extension loads only once the user does `using ElabFTW`.
 #
-# These methods extend ElabFTW.tags_from_sample and ElabFTW.log_to_elab
-# with QPSTools data (token-stamped Spectrum provenance, StreakPL).
+# The join lives here because nothing else can host it: ElabFTW knows nothing of
+# spectra, and OpticalSpectroscopy knows nothing of eLabFTW. (Extending ElabFTW's
+# generics on OpticalSpectroscopy's `Spectrum` would be type piracy in QPSTools
+# proper — the extension is the blessed home for exactly this kind of glue.)
+
+using QPSTools: StreakPL, sample_metadata
+using OpticalSpectroscopy: Spectrum, format_results
+import ElabFTW: tags_from_sample, log_to_elab
 
 # =============================================================================
 # Auto-provenance helpers
@@ -168,3 +178,5 @@ function log_to_elab(s::StreakPL, result;
         category = category
     )
 end
+
+end # module QPSToolsElabFTWExt

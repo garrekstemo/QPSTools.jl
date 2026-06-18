@@ -6,7 +6,6 @@ authors = ["Garrek Stemo <8449000+garrekstemo@users.noreply.github.com>"]
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
-ElabFTW = "cc2949f1-737d-51f9-be66-fe7a219205ce"
 HamamatsuStreakFiles = "9cf175da-80c3-439d-a199-cfd3547211b3"
 JASCOFiles = "8f461479-960a-4355-a802-16cf8971498c"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
@@ -14,6 +13,12 @@ Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 OpticalSpectroscopy = "f1436f7a-66ba-4269-a153-8996db8f0853"
 QPSScanFormat = "be28e0f9-8e2f-4b98-9124-ee1c250d40da"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+[weakdeps]
+ElabFTW = "cc2949f1-737d-51f9-be66-fe7a219205ce"
+
+[extensions]
+QPSToolsElabFTWExt = "ElabFTW"
 
 [sources]
 # URLs in [sources] are the canonical setting — CI runners check out only
@@ -37,9 +42,10 @@ julia = "1.11"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
+ElabFTW = "cc2949f1-737d-51f9-be66-fe7a219205ce"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Aqua", "Logging", "Random", "Test"]
+test = ["Aqua", "ElabFTW", "Logging", "Random", "Test"]

@@ -417,6 +417,10 @@ JASCO header (`:technique`, `:xquantity`/`:xunit`, `:yquantity`/`:yunit`,
 eLabFTW logging; any keyword arguments are stored as sample metadata under
 `metadata[:sample]` for display and tagging.
 
+`cavity_length`, if given, is promoted to the top-level `:cavity_length` token
+(not buried in `:sample`) so OpticalSpectroscopy's `fit_cavity_spectrum(::Spectrum)`
+can pick it up as the cavity length `L`.
+
 This replaces the former `load_cavity`/`CavitySpectrum` pair — a cavity
 transmission spectrum is just an FTIR `Spectrum` carrying cavity sample metadata.
 
@@ -426,7 +430,7 @@ spec = load_spectrum("data/ftir/sample.csv")
 spec = load_spectrum("data/ftir/cavity.csv"; mirror="Au", angle=0, cavity_length=12e-4)
 ```
 """
-function load_spectrum(path::String; kwargs...)
+function load_spectrum(path::String; cavity_length=nothing, kwargs...)
     full_path = abspath(path)
     isfile(full_path) || error("File not found: $full_path")
     j = JASCOSpectrum(full_path)
@@ -447,6 +451,7 @@ function load_spectrum(path::String; kwargs...)
         :datatype    => j.datatype,
         :sample      => Dict{String,Any}(string(k) => v for (k, v) in kwargs),
     )
+    isnothing(cavity_length) || (metadata[:cavity_length] = cavity_length)
     isempty(j.spectrometer) || (metadata[:instrument] = j.spectrometer)
     isnothing(j.date) || (metadata[:date] = j.date)
     isempty(j.title) || (metadata[:title] = j.title)

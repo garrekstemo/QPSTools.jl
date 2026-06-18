@@ -33,8 +33,8 @@ function plot_chirp(matrix::TimeResolvedMatrix, cal::ChirpCalibration;
     with_theme(qps_theme()) do
         fig = Figure(size=(800, 500))
         ax = Axis(fig[1, 1],
-            xlabel=QPSTools.xlabel(matrix),  # "Wavelength (nm)"
-            ylabel=QPSTools.ylabel(matrix),  # "Time (ps)"
+            xlabel=OpticalSpectroscopy.xlabel(matrix),  # "Wavelength (nm)"
+            ylabel=OpticalSpectroscopy.ylabel(matrix),  # "Time (ps)"
             title=title)
 
         # Auto colorrange
