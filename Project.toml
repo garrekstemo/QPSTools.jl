@@ -21,19 +21,14 @@ ElabFTW = "cc2949f1-737d-51f9-be66-fe7a219205ce"
 QPSToolsElabFTWExt = "ElabFTW"
 
 [sources]
-# URLs in [sources] are the canonical setting — CI runners check out only
-# this repo, so local paths break them. For interactive live-edit dev, use
-# `Pkg.develop(path="../OpticalSpectroscopy.jl")` etc. (Manifest-only override,
-# not committed). See the global CLAUDE.md "Developing unregistered
-# interdependent packages" section.
-ElabFTW = {url = "https://github.com/garrekstemo/ElabFTW.jl"}
-HamamatsuStreakFiles = {url = "https://github.com/garrekstemo/HamamatsuStreakFiles.jl"}
-JASCOFiles = {url = "https://github.com/garrekstemo/JASCOFiles.jl"}
 OpticalSpectroscopy = {url = "https://github.com/garrekstemo/OpticalSpectroscopy.jl"}
 QPSScanFormat = {url = "https://github.com/garrekstemo/QPSScanFormat.jl"}
 
 [compat]
 Aqua = "0.8"
+ElabFTW = "0.1"
+HamamatsuStreakFiles = "0.1"
+JASCOFiles = "3.0"
 Logging = "1"
 Makie = "0.24"
 Random = "1"
