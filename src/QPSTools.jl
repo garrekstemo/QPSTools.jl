@@ -5,7 +5,7 @@ Lab-specific glue for the QPS spectroscopy ecosystem. QPSTools defines:
 
 - LabVIEW pump-probe loaders (`load_ta_trace`, `load_ta_spectrum`, `load_ta_matrix`, `load_lvm`, `load_pl_map`)
 - Streak-camera PL loader (`load_streak_pl` → `StreakPL`)
-- Steady-state spectrum loader (`load_spectrum` → token-stamped `Spectrum`) + cavity fitting (`fit_cavity_spectrum`, `fit_dispersion`)
+- Steady-state spectrum loader (`load_spectrum` → token-stamped `Spectrum`)
 - Makie plotting themes and layouts (`plot_spectrum`, `plot_kinetics`, `plot_dispersion`, …)
 - eLabFTW provenance (`log_to_elab`, `tags_from_sample` dispatched on `Spectrum` and `StreakPL`) — a package extension that activates only under `using ElabFTW` (ElabFTW is a weak dependency)
 
@@ -25,7 +25,6 @@ Method dispatch threads the layers together.
 module QPSTools
 
 using Statistics
-using LinearAlgebra
 using Dates
 using JASCOFiles
 using HamamatsuStreakFiles

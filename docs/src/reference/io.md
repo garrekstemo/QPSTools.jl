@@ -24,6 +24,31 @@ find_peak_time
 load_spectrum
 ```
 
+## Streak-Camera PL
+
+```@docs
+StreakPL
+load_streak_pl
+```
+
+Convert a `StreakPL` to an analysis matrix with `TimeResolvedMatrix(pl)` (from
+OpticalSpectroscopy) for slicing, binning, cosmic-ray removal, and decay fitting.
+
+## HDF5 Scan Files
+
+```@docs
+load_scan
+```
+
+`load_scan` wraps `QPSScanFormat.load_scan` and rebuilds its plain-data results
+with OpticalSpectroscopy analysis types (`KineticTrace`, `Spectrum`,
+`TimeResolvedMatrix`, `SweepData`). The `Loaded*` result types
+(`LoadedScanResult`, `LoadedSpectralResult`, `LoadedCompositeResult`,
+`LoadedNoiseResult`) and the in-place editors (`update_scan_description!`,
+`update_scan_comment!`, `update_scan_sample_name!`) are re-exported from
+[QPSScanFormat.jl](https://github.com/garrekstemo/QPSScanFormat.jl) — see its
+documentation for their fields.
+
 ## Raw Instrument Types
 
 ```@docs

@@ -8,18 +8,18 @@ function _subscript(n::Int)
 end
 
 """
-    _auto_xlabel(wavelengths::Vector{Float64})
+    _das_xlabel(result::GlobalFitResult)
 
-Auto-detect x-axis label from wavelength range.
-Values in [1200, 5000] are assumed to be wavenumbers (cm⁻¹); otherwise nm.
+Derive the DAS x-axis label from the spectral-axis tokens the fit carried from
+its source matrix (`spectral_quantity`/`spectral_unit`), never from the data
+magnitude. Falls back to the broadband-TA convention "Wavelength (nm)" when the
+fit carried no tokens (e.g. fit from bare traces); callers can override with the
+`xlabel` keyword.
 """
-function _auto_xlabel(wavelengths::Vector{Float64})
-    wl_min, wl_max = extrema(wavelengths)
-    if wl_min > 1200 && wl_max < 5000
-        return "Wavenumber (cm⁻¹)"
-    else
-        return "Wavelength (nm)"
-    end
+function _das_xlabel(result::GlobalFitResult)
+    q = result.spectral_quantity
+    isnothing(q) && return "Wavelength (nm)"
+    return OpticalSpectroscopy.axis_label(q, something(result.spectral_unit, :dimensionless))
 end
 
 """
@@ -47,7 +47,7 @@ Requires that `result` was produced by `fit_global(matrix::TimeResolvedMatrix; .
 that wavelength information is available. Errors otherwise.
 
 # Keyword Arguments
-- `xlabel::String`: X-axis label (auto-detected from wavelength range if not given)
+- `xlabel::String`: X-axis label (derived from the fit's spectral-axis tokens if not given)
 - `ylabel::String="Amplitude"`: Y-axis label
 - `title::String="Decay-Associated Spectra"`: Plot title
 
@@ -73,7 +73,7 @@ function plot_das(result::GlobalFitResult;
     with_theme(qps_theme()) do
         fig = Figure()
         ax = Axis(fig[1, 1],
-            xlabel=something(xlabel, _auto_xlabel(result.wavelengths)),
+            xlabel=something(xlabel, _das_xlabel(result)),
             ylabel=ylabel,
             title=title)
 

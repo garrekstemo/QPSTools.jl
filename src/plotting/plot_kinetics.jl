@@ -33,7 +33,7 @@ and residuals below (can be disabled with `residuals=false`).
 
 # Arguments
 - `trace`: KineticTrace from `load_ta_trace`
-- `fit`: Optional fit result (`ExpDecayFit`, `MultiexpDecayFit`, or `GlobalFitResult`)
+- `fit`: Optional fit result (`ExpDecayFit` or `MultiexpDecayFit`)
 - `residuals`: Show residuals panel when fit provided (default: true)
 - `xlabel`, `ylabel`, `title`: Axis labels
 - `kwargs...`: Additional arguments passed to data `scatter!`

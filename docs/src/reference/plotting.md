@@ -34,6 +34,12 @@ plot_das
 plot_das!
 ```
 
+## Streak-Camera PL
+
+```@docs
+plot_streak_pl
+```
+
 ## Peak Overlays
 
 ```@docs

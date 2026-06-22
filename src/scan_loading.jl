@@ -67,9 +67,13 @@ end
 _with_analysis_types(r::LoadedNoiseResult) = r
 
 # Broadband: QPSScanFormat returns a bare (time, wavelength, data)
-# NamedTuple; analysis users get the TimeResolvedMatrix they always had.
+# NamedTuple; analysis users get the TimeResolvedMatrix they always had. The
+# schema fixes the axes (data/time_ps, data/wavelength_nm, ΔA signal), so stamp
+# the matching tokens — otherwise labels regress to "x"/"Signal".
 _with_analysis_types(r::NamedTuple{(:time, :wavelength, :data)}) =
-    TimeResolvedMatrix(r.time, r.wavelength, r.data)
+    TimeResolvedMatrix(r.time, r.wavelength, r.data;
+                       spectral=:wavelength, spectral_unit=:nm,
+                       time_unit=:ps, yquantity=:delta_absorbance)
 
 # Transitional: a pre-decoupling QPSScanFormat returns broadband as a
 # TimeResolvedMatrix already — pass it through so QPSTools works against both.
