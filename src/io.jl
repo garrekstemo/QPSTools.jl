@@ -307,8 +307,10 @@ Load a transient absorption spectrum from a MIR pump-probe spectrometer file.
 - `time_delay`: Time delay in ps (default NaN = unknown)
 
 # Returns
-`Spectrum` (wavenumber axis, ΔA signal; tokens `:xquantity=:wavenumber`,
-`:yquantity=:delta_absorbance`, so labels derive to "Wavenumber (cm⁻¹)" / "ΔA").
+`Spectrum` on a wavenumber axis (`:xquantity=:wavenumber`, `:xunit=:per_cm`).
+The signal token follows `mode`: `:OD` → `:delta_absorbance` ("ΔA"),
+`:transmission` → `:delta_transmittance` ("−ΔT/T"), `:diff` → no signal token
+(label falls back to the generic "Signal").
 
 # Example
 ```julia
@@ -375,8 +377,14 @@ function load_ta_spectrum(filepath::String; mode::Symbol=:OD, channel::Int=1,
         :technique => :ta,
         :xquantity => :wavenumber,
         :xunit => :per_cm,
-        :yquantity => :delta_absorbance,
     )
+    # Signal quantity depends on mode: :OD gives ΔA, :transmission gives -ΔT/T,
+    # :diff is the raw lock-in difference (no honest signal token → "Signal").
+    if mode == :OD
+        metadata[:yquantity] = :delta_absorbance
+    elseif mode == :transmission
+        metadata[:yquantity] = :delta_transmittance
+    end
     if !isnan(time_delay)
         metadata[:time_delay] = time_delay
         metadata[:time_delay_unit] = :ps
@@ -540,18 +548,23 @@ function load_ta_matrix(dir::String; time_file::Union{String,Nothing}=nothing,
     wavelength_path = joinpath(dir, wavelength_file)
     data_path = joinpath(dir, data_file)
 
-    # Load time axis (from vector, file, or row indices)
+    # Load time axis (from vector, file, or row indices). When a file axis is in
+    # fs it is converted to ps, so the *stored* time unit becomes :ps — the token
+    # must describe the axis as stored, not the source-file unit.
+    stored_time_unit = time_unit
     if !isnothing(time)
         time_vec = collect(Float64, time)
     elseif !isnothing(time_file)
         time_raw = _load_axis_file(joinpath(dir, time_file))
         time_vec = time_unit == :fs ? time_raw ./ 1000 : Float64.(time_raw)
+        time_unit == :fs && (stored_time_unit = :ps)
     else
         # Try auto-detecting a time file
         time_file_found = _find_file_or_nothing(dir, ["time", "delay", "t_axis"])
         if !isnothing(time_file_found)
             time_raw = _load_axis_file(joinpath(dir, time_file_found))
             time_vec = time_unit == :fs ? time_raw ./ 1000 : Float64.(time_raw)
+            time_unit == :fs && (stored_time_unit = :ps)
             time_file = time_file_found
         else
             time_vec = nothing  # Will be set after loading matrix
@@ -598,7 +611,8 @@ function load_ta_matrix(dir::String; time_file::Union{String,Nothing}=nothing,
         :wavelength_file => wavelength_file,
         :data_file => data_file,
         :technique => :ta,
-        :time_unit => time_unit,
+        :time_unit => stored_time_unit,
+        :source_time_unit => time_unit,
         :xquantity => xunit === :per_cm ? :wavenumber : :wavelength,
         :xunit => xunit,
         :yquantity => :delta_absorbance,

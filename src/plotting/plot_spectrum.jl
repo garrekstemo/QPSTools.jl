@@ -376,7 +376,7 @@ fig, ax = plot_data(data)
 save("plot.pdf", fig)
 ```
 """
-function plot_data(data::AbstractSpectroscopyData; colormap=:RdBu, colorrange=nothing, kwargs...)
+function plot_data(data::AbstractSpectroscopyData; colormap=nothing, colorrange=nothing, kwargs...)
     with_theme(qps_theme()) do
         if is_matrix(data)
             # 2D heatmap
@@ -384,14 +384,24 @@ function plot_data(data::AbstractSpectroscopyData; colormap=:RdBu, colorrange=no
             ax = Axis(fig[1, 1], xlabel=OpticalSpectroscopy.xlabel(data), ylabel=OpticalSpectroscopy.ylabel(data))
 
             z = zdata(data)
-            if isnothing(colorrange)
+            if data isa PLMap
+                # PLMap intensity is stored (nx, ny) = (length(x), length(y)) —
+                # Makie's expected shape, no transpose — and is strictly positive,
+                # so use a sequential map over its actual range.
+                zmat = z
+                cmap = something(colormap, :hot)
+                crange = something(colorrange, extrema(z))
+            else
+                # TimeResolvedMatrix stores (n_time, n_wl); transpose to (x, y) and
+                # use a symmetric diverging range about zero (signal straddles 0).
+                zmat = z'
+                cmap = something(colormap, :RdBu)
                 max_abs = maximum(abs, z)
-                colorrange = (-max_abs, max_abs)
+                crange = something(colorrange, (-max_abs, max_abs))
             end
 
-            # Transpose for heatmap (expects x x y, we have y x x)
-            hm = heatmap!(ax, xdata(data), ydata(data), z';
-                colormap=colormap, colorrange=colorrange, kwargs...)
+            hm = heatmap!(ax, xdata(data), ydata(data), zmat;
+                colormap=cmap, colorrange=crange, kwargs...)
             Colorbar(fig[1, 2], hm, label=zlabel(data))
 
             return fig, ax, hm

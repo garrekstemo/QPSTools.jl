@@ -38,7 +38,7 @@ function plot_pl_map(m::PLMap; colormap=:hot, colorrange=nothing,
         merge!(hm_kwargs, Dict(kwargs))
 
         hm = heatmap!(ax, m.x, m.y, m.intensity; hm_kwargs...)
-        Colorbar(fig[1, 2], hm, label=QPSTools.zlabel(m))
+        Colorbar(fig[1, 2], hm, label=OpticalSpectroscopy.zlabel(m))
 
         return fig, ax, hm
     end

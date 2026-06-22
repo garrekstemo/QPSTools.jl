@@ -175,15 +175,20 @@ function load_pl_map(filepath::String; nx::Union{Int,Nothing}=nothing,
         pixel = collect(1.0:n_pixel)
     end
 
-    metadata = Dict{String,Any}(
-        "source_file" => basename(filepath),
-        "filepath" => filepath,
-        "nx" => nx,
-        "ny" => ny,
-        "n_pixel" => n_pixel,
-        "step_size" => step,
-        "pixel_range" => pixel_range,
-        "centered" => center,
+    metadata = Dict{Symbol,Any}(
+        :source_file => basename(filepath),
+        :filepath => filepath,
+        :nx => nx,
+        :ny => ny,
+        :n_pixel => n_pixel,
+        :step_size => step,
+        :pixel_range => pixel_range,
+        :centered => center,
+        # Axis tokens (spatial step is in µm; integrated CCD signal is counts)
+        :technique => :pl,
+        :position_unit => :um,
+        :yquantity => :intensity,
+        :yunit => :counts,
     )
 
     return PLMap(int_matrix, spectra, x, y, pixel, metadata)

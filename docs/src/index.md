@@ -33,14 +33,14 @@ CurveFitModels.jl ──── zero deps, pure math model functions
 CurveFit.jl ────────── fitting backend (NonlinearCurveFitProblem, solve)
        │
 OpticalSpectroscopy.jl ── base types + algorithms (public, registerable)
-       │                  KineticTrace, TASpectrum, TimeResolvedMatrix, PLMap
+       │                  Spectrum, KineticTrace, TimeResolvedMatrix, PLMap
        │                  fit_peaks, fit_exp_decay, fit_ta_spectrum, fit_cavity_spectrum
        │                  baseline, smoothing, normalize
        │
 QPSTools.jl ──────────── lab layer (this package)
-                          load_ftir, load_raman, load_ta_*, load_pl_map
+                          load_spectrum, load_ta_*, load_pl_map, load_streak_pl
                           plot_spectrum, plot_kinetics, Makie themes
-                          eLabFTW integration, lab cavity layer
+                          eLabFTW integration (weakdep extension)
 ```
 
 ## Package Overview
