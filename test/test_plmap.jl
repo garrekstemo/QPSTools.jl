@@ -13,7 +13,7 @@
 
     @test length(m.x) == 11
     @test length(m.y) == 11
-    @test size(m.spectra) == (11, 11, 200)
+    @test size(m.spectra) == (200, 11, 11)
     @test size(m.intensity) == (11, 11)
 
     # Centered spatial axes

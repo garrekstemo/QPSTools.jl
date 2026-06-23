@@ -143,17 +143,19 @@ function load_pl_map(filepath::String; nx::Union{Int,Nothing}=nothing,
         error("Grid dimensions $(nx)×$(ny) = $(nx*ny) do not match $n_points data points.")
     end
 
-    # Reshape to (nx, ny, n_pixel)
-    spectra = reshape(data, nx, ny, n_pixel)
+    # Channel-major (n_pixel, nx, ny): one pixel's spectrum is the contiguous
+    # first axis. data is (n_points, n_pixel) = (nx*ny, n_pixel); transpose then
+    # reshape so the spectral axis leads.
+    spectra = reshape(permutedims(data), n_pixel, nx, ny)
 
-    # Integrate spectra to get intensity map
+    # Integrate spectra to get intensity map (channel axis is dim 1)
     if !isnothing(pixel_range)
         p1, p2 = pixel_range
         p1 = max(1, p1)
         p2 = min(n_pixel, p2)
-        int_matrix = dropdims(sum(spectra[:, :, p1:p2]; dims=3); dims=3)
+        int_matrix = dropdims(sum((@view spectra[p1:p2, :, :]); dims=1); dims=1)
     else
-        int_matrix = dropdims(sum(spectra; dims=3); dims=3)
+        int_matrix = dropdims(sum(spectra; dims=1); dims=1)
     end
 
     # Build spatial axes
