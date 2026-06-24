@@ -59,8 +59,8 @@
             @test m isa PLMap
             @test m.pixel == wl_expected
             @test m.pixel[1] ≈ 500.0
-            @test length(m.pixel) == size(m.spectra, 3)
-            @test size(m.spectra) == (2, 2, 5)
+            @test length(m.pixel) == size(m.spectra, 1)
+            @test size(m.spectra) == (5, 2, 2)
         end
     end
 
@@ -105,7 +105,7 @@
             wl = generate_wavelength_axis(length(m.pixel); start=500.0, stop=600.0)
             m2 = load_pl_map(lvm_path; nx=2, ny=2, wavelength=wl)
 
-            @test length(wl) == size(m.spectra, 3)
+            @test length(wl) == size(m.spectra, 1)
             @test m2.pixel == wl
         end
     end
