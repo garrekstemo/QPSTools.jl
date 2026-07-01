@@ -42,3 +42,50 @@ function make_plmap_fixture(path::String; nx::Int=11, ny::Int=11,
     end
     return path
 end
+
+"""
+    make_plmap_field(; nx, ny, npix=50, seed=7) -> Array{Int,3}
+
+Build a deterministic `(nx, ny, npix)` synthetic PL-map cube: a smooth Gaussian
+spatial blob times a Gaussian spectral peak, plus mild noise. Value generation is
+keyed on `(ix, iy)` so the same field can be written to disk in different raster
+orders (see [`write_plmap_lvm`](@ref)) and still describe the same physical map.
+"""
+function make_plmap_field(; nx::Int, ny::Int, npix::Int=50, seed::Int=7)
+    rng = MersenneTwister(seed)
+    cx, cy = (nx + 1) / 2, (ny + 1) / 2
+    pk = npix ÷ 2
+    field = Array{Int}(undef, nx, ny, npix)
+    for iy in 1:ny, ix in 1:nx
+        spatial = exp(-((ix - cx)^2 + (iy - cy)^2) / (2 * 3^2))
+        ramp = 60 * ix   # break fast-axis symmetry so scan direction is detectable
+        for p in 1:npix
+            peak = 5000 * spatial * exp(-(p - pk)^2 / (2 * 15^2))
+            field[ix, iy, p] = 1000 + ramp + round(Int, peak + 20 * randn(rng))
+        end
+    end
+    return field
+end
+
+"""
+    write_plmap_lvm(path, field; serpentine=false) -> path
+
+Write a `(nx, ny, npix)` cube to a LabVIEW `.lvm` (row-count header + one
+tab-separated spectrum per spatial point). Points are streamed in raster order
+(`ix` fast, `iy` slow); with `serpentine=true` even `iy` rows are written in
+reverse `ix` order (boustrophedon), matching a bidirectional stage scan.
+"""
+function write_plmap_lvm(path::String, field::Array{Int,3}; serpentine::Bool=false)
+    nx, ny, _ = size(field)
+    mkpath(dirname(path))
+    open(path, "w") do io
+        println(io, nx * ny)
+        for iy in 1:ny
+            xs = (serpentine && iseven(iy)) ? (nx:-1:1) : (1:nx)
+            for ix in xs
+                println(io, join(view(field, ix, iy, :), '\t'))
+            end
+        end
+    end
+    return path
+end
