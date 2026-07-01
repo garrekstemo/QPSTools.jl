@@ -58,6 +58,71 @@ end
     @test m.x[end] ≈ 10.0
 end
 
+@testset "load_pl_map — auto-detect non-square grid (unidirectional)" begin
+    field = make_plmap_field(; nx=15, ny=9)          # 135 pts, √135 not integer
+    path = write_plmap_lvm(joinpath(mktempdir(), "ns.lvm"), field)
+
+    m = load_pl_map(path)                             # no nx/ny given
+    @test length(m.x) == 15
+    @test length(m.y) == 9
+    @test size(m.spectra) == (50, 15, 9)
+
+    # Auto-detected map matches the explicit-dims load of the same file.
+    m_explicit = load_pl_map(path; nx=15, ny=9)
+    @test m.intensity ≈ m_explicit.intensity
+end
+
+@testset "load_pl_map — serpentine reconstruction (explicit snake)" begin
+    field = make_plmap_field(; nx=15, ny=9)
+    p_uni  = write_plmap_lvm(joinpath(mktempdir(), "uni.lvm"), field)
+    p_serp = write_plmap_lvm(joinpath(mktempdir(), "serp.lvm"), field; serpentine=true)
+
+    m_uni  = load_pl_map(p_uni;  nx=15, ny=9)                 # canonical map
+    m_serp = load_pl_map(p_serp; nx=15, ny=9, snake=true)     # un-snaked
+
+    @test m_serp.intensity ≈ m_uni.intensity
+    @test m_serp.spectra ≈ m_uni.spectra
+end
+
+@testset "load_pl_map — auto-detect serpentine orientation" begin
+    field = make_plmap_field(; nx=15, ny=9)
+    p_uni  = write_plmap_lvm(joinpath(mktempdir(), "uni.lvm"), field)
+    p_serp = write_plmap_lvm(joinpath(mktempdir(), "serp.lvm"), field; serpentine=true)
+
+    m_uni  = load_pl_map(p_uni; nx=15, ny=9)
+    m_auto = load_pl_map(p_serp)                             # no dims, no snake flag
+
+    @test length(m_auto.x) == 15
+    @test length(m_auto.y) == 9
+    @test m_auto.intensity ≈ m_uni.intensity                 # detected serp + rebuilt correctly
+end
+
+@testset "load_pl_map — uninferable grid raises a helpful error" begin
+    field = make_plmap_field(; nx=17, ny=1)                  # 17 pts: prime, non-square
+    path = write_plmap_lvm(joinpath(mktempdir(), "prime.lvm"), field)
+    @test_throws "nx and ny" load_pl_map(path)
+end
+
+@testset "_infer_raster_grid — refuses to guess unstructured data" begin
+    # A perfectly flat signal has zero row-alignment contrast → no confident grid.
+    @test QPSTools._infer_raster_grid(fill(5.0, 120)) === nothing
+end
+
+@testset "detect_pl_grid — probe grid without building a PLMap" begin
+    field  = make_plmap_field(; nx=15, ny=9)
+    p_uni  = write_plmap_lvm(joinpath(mktempdir(), "u.lvm"), field)
+    p_serp = write_plmap_lvm(joinpath(mktempdir(), "s.lvm"), field; serpentine=true)
+
+    g = detect_pl_grid(p_uni)
+    @test (g.nx, g.ny, g.serpentine, g.n_points) == (15, 9, false, 135)
+
+    gs = detect_pl_grid(p_serp)
+    @test (gs.nx, gs.ny, gs.serpentine) == (15, 9, true)
+
+    prime = write_plmap_lvm(joinpath(mktempdir(), "p.lvm"), make_plmap_field(; nx=17, ny=1))
+    @test detect_pl_grid(prime) === nothing
+end
+
 @testset "PLMap plotting" begin
     using Makie: Figure, Axis
 

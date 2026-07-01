@@ -69,9 +69,118 @@ function generate_wavelength_axis(n_pixel::Integer; start::Real,
     end
 end
 
+# =============================================================================
+# Raster grid inference
+# =============================================================================
+
+# Read a CCD raster `.lvm` into a Float64 matrix (one row per spatial point,
+# one column per CCD pixel), skipping the optional single-integer row-count
+# header line.
+function _read_ccd_lvm(filepath::String)
+    raw = readdlm(filepath)
+    data_start = 1
+    if size(raw, 1) > 1 && size(raw, 2) == 1 || (size(raw, 2) > 1 && all(raw[1, 2:end] .== 0))
+        # First row is a single value (row-count header).
+        if size(raw, 2) == 1 || count(!iszero, raw[1, :]) == 1
+            data_start = 2
+        end
+    end
+    # Robust check: a lone-integer first line is a row count. Only the first line
+    # is needed, so read just that rather than the whole file again.
+    if match(r"^\d+$", strip(readline(filepath))) !== nothing
+        data_start = 2
+    end
+    return Float64.(raw[data_start:end, :])
+end
+
+# Nontrivial divisor pairs (a, n÷a) with a ≤ √n, smallest factor first.
+_divisor_pairs(n::Integer) = [(d, n ÷ d) for d in 1:isqrt(n) if n % d == 0]
+
+"""
+    _alignment_cost(signal, nx, serpentine) -> Float64
+
+Mean `|Δ|` between same-column, adjacent-row points when a length-`n` scan
+`signal` is folded column-major into an `nx`-by-`n÷nx` image (`nx` = fast axis).
+`serpentine=true` reverses the fast-axis order on even rows (boustrophedon scan).
+The true grid makes consecutive rows line up, minimising this cost.
+"""
+function _alignment_cost(signal::AbstractVector, nx::Integer, serpentine::Bool)
+    ny = length(signal) ÷ nx
+    img = reshape(view(signal, 1:nx*ny), nx, ny)
+    total = 0.0
+    count = 0
+    for j in 1:(ny - 1)
+        flipj  = serpentine && iseven(j)
+        flipj1 = serpentine && iseven(j + 1)
+        for p in 1:nx
+            a = img[flipj  ? nx - p + 1 : p, j]
+            b = img[flipj1 ? nx - p + 1 : p, j + 1]
+            total += abs(b - a)
+            count += 1
+        end
+    end
+    return count == 0 ? Inf : total / count
+end
+
+"""
+    _infer_raster_grid(signal; min_side=8, aspect_max=20, confidence=0.9)
+
+Infer `(nx, ny, serpentine)` for a raster scan from a per-point summary `signal`
+(e.g. integrated intensity), or `nothing` when no folding is clearly best.
+
+A 2-D raster is spatially continuous, so the true fast-axis width `nx` folds the
+1-D stream into an image whose adjacent rows line up column-for-column — the
+minimum [`_alignment_cost`](@ref). Every divisor of `length(signal)` with a
+plausible aspect ratio is scored in both scan directions; the lowest-cost
+candidate is returned only if it beats the runner-up by the `confidence` margin
+(otherwise the fold is ambiguous and the caller should fall back).
+"""
+function _infer_raster_grid(signal::AbstractVector; min_side::Integer=8,
+                            aspect_max::Real=20.0, confidence::Real=0.9)
+    n = length(signal)
+    # Best (cost, serpentine) achievable at each candidate fast-axis width. The
+    # scan *direction* is a per-width choice — a map symmetric about the fast axis
+    # scores the same both ways — so it must not count against grid confidence.
+    per_nx = Tuple{Float64,Int,Bool}[]        # (best_cost, nx, serpentine)
+    for (a, b) in _divisor_pairs(n)
+        for nx in unique((a, b))
+            ny = n ÷ nx
+            (min(nx, ny) >= min_side) || continue
+            (max(nx, ny) / min(nx, ny) <= aspect_max) || continue
+            cu = _alignment_cost(signal, nx, false)
+            cs = _alignment_cost(signal, nx, true)
+            push!(per_nx, cs < cu ? (cs, nx, true) : (cu, nx, false))
+        end
+    end
+    isempty(per_nx) && return nothing
+    sort!(per_nx; by = first)
+    best = per_nx[1]
+    runner = length(per_nx) >= 2 ? per_nx[2][1] : Inf   # next distinct width
+    (best[1] < confidence * runner) || return nothing   # grid ambiguous → give up
+    return (nx = best[2], ny = n ÷ best[2], serpentine = best[3])
+end
+
+"""
+    detect_pl_grid(filepath) -> NamedTuple or nothing
+
+Infer a CCD raster map's grid straight from the `.lvm` on disk, without building
+a [`PLMap`](@ref). Returns `(; nx, ny, serpentine, n_points)` when the fold is
+unambiguous (see [`_infer_raster_grid`](@ref)), or `nothing` when it can't be
+inferred and the caller should ask for explicit dimensions. Intended for
+pre-filling a load dialog with the right dimensions and scan direction.
+"""
+function detect_pl_grid(filepath::String)
+    data = _read_ccd_lvm(filepath)
+    n_points = size(data, 1)
+    inferred = _infer_raster_grid(vec(sum(data; dims=2)))
+    inferred === nothing && return nothing
+    return (; inferred.nx, inferred.ny, inferred.serpentine, n_points)
+end
+
 """
     load_pl_map(filepath; nx=nothing, ny=nothing, step_size=1.0,
-                pixel_range=nothing, center=true, wavelength=nothing) -> PLMap
+                pixel_range=nothing, center=true, snake=nothing,
+                wavelength=nothing) -> PLMap
 
 Load a PL/Raman spatial map from a CCD raster scan file.
 
@@ -80,11 +189,17 @@ tab-separated CCD spectra (one row per spatial point, one column per pixel).
 
 # Arguments
 - `filepath`: Path to `.lvm` CCD data file
-- `nx`, `ny`: Grid dimensions. If not given, assumes a square grid (`√n_points`)
+- `nx`, `ny`: Grid dimensions. If neither is given they are inferred from the
+  map's spatial continuity (see [`_infer_raster_grid`](@ref)), falling back to a
+  square grid and then to an error that lists the candidate factor pairs. Give
+  one to fix it and derive the other.
 - `step_size`: Spatial step between grid points in μm (default 1.0)
 - `pixel_range`: `(start, stop)` pixel range for intensity integration.
   If `nothing` (default), integrates over all pixels.
 - `center`: Center spatial axes at zero (default `true`)
+- `snake`: Boustrophedon (serpentine) scan — reverse every other row before
+  folding. `nothing` (default) auto-detects direction when the grid is inferred;
+  pass `true`/`false` to force it.
 - `wavelength`: Optional wavelength calibration vector (nm). If provided,
   replaces the default pixel index axis. Must have length equal to `n_pixel`.
 
@@ -101,38 +216,33 @@ function load_pl_map(filepath::String; nx::Union{Int,Nothing}=nothing,
                      ny::Union{Int,Nothing}=nothing, step_size::Real=1.0,
                      pixel_range::Union{Tuple{Int,Int},Nothing}=nothing,
                      center::Bool=true,
+                     snake::Union{Bool,Nothing}=nothing,
                      wavelength::Union{Vector{Float64},Nothing}=nothing)
 
-    raw = readdlm(filepath)
-
-    # First line may be a row count (single integer); skip if so
-    data_start = 1
-    if size(raw, 1) > 1 && size(raw, 2) == 1 || (size(raw, 2) > 1 && all(raw[1, 2:end] .== 0))
-        # Check if first row is a single value (row count header)
-        if size(raw, 2) == 1 || count(!iszero, raw[1, :]) == 1
-            data_start = 2
-        end
-    end
-
-    # More robust: read file, detect header
-    lines = readlines(filepath)
-    first_line = strip(lines[1])
-    if match(r"^\d+$", first_line) !== nothing
-        # Single integer header (row count) — skip it
-        data_start = 2
-    end
-
-    data = Float64.(raw[data_start:end, :])
+    data = _read_ccd_lvm(filepath)
     n_points, n_pixel = size(data)
 
-    # Infer grid dimensions
-    if isnothing(nx) && isnothing(ny)
-        n_side = isqrt(n_points)
-        if n_side * n_side != n_points
-            error("Cannot infer square grid: $n_points points is not a perfect square. Specify nx and ny.")
+    # Infer grid dimensions. With neither side given, recover the raster shape
+    # (and scan direction) from the spatial continuity of the map; fall back to a
+    # square grid, then to an error that lists the candidate factorisations.
+    auto = isnothing(nx) && isnothing(ny)
+    detected_serpentine = false
+    if auto
+        inferred = _infer_raster_grid(vec(sum(data; dims=2)))
+        if inferred !== nothing
+            nx, ny = inferred.nx, inferred.ny
+            detected_serpentine = inferred.serpentine
+        else
+            n_side = isqrt(n_points)
+            if n_side * n_side == n_points
+                nx = ny = n_side
+            else
+                error("Cannot infer a grid for $n_points points: no confident " *
+                      "rectangular fold and not a perfect square. Candidate " *
+                      "factor pairs: $(_divisor_pairs(n_points)[2:end]). " *
+                      "Specify nx and ny.")
+            end
         end
-        nx = n_side
-        ny = n_side
     elseif isnothing(nx)
         nx = div(n_points, ny)
     elseif isnothing(ny)
@@ -141,6 +251,19 @@ function load_pl_map(filepath::String; nx::Union{Int,Nothing}=nothing,
 
     if nx * ny != n_points
         error("Grid dimensions $(nx)×$(ny) = $(nx*ny) do not match $n_points data points.")
+    end
+
+    # Serpentine (boustrophedon) scans store even rows in reverse fast-axis order.
+    # Undo that before folding so the map isn't zig-zag scrambled. An explicit
+    # `snake` overrides detection; otherwise honour what inference found.
+    serpentine = isnothing(snake) ? detected_serpentine : snake
+    if serpentine
+        order = collect(1:n_points)
+        for iy in 2:2:ny
+            block = ((iy - 1) * nx + 1):(iy * nx)
+            order[block] = reverse(block)
+        end
+        data = data[order, :]
     end
 
     # Channel-major (n_pixel, nx, ny): one pixel's spectrum is the contiguous
@@ -186,6 +309,8 @@ function load_pl_map(filepath::String; nx::Union{Int,Nothing}=nothing,
         :step_size => step,
         :pixel_range => pixel_range,
         :centered => center,
+        :serpentine => serpentine,
+        :grid_inferred => auto,
         # Axis tokens (spatial step is in µm; integrated CCD signal is counts)
         :technique => :pl,
         :position_unit => :um,
