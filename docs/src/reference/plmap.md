@@ -6,6 +6,7 @@ Loaders and plotting for photoluminescence and Raman spatial maps produced by th
 
 ```@docs
 load_pl_map
+detect_pl_grid
 load_wavelength_file
 ```
 

@@ -108,6 +108,21 @@ end
     @test QPSTools._infer_raster_grid(fill(5.0, 120)) === nothing
 end
 
+@testset "detect_pl_grid — probe grid without building a PLMap" begin
+    field  = make_plmap_field(; nx=15, ny=9)
+    p_uni  = write_plmap_lvm(joinpath(mktempdir(), "u.lvm"), field)
+    p_serp = write_plmap_lvm(joinpath(mktempdir(), "s.lvm"), field; serpentine=true)
+
+    g = detect_pl_grid(p_uni)
+    @test (g.nx, g.ny, g.serpentine, g.n_points) == (15, 9, false, 135)
+
+    gs = detect_pl_grid(p_serp)
+    @test (gs.nx, gs.ny, gs.serpentine) == (15, 9, true)
+
+    prime = write_plmap_lvm(joinpath(mktempdir(), "p.lvm"), make_plmap_field(; nx=17, ny=1))
+    @test detect_pl_grid(prime) === nothing
+end
+
 @testset "PLMap plotting" begin
     using Makie: Figure, Axis
 

@@ -73,6 +73,26 @@ end
 # Raster grid inference
 # =============================================================================
 
+# Read a CCD raster `.lvm` into a Float64 matrix (one row per spatial point,
+# one column per CCD pixel), skipping the optional single-integer row-count
+# header line.
+function _read_ccd_lvm(filepath::String)
+    raw = readdlm(filepath)
+    data_start = 1
+    if size(raw, 1) > 1 && size(raw, 2) == 1 || (size(raw, 2) > 1 && all(raw[1, 2:end] .== 0))
+        # First row is a single value (row-count header).
+        if size(raw, 2) == 1 || count(!iszero, raw[1, :]) == 1
+            data_start = 2
+        end
+    end
+    # Robust check: a lone-integer first line is a row count. Only the first line
+    # is needed, so read just that rather than the whole file again.
+    if match(r"^\d+$", strip(readline(filepath))) !== nothing
+        data_start = 2
+    end
+    return Float64.(raw[data_start:end, :])
+end
+
 # Nontrivial divisor pairs (a, n÷a) with a ≤ √n, smallest factor first.
 _divisor_pairs(n::Integer) = [(d, n ÷ d) for d in 1:isqrt(n) if n % d == 0]
 
@@ -141,6 +161,23 @@ function _infer_raster_grid(signal::AbstractVector; min_side::Integer=8,
 end
 
 """
+    detect_pl_grid(filepath) -> NamedTuple or nothing
+
+Infer a CCD raster map's grid straight from the `.lvm` on disk, without building
+a [`PLMap`](@ref). Returns `(; nx, ny, serpentine, n_points)` when the fold is
+unambiguous (see [`_infer_raster_grid`](@ref)), or `nothing` when it can't be
+inferred and the caller should ask for explicit dimensions. Intended for
+pre-filling a load dialog with the right dimensions and scan direction.
+"""
+function detect_pl_grid(filepath::String)
+    data = _read_ccd_lvm(filepath)
+    n_points = size(data, 1)
+    inferred = _infer_raster_grid(vec(sum(data; dims=2)))
+    inferred === nothing && return nothing
+    return (; inferred.nx, inferred.ny, inferred.serpentine, n_points)
+end
+
+"""
     load_pl_map(filepath; nx=nothing, ny=nothing, step_size=1.0,
                 pixel_range=nothing, center=true, snake=nothing,
                 wavelength=nothing) -> PLMap
@@ -182,26 +219,7 @@ function load_pl_map(filepath::String; nx::Union{Int,Nothing}=nothing,
                      snake::Union{Bool,Nothing}=nothing,
                      wavelength::Union{Vector{Float64},Nothing}=nothing)
 
-    raw = readdlm(filepath)
-
-    # First line may be a row count (single integer); skip if so
-    data_start = 1
-    if size(raw, 1) > 1 && size(raw, 2) == 1 || (size(raw, 2) > 1 && all(raw[1, 2:end] .== 0))
-        # Check if first row is a single value (row count header)
-        if size(raw, 2) == 1 || count(!iszero, raw[1, :]) == 1
-            data_start = 2
-        end
-    end
-
-    # More robust: read file, detect header
-    lines = readlines(filepath)
-    first_line = strip(lines[1])
-    if match(r"^\d+$", first_line) !== nothing
-        # Single integer header (row count) — skip it
-        data_start = 2
-    end
-
-    data = Float64.(raw[data_start:end, :])
+    data = _read_ccd_lvm(filepath)
     n_points, n_pixel = size(data)
 
     # Infer grid dimensions. With neither side given, recover the raster shape
