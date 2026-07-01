@@ -123,6 +123,59 @@ end
     @test detect_pl_grid(prime) === nothing
 end
 
+@testset "detect_pl_grid — streaming row-sums match readdlm ground truth" begin
+    # The fast detection path integrates each CCD row with a single streaming
+    # byte-scan instead of materialising the whole matrix. For integer CCD
+    # counts it must reproduce the readdlm-based per-row sums *exactly*, not
+    # approximately — that equivalence is what lets it feed _infer_raster_grid.
+    field = make_plmap_field(; nx=15, ny=9, npix=64)
+    p = write_plmap_lvm(joinpath(mktempdir(), "stream.lvm"), field)
+
+    truth = vec(sum(QPSTools._read_ccd_lvm(p); dims=2))
+    fast  = QPSTools._stream_ccd_row_sums(p)
+    @test fast == truth
+    @test length(fast) == 15 * 9
+
+    # Serpentine ordering changes which row is which, but each row's integrated
+    # intensity is still parsed identically.
+    ps = write_plmap_lvm(joinpath(mktempdir(), "stream_s.lvm"), field; serpentine=true)
+    @test QPSTools._stream_ccd_row_sums(ps) == vec(sum(QPSTools._read_ccd_lvm(ps); dims=2))
+
+    # Grid detection over the streamed sums is unchanged.
+    @test detect_pl_grid(p) == (nx=15, ny=9, serpentine=false, n_points=135)
+end
+
+@testset "detect_pl_grid — fast path stays low-allocation" begin
+    # Streaming reads the file once (~1× its size) plus a tiny per-row vector;
+    # the old readdlm path built the full matrix and allocated ~20× the file.
+    # Bound well below that so the streaming property is actually enforced.
+    field = make_plmap_field(; nx=40, ny=40, npix=400)
+    p = write_plmap_lvm(joinpath(mktempdir(), "alloc.lvm"), field)
+    detect_pl_grid(p)                                  # compile before measuring
+    @test @allocated(detect_pl_grid(p)) < 3 * filesize(p)
+end
+
+@testset "detect_pl_grid — real CCD map files (local only)" begin
+    # Correctness on the actual LabVIEW CCD raster files. These live outside the
+    # repo, so the testset auto-skips wherever they are absent (e.g. CI).
+    realcases = [
+        ("/Users/garrek/Data/test/PLmap/20260623/CCDtmp_260623_201749.lvm",
+         (nx=65, ny=55, serpentine=false, n_points=3575)),
+        ("/Users/garrek/Data/test/PLmap/20260308/CCDtmp_260308_141314.lvm",
+         (nx=86, ny=96, serpentine=false, n_points=8256)),
+    ]
+    present = filter(c -> isfile(first(c)), realcases)
+    if isempty(present)
+        @test_skip "real CCD map files not present on this machine"
+    else
+        for (path, expected) in present
+            @test detect_pl_grid(path) == expected
+            detect_pl_grid(path)                        # compile
+            @test (@elapsed detect_pl_grid(path)) < 0.75
+        end
+    end
+end
+
 @testset "PLMap plotting" begin
     using Makie: Figure, Axis
 
