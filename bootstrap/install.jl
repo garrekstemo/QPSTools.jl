@@ -47,15 +47,22 @@ end
 unregistered = Dict(
     "QPSTools"          => ("91240044-bfa4-4bca-8577-4d123ebe80d7",
                             "https://github.com/garrekstemo/QPSTools.jl.git"),
-    "OpticalSpectroscopy" => ("f1436f7a-66ba-4269-a153-8996db8f0853",
-                            "https://github.com/garrekstemo/OpticalSpectroscopy.jl.git"),
-    "JASCOFiles"        => ("8f461479-960a-4355-a802-16cf8971498c",
-                            "https://github.com/garrekstemo/JASCOFiles.jl.git"),
 )
 
 for (name, (uuid, url)) in unregistered
     project["deps"][name] = uuid
     project["sources"][name] = Dict("url" => url)
+    println("  + $name")
+end
+
+# Registered packages just need [deps] — Pkg.resolve() finds them via the registry
+registered = Dict(
+    "OpticalSpectroscopy" => "f1436f7a-66ba-4269-a153-8996db8f0853",
+    "JASCOFiles"        => "8f461479-960a-4355-a802-16cf8971498c",
+)
+
+for (name, uuid) in registered
+    project["deps"][name] = uuid
     println("  + $name")
 end
 

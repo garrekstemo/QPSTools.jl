@@ -21,7 +21,6 @@ ElabFTW = "cc2949f1-737d-51f9-be66-fe7a219205ce"
 QPSToolsElabFTWExt = "ElabFTW"
 
 [sources]
-OpticalSpectroscopy = {url = "https://github.com/garrekstemo/OpticalSpectroscopy.jl"}
 QPSScanFormat = {url = "https://github.com/garrekstemo/QPSScanFormat.jl"}
 
 [compat]
@@ -31,6 +30,7 @@ HamamatsuStreakFiles = "0.1"
 JASCOFiles = "3.0"
 Logging = "1"
 Makie = "0.24"
+OpticalSpectroscopy = "0.1"
 Random = "1"
 Test = "1"
 julia = "1.11"
