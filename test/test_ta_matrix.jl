@@ -30,8 +30,8 @@
     @test haskey(spec.metadata, :time_delay)
 
     # Error cases
-    @test_throws ErrorException matrix[]  # No index specified
-    @test_throws ErrorException matrix[λ=600, t=1.0]  # Both specified
+    @test_throws ArgumentError matrix[]  # No index specified
+    @test_throws ArgumentError matrix[λ=600, t=1.0]  # Both specified
 end
 
 @testset "TimeResolvedMatrix fitting" begin
