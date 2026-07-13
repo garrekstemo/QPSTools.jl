@@ -244,3 +244,33 @@ end
     @test length(curve_no_irf) == length(trace.time)
     @test all(isfinite, curve_no_irf)
 end
+
+@testset "load_ta_matrix wavelength fallback + explicit vector" begin
+    dir = mktempdir()
+    # 3 time rows × 4 pixels, count header, CRLF like the instrument
+    open(joinpath(dir, "ta_matrix_test.lvm"), "w") do io
+        write(io, "3\r\n")
+        for i in 1:3
+            write(io, join(0.01i .* (1:4), '\t') * "\r\n")
+        end
+    end
+    open(joinpath(dir, "time_axis.txt"), "w") do io
+        write(io, join([0.0, 1000.0, 2000.0], '\n'))
+    end
+
+    # (a) no wavelength file anywhere → pixel-index fallback, no throw
+    m = @test_logs (:warn, r"pixel indices") load_ta_matrix(dir; data_file="ta_matrix_test.lvm")
+    @test m.wavelength == [1.0, 2.0, 3.0, 4.0]
+    @test m.metadata[:xquantity] == :pixel
+
+    # (b) explicit wavelength vector wins
+    m2 = load_ta_matrix(dir; data_file="ta_matrix_test.lvm", wavelength=[500.0, 510.0, 520.0, 530.0])
+    @test m2.wavelength == [500.0, 510.0, 520.0, 530.0]
+    @test m2.metadata[:xquantity] == :wavelength
+end
+
+@testset "read_axis_file public wrapper" begin
+    p = joinpath(mktempdir(), "axis.txt")
+    open(p, "w") do io; write(io, "2\n1.5\n2.5\n"); end   # bare-int line-1 = count header
+    @test read_axis_file(p) == [1.5, 2.5]
+end

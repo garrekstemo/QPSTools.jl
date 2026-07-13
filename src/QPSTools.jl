@@ -98,6 +98,7 @@ export StreakPL
 # Loaders
 export load_spectroscopy
 export load_ta_trace, load_ta_spectrum, load_ta_matrix
+export read_axis_file
 export load_lvm
 export load_pl_map, load_wavelength_file, generate_wavelength_axis, detect_pl_grid
 export load_streak_pl
