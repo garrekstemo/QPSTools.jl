@@ -41,13 +41,22 @@ Load a transient absorption kinetic trace from a single-pixel detector file.
 The time axis is automatically shifted so that the signal peak (pump-probe overlap)
 is at t = 0. This is the standard convention for ultrafast spectroscopy.
 
+Two file layouts are supported:
+1. **Raw lock-in .lvm** (MIR pump-probe setup): ON/OFF/diff channel sections;
+   the ΔA signal is computed according to `mode` and `channel`.
+2. **Plain two-column text** (pre-processed exports, e.g. from the vis-pump /
+   white-light-probe setup): time and ΔA columns, no headers. `mode` and
+   `channel` are ignored (the signal is already computed; metadata records
+   `:mode => :precomputed`). A time axis whose magnitude exceeds 10⁴ is
+   assumed to be in fs and is converted to ps.
+
 # Arguments
-- `filepath`: Path to .lvm file
-- `mode`: How to compute ΔA signal
+- `filepath`: Path to .lvm or two-column text file
+- `mode`: How to compute ΔA signal (raw .lvm only)
   - `:OD` — ΔOD = -log₁₀(ON/OFF) (default, for bare molecules)
   - `:transmission` — -ΔT/T = -(ON - OFF)/OFF
   - `:diff` — Raw lock-in difference signal
-- `channel`: Detector channel (1-4, default 1 = CH0)
+- `channel`: Detector channel (1-4, default 1 = CH0; raw .lvm only)
 - `wavelength`: Probe wavelength in nm or cm⁻¹ (default NaN = unknown)
 - `shift_t0`: Shift time axis so peak is at t=0 (default true)
 
@@ -63,6 +72,9 @@ trace.time[1]  # Negative (before pump-probe overlap)
 """
 function load_ta_trace(filepath::String; mode::Symbol=:OD, channel::Int=1,
                        wavelength::Float64=NaN, shift_t0::Bool=true)
+    if _is_plain_xy_file(filepath)
+        return _load_plain_trace(filepath; wavelength=wavelength, shift_t0=shift_t0)
+    end
     raw = load_lvm(filepath)
     signal = _compute_signal(raw, channel, mode)
     time = raw.time
@@ -79,6 +91,74 @@ function load_ta_trace(filepath::String; mode::Symbol=:OD, channel::Int=1,
         :timestamp => raw.timestamp,
         :mode => mode,
         :channel => channel
+    )
+
+    return KineticTrace(time, signal, wavelength, metadata)
+end
+
+"""
+Check whether a file is a plain two-column numeric (x, y) text file with no
+header lines or LVM section markers. Tab, comma, or whitespace separated;
+tolerates CRLF line endings. Inspects up to the first 20 data lines.
+"""
+function _is_plain_xy_file(path::String)
+    n_checked = 0
+    for line in eachline(path)
+        stripped = strip(replace(line, '\r' => ' '))
+        isempty(stripped) && continue
+        occursin(r"[a-df-zA-DF-Z_]", stripped) && return false  # allow e/E exponents
+        parts = split(stripped, r"[\t, ]+"; keepempty=false)
+        length(parts) == 2 || return false
+        all(p -> tryparse(Float64, p) !== nothing, parts) || return false
+        n_checked += 1
+        n_checked >= 20 && break
+    end
+    return n_checked > 0
+end
+
+"""
+Parse a plain two-column numeric file into (x, y) vectors.
+"""
+function _read_xy(path::String)
+    x = Float64[]
+    y = Float64[]
+    for line in eachline(path)
+        stripped = strip(replace(line, '\r' => ' '))
+        isempty(stripped) && continue
+        parts = split(stripped, r"[\t, ]+"; keepempty=false)
+        length(parts) == 2 || continue
+        xv = tryparse(Float64, parts[1])
+        yv = tryparse(Float64, parts[2])
+        (isnothing(xv) || isnothing(yv)) && continue
+        push!(x, xv)
+        push!(y, yv)
+    end
+    return x, y
+end
+
+"""
+Load a pre-processed two-column (time, ΔA) trace file. Time axes with
+magnitude above 10⁴ are assumed to be in fs and converted to ps.
+"""
+function _load_plain_trace(filepath::String; wavelength::Float64=NaN, shift_t0::Bool=true)
+    time, signal = _read_xy(filepath)
+    isempty(time) && error("No numeric data found in $filepath")
+
+    if maximum(abs, time) > 1e4
+        time = time ./ 1000
+    end
+
+    if shift_t0
+        t_peak = find_peak_time(time, signal)
+        time = time .- t_peak
+    end
+
+    metadata = Dict{Symbol,Any}(
+        :filename => basename(filepath),
+        :filepath => filepath,
+        :timestamp => "",
+        :mode => :precomputed,
+        :channel => 0
     )
 
     return KineticTrace(time, signal, wavelength, metadata)
@@ -800,6 +880,8 @@ that need to handle any spectroscopy data type uniformly.
 1. **Directory path** → `TimeResolvedMatrix` (broadband TA with separate axis files)
 2. **LVM file with time axis** → `KineticTrace` (kinetics measurement)
 3. **LVM file with wavelength axis** → `Spectrum` (spectral measurement)
+4. **Plain two-column text file with a time-like first column** (negative values
+   or fs-scale magnitudes) → `KineticTrace` (pre-processed trace export)
 
 # Keyword arguments
 Passed through to the appropriate loader:
@@ -850,6 +932,17 @@ function load_spectroscopy(path::String; kwargs...)
             return load_ta_trace(path; kwargs...)
         else
             return load_ta_spectrum(path; kwargs...)
+        end
+    end
+
+    # Plain two-column text: a first column with negative values (pre-t0
+    # points) or fs-scale magnitudes is a time axis → kinetic trace. An
+    # all-positive, small-magnitude first column is ambiguous (could be a
+    # wavelength axis), so fall through to the error below.
+    if _is_plain_xy_file(path)
+        x, _ = _read_xy(path)
+        if !isempty(x) && (minimum(x) < 0 || maximum(abs, x) > 1e4)
+            return load_ta_trace(path; kwargs...)
         end
     end
 

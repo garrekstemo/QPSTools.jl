@@ -274,3 +274,59 @@ end
     open(p, "w") do io; write(io, "2\n1.5\n2.5\n"); end   # bare-int line-1 = count header
     @test read_axis_file(p) == [1.5, 2.5]
 end
+
+@testset "Plain two-column trace loading" begin
+    # Pre-processed (time, ΔA) export from the vis-pump/WL-probe setup:
+    # tab-separated, CRLF line endings, time already in ps, no headers.
+    mktempdir() do dir
+        ps_file = joinpath(dir, "sample 0-1000000 630.txt")
+        time_ps = -4.0 .+ (0:99) .* 1.1675
+        signal = -0.02 .* exp.(-max.(time_ps, 0.0) ./ 100.0) .- 0.005
+        open(ps_file, "w") do io
+            for (t, s) in zip(time_ps, signal)
+                print(io, t, '\t', s, "\r\n")
+            end
+        end
+
+        trace = load_ta_trace(ps_file; shift_t0=false)
+        @test trace isa KineticTrace
+        @test length(trace.time) == 100
+        @test trace.time[1] ≈ -4.0
+        @test trace.time[end] ≈ -4.0 + 99 * 1.1675
+        @test trace.signal[1] ≈ signal[1]
+        @test isnan(trace.wavelength)
+        @test trace.metadata[:mode] == :precomputed
+
+        # wavelength passthrough
+        trace_wl = load_ta_trace(ps_file; wavelength=630.0, shift_t0=false)
+        @test trace_wl.wavelength == 630.0
+
+        # shift_t0 moves the |signal| peak to t = 0
+        shifted = load_ta_trace(ps_file)
+        peak_idx = argmin(shifted.signal)
+        @test shifted.time[peak_idx] == 0.0
+
+        # fs axis is auto-converted to ps
+        fs_file = joinpath(dir, "trace_fs.txt")
+        open(fs_file, "w") do io
+            for (t, s) in zip(time_ps .* 1000, signal)
+                print(io, t, '\t', s, '\n')
+            end
+        end
+        trace_fs = load_ta_trace(fs_file; shift_t0=false)
+        @test trace_fs.time ≈ collect(time_ps)
+
+        # load_spectroscopy auto-detects a negative-start axis as kinetics
+        auto = load_spectroscopy(ps_file)
+        @test auto isa KineticTrace
+
+        # all-positive two-column .txt stays ambiguous → error
+        amb_file = joinpath(dir, "ambiguous.txt")
+        open(amb_file, "w") do io
+            for (t, s) in zip(400.0:700.0, rand(301))
+                print(io, t, '\t', s, '\n')
+            end
+        end
+        @test_throws ErrorException load_spectroscopy(amb_file)
+    end
+end
