@@ -473,7 +473,7 @@ end
 
 """
     load_ta_matrix(dir; time_file=nothing, wavelength_file=nothing, data_file=nothing,
-                   time=nothing, time_unit=:fs, wavelength_unit=:nm) -> TimeResolvedMatrix
+                   time=nothing, wavelength=nothing, time_unit=:fs, wavelength_unit=:nm) -> TimeResolvedMatrix
 
 Load 2D transient absorption data (time × wavelength) from separate files.
 
@@ -487,6 +487,9 @@ for the time axis, wavelength axis, and data matrix.
 - `data_file`: TA matrix file (auto-detected if not specified)
 - `time`: Time axis as a `Vector{Float64}` (in ps). Overrides `time_file` when provided.
   Use this when the time axis is not stored in a file (e.g., CCD data with instrument-defined delays).
+- `wavelength`: Wavelength (or wavenumber) axis as a vector. Overrides `wavelength_file`
+  when provided, parallel to `time`. Use this when the wavelength axis is not stored in a
+  file (e.g., supplied by an import dialog or computed from a spectrograph calibration).
 - `time_unit`: Unit of time axis file, `:fs` (default) or `:ps`. Ignored when `time` vector is provided.
 - `wavelength_unit`: Unit of wavelength axis, `:nm` (default) or `:cm⁻¹`
 
@@ -495,6 +498,11 @@ If files are not specified, looks for common naming patterns:
 - Time: `time*.txt`, `delay*.txt`, `*time*.txt`
 - Wavelength: `wavelength*.txt`, `lambda*.txt`, `wl_axis*.txt`, `波長*.txt`
 - Data: `CCDABS*.lvm`, `ta_matrix*.txt`, `*matrix*.txt`, `*data*.lvm`
+
+If neither a `wavelength` vector nor a wavelength file (given or auto-detected) resolves,
+the axis falls back to pixel indices `1:n_wl`, `metadata[:xquantity]` is set to `:pixel`,
+and a warning is emitted — this no longer errors (unlike a missing data file, which still
+raises via the auto-detect failure).
 
 # File Formats
 - Time/wavelength axis files: Single or multi-column numeric values (first column used)
@@ -521,6 +529,11 @@ matrix = load_ta_matrix("data/ccd/",
     time=time_fs ./ 1000,  # convert to ps
     data_file="ta_matrix.lvm")
 
+# CCD data with instrument-defined wavelength axis (no wavelength file)
+matrix = load_ta_matrix("data/ccd/",
+    wavelength=collect(400.0:0.5:800.0),
+    data_file="ta_matrix.lvm")
+
 # Extract kinetics and fit
 trace = matrix[λ=800]
 result = fit_exp_decay(trace)
@@ -530,6 +543,7 @@ function load_ta_matrix(dir::String; time_file::Union{String,Nothing}=nothing,
                         wavelength_file::Union{String,Nothing}=nothing,
                         data_file::Union{String,Nothing}=nothing,
                         time::Union{AbstractVector,Nothing}=nothing,
+                        wavelength::Union{AbstractVector,Nothing}=nothing,
                         time_unit::Symbol=:fs,
                         wavelength_unit::Symbol=:nm)
 
@@ -539,14 +553,21 @@ function load_ta_matrix(dir::String; time_file::Union{String,Nothing}=nothing,
                                extensions=[".lvm", ".txt", ".csv"])
     end
 
-    # Auto-detect wavelength file if not specified
-    if isnothing(wavelength_file)
-        wavelength_file = _find_file(dir, ["wavelength", "lambda", "wl_axis", "波長", "nm"])
-    end
-
-    # Build full paths
-    wavelength_path = joinpath(dir, wavelength_file)
+    # Build full path for the data file
     data_path = joinpath(dir, data_file)
+
+    # Wavelength axis: explicit vector > file (given or auto-detected) > pixel indices
+    local wavelength_vec
+    if !isnothing(wavelength)
+        wavelength_vec = collect(Float64, wavelength)
+        wavelength_file = something(wavelength_file, "direct")
+    else
+        if isnothing(wavelength_file)
+            wavelength_file = _find_file_or_nothing(dir, ["wavelength", "lambda", "wl_axis", "波長", "nm"])
+        end
+        wavelength_vec = isnothing(wavelength_file) ? nothing :
+                         _load_axis_file(joinpath(dir, wavelength_file))
+    end
 
     # Load time axis (from vector, file, or row indices). When a file axis is in
     # fs it is converted to ps, so the *stored* time unit becomes :ps — the token
@@ -571,9 +592,6 @@ function load_ta_matrix(dir::String; time_file::Union{String,Nothing}=nothing,
         end
     end
 
-    # Load wavelength axis
-    wavelength = _load_axis_file(wavelength_path)
-
     # Load data matrix
     data = _load_matrix_file(data_path)
 
@@ -583,11 +601,17 @@ function load_ta_matrix(dir::String; time_file::Union{String,Nothing}=nothing,
         @warn "No time axis found. Using row indices (1:$(size(data, 1)))."
     end
 
+    # If no wavelength axis was found (no vector, no file), use pixel indices
+    if isnothing(wavelength_vec)
+        wavelength_vec = collect(1.0:size(data, 2))
+        @warn "No wavelength axis found. Using pixel indices (1:$(size(data, 2)))."
+    end
+
     # Validate dimensions
     n_time, n_wl = size(data)
     if length(time_vec) != n_time
         # Try transpose
-        if length(time_vec) == n_wl && length(wavelength) == n_time
+        if length(time_vec) == n_wl && length(wavelength_vec) == n_time
             data = collect(data')
             n_time, n_wl = size(data)
         else
@@ -597,29 +621,40 @@ function load_ta_matrix(dir::String; time_file::Union{String,Nothing}=nothing,
             data = data[1:n, :]
         end
     end
-    if length(wavelength) != n_wl
-        @warn "Wavelength axis length ($(length(wavelength))) does not match matrix columns ($n_wl). Truncating to shorter."
-        n = min(length(wavelength), n_wl)
-        wavelength = wavelength[1:n]
+    if length(wavelength_vec) != n_wl
+        @warn "Wavelength axis length ($(length(wavelength_vec))) does not match matrix columns ($n_wl). Truncating to shorter."
+        n = min(length(wavelength_vec), n_wl)
+        wavelength_vec = wavelength_vec[1:n]
         data = data[:, 1:n]
     end
 
     xunit = normalize_unit(string(wavelength_unit))
+    is_pixel = isnothing(wavelength) && (wavelength_file === nothing)
     metadata = Dict{Symbol,Any}(
         :source => dir,
         :time_file => something(time_file, "direct"),
-        :wavelength_file => wavelength_file,
+        :wavelength_file => something(wavelength_file, "none"),
         :data_file => data_file,
         :technique => :ta,
         :time_unit => stored_time_unit,
         :source_time_unit => time_unit,
-        :xquantity => xunit === :per_cm ? :wavenumber : :wavelength,
+        :xquantity => is_pixel ? :pixel : (xunit === :per_cm ? :wavenumber : :wavelength),
         :xunit => xunit,
         :yquantity => :delta_absorbance,
     )
 
-    return TimeResolvedMatrix(time_vec, wavelength, data, metadata)
+    return TimeResolvedMatrix(time_vec, wavelength_vec, data, metadata)
 end
+
+"""
+    read_axis_file(path; column=1) -> Vector{Float64}
+
+Parse a single- or multi-column numeric axis file (text headers and a bare
+row-count first line are skipped; first numeric column by default). Public
+wrapper over the parser `load_ta_matrix` uses, for callers that need to
+preview an axis before loading (e.g. QPSLab's import dialog).
+"""
+read_axis_file(path::String; column::Int=1) = _load_axis_file(path; column=column)
 
 """
 Find a file in directory matching any of the patterns.
