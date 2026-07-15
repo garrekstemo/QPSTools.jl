@@ -4,22 +4,20 @@ Private lab-specific glue layer of the spectroscopy ecosystem (see global CLAUDE
 
 ## Status
 
-Pre-ship (v0.2.0, unregistered). Breaking changes to APIs, struct fields, and signatures are fine — prioritize clean design over legacy compatibility.
+Pre-ship (unregistered). Breaking changes to APIs, struct fields, and signatures are fine — prioritize clean design over legacy compatibility.
 
 ## Scope
 
-- **Pump-probe loaders** (LabVIEW LVM): `load_ta_trace`, `load_ta_spectrum`, `load_ta_matrix`, `load_lvm`, `load_pl_map`, `load_wavelength_file`
+- **Pump-probe loaders** (LabVIEW LVM) — TA traces/spectra/matrices, PL maps, wavelength files
 - **Steady-state loader**: `load_spectrum` → token-stamped OpticalSpectroscopy `Spectrum` (FTIR/Raman/UV-Vis/cavity transmission). This replaced the old `load_cavity`/`CavitySpectrum` pair, which no longer exist. (`load_spectroscopy` is a separate auto-detect entry point.)
 - **Streak PL**: `load_streak_pl` → `StreakPL` (wraps HamamatsuStreakFiles' `StreakImage`); `TimeResolvedMatrix(::StreakPL)` transposes to time × wavelength, sorts λ ascending, maps display metadata for downstream slicing/binning/cosmic-ray/decay-fitting.
-- **Makie plots/themes**: `plot_spectrum`, `plot_kinetics`, `plot_ta_heatmap`, `plot_dispersion`, `plot_hopfield`, `plot_pl_map`, `plot_streak_pl`, `print_theme`, `poster_theme`, …
+- **Makie plots/themes** — `plot_*` recipes and lab themes (see `src/plotting/`)
 
 `using QPSTools` brings in only names QPSTools defines. Students load siblings alongside (`OpticalSpectroscopy`, `JASCOFiles`, `HamamatsuStreakFiles`, `ElabFTW`).
 
 ## Cavity / polariton
 
 QPSTools' `src/cavity.jl` holds **only lab accessors** over the generic `Spectrum` (`sample_metadata`, `xreversed`, `_sample_title`). All cavity/polariton numerics — `fit_cavity_spectrum(::Spectrum)` (reads `:cavity_length` and `:yunit` tokens), `fit_dispersion`, `polariton_branches`, `hopfield_coefficients` — live in **OpticalSpectroscopy.jl** (its `src/cavity.jl`) and reach lab users via `using OpticalSpectroscopy` (not re-exported). `load_spectrum`'s `cavity_length` kwarg is promoted to the `:cavity_length` token so that dispatch can find it.
-
-Note: the standalone CavitySpectroscopy.jl was merged into OpticalSpectroscopy and archived (June 2026); its local dir is frozen. The unrelated `CavitySpectroscopy` module inside the Variable-Rabi-Splitting-VSC-Project repo is a different thing — never conflate them.
 
 ## eLabFTW glue (weakdep extension)
 
