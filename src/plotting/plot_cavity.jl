@@ -8,19 +8,23 @@ bare cavity and molecular mode lines.
 
 # Returns
 `(Figure, Axis)`
+
+Respects the active Makie theme (`set_theme!` / `with_theme`). Lab-convention
+inside ticks are passed as Axis kwargs; change them on the returned Axis.
 """
 function plot_dispersion(result::DispersionFitResult; title::String="")
-    with_theme(qps_theme()) do
-        fig = Figure()
-        ax = Axis(fig[1, 1],
-            xlabel="Angle (deg)",
-            ylabel="Energy (cm⁻¹)",
-            title=isempty(title) ? "Polariton Dispersion" : title)
+    fig = Figure()
+    # Inside ticks as Axis kwargs, not an internal with_theme(qps_theme()),
+    # which would wipe any theme the caller has active.
+    ax = Axis(fig[1, 1],
+        xlabel="Angle (deg)",
+        ylabel="Energy (cm⁻¹)",
+        title=isempty(title) ? "Polariton Dispersion" : title,
+        xtickalign=1.0, ytickalign=1.0)
 
-        plot_dispersion!(ax, result)
+    plot_dispersion!(ax, result)
 
-        return fig, ax
-    end
+    return fig, ax
 end
 
 """
@@ -90,17 +94,16 @@ Plot Hopfield coefficients (photon/matter fractions) vs cavity detuning.
 `(Figure, Axis)`
 """
 function plot_hopfield(result::DispersionFitResult; title::String="")
-    with_theme(qps_theme()) do
-        fig = Figure()
-        ax = Axis(fig[1, 1],
-            xlabel="Detuning (cm⁻¹)",
-            ylabel="|C|², |X|²",
-            title=isempty(title) ? "Hopfield Coefficients" : title)
+    fig = Figure()
+    ax = Axis(fig[1, 1],
+        xlabel="Detuning (cm⁻¹)",
+        ylabel="|C|², |X|²",
+        title=isempty(title) ? "Hopfield Coefficients" : title,
+        xtickalign=1.0, ytickalign=1.0)
 
-        plot_hopfield!(ax, result)
+    plot_hopfield!(ax, result)
 
-        return fig, ax
-    end
+    return fig, ax
 end
 
 """

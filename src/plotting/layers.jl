@@ -228,15 +228,20 @@ end
 # LAYOUT FUNCTIONS (internal, create Figure + Axes)
 # ============================================================================
 
+# Lab convention (inside ticks) as Axis kwargs rather than an internal
+# with_theme(qps_theme()), which would wipe any theme the caller has
+# active. Change tick direction on the returned axes if needed.
+
 """
     _layout_single(; xlabel, ylabel, title, xreversed) -> (Figure, Axis)
 
-Single-panel layout wrapped in qps_theme().
+Single-panel layout with lab-convention inside ticks.
 """
 function _layout_single(; xlabel::String="X", ylabel::String="Y",
     title::String="", xreversed::Bool=false)
     fig = Figure()
-    ax = Axis(fig[1, 1], xlabel=xlabel, ylabel=ylabel, title=title, xreversed=xreversed)
+    ax = Axis(fig[1, 1], xlabel=xlabel, ylabel=ylabel, title=title, xreversed=xreversed,
+        xtickalign=1.0, ytickalign=1.0)
     return fig, ax
 end
 
@@ -250,10 +255,12 @@ function _layout_stacked(; xlabel::String="X", ylabel::String="Y",
     title::String="", xreversed::Bool=false)
     fig = Figure(size=(600, 500))
 
-    ax = Axis(fig[1, 1], ylabel=ylabel, title=title, xreversed=xreversed)
+    ax = Axis(fig[1, 1], ylabel=ylabel, title=title, xreversed=xreversed,
+        xtickalign=1.0, ytickalign=1.0)
     hidexdecorations!(ax, grid=false)
 
-    ax_res = Axis(fig[2, 1], xlabel=xlabel, ylabel="Residuals", xreversed=xreversed)
+    ax_res = Axis(fig[2, 1], xlabel=xlabel, ylabel="Residuals", xreversed=xreversed,
+        xtickalign=1.0, ytickalign=1.0)
 
     linkxaxes!(ax, ax_res)
     rowgap!(fig.layout, 1, 0)
@@ -279,7 +286,8 @@ function _layout_three_panel(; xlabel::String="X", ylabel::String="Y",
         xlabel=xlabel,
         ylabel=ylabel,
         title=isempty(title) ? "(a) Full spectrum" : title,
-        xreversed=xreversed
+        xreversed=xreversed,
+        xtickalign=1.0, ytickalign=1.0,
     )
 
     # Panel (b): Fit region
@@ -289,6 +297,7 @@ function _layout_three_panel(; xlabel::String="X", ylabel::String="Y",
         xreversed=xreversed,
         xticklabelsvisible=false,
         xlabelvisible=false,
+        xtickalign=1.0, ytickalign=1.0,
     )
 
     # Panel (c): Residuals
@@ -296,6 +305,7 @@ function _layout_three_panel(; xlabel::String="X", ylabel::String="Y",
         xlabel=xlabel,
         ylabel="Residuals",
         xreversed=xreversed,
+        xtickalign=1.0, ytickalign=1.0,
     )
 
     linkxaxes!(ax_fit, ax_res)

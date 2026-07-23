@@ -72,7 +72,7 @@ using Dates: DateTime
     end
 
     @testset "Plotting: plot_spectrum smoke test" begin
-        using Makie: Figure, Axis
+        using Makie: Figure, Axis, Theme, with_theme, to_color
 
         # Generate synthetic data as CavityFitResult for plot_spectrum dispatch
         nu = collect(1900.0:1.0:2200.0)
@@ -94,10 +94,32 @@ using Dates: DateTime
         @test fig2 isa Figure
         @test ax2 isa Axis
         @test ax_res isa Axis
+
+        # Theme transparency: a caller's active theme must reach every axis
+        # of each layout — single, stacked, and three-panel (regression for
+        # the internal with_theme(qps_theme()) that wiped it), while the
+        # lab-convention inside ticks still apply via Axis kwargs.
+        red = to_color(:red)
+        with_theme(Theme(Axis=(titlecolor=:red,))) do
+            _, axt = plot_spectrum(nu, T; fit=result)
+            @test axt.titlecolor[] == red
+            @test axt.xtickalign[] == 1.0
+
+            _, axs, axr = plot_spectrum(nu, T; fit=result, residuals=true)
+            @test axs.titlecolor[] == red
+            @test axr.titlecolor[] == red
+            @test axr.xtickalign[] == 1.0
+
+            _, ax_ctx, ax_fit, ax_r3 = plot_spectrum(nu, T; fit=result, context=(nu, T))
+            @test ax_ctx.titlecolor[] == red
+            @test ax_fit.titlecolor[] == red
+            @test ax_r3.titlecolor[] == red
+            @test ax_fit.xtickalign[] == 1.0
+        end
     end
 
     @testset "Plotting: plot_dispersion smoke test" begin
-        using Makie: Figure, Axis
+        using Makie: Figure, Axis, Theme, with_theme, to_color
 
         angles = collect(0.0:5.0:30.0) .* (pi / 180)
         E_cav = cavity_mode_energy([2040.0, 1.5], angles)
@@ -107,10 +129,17 @@ using Dates: DateTime
         fig, ax = plot_dispersion(disp)
         @test fig isa Figure
         @test ax isa Axis
+
+        # Caller's active theme reaches the Axis; inside ticks via kwargs
+        with_theme(Theme(Axis=(titlecolor=:red,))) do
+            _, axt = plot_dispersion(disp)
+            @test axt.titlecolor[] == to_color(:red)
+            @test axt.xtickalign[] == 1.0
+        end
     end
 
     @testset "Plotting: plot_hopfield smoke test" begin
-        using Makie: Figure, Axis
+        using Makie: Figure, Axis, Theme, with_theme, to_color
 
         angles = collect(0.0:5.0:30.0) .* (pi / 180)
         E_cav = cavity_mode_energy([2040.0, 1.5], angles)
@@ -120,6 +149,13 @@ using Dates: DateTime
         fig, ax = plot_hopfield(disp)
         @test fig isa Figure
         @test ax isa Axis
+
+        # Caller's active theme reaches the Axis; inside ticks via kwargs
+        with_theme(Theme(Axis=(titlecolor=:red,))) do
+            _, axt = plot_hopfield(disp)
+            @test axt.titlecolor[] == to_color(:red)
+            @test axt.xtickalign[] == 1.0
+        end
     end
 
 end
