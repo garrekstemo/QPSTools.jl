@@ -29,10 +29,9 @@ end
 
 Theme for publication figures designed at final print dimensions.
 
-Use with figures sized in physical units (points = 1/72 inch):
-```julia
-fig = Figure(size=(7 * 72, 4 * 72))  # 7" × 4" figure
-```
+The theme sets the default figure size to 7" × 4" in points (1 pt = 1/72
+inch), so a plain `Figure()` comes out print-sized; pass `Figure(size=...)`
+to choose other physical dimensions.
 
 Font sizes are chosen for direct 1:1 output (no scaling needed):
 - Axis labels: 10pt
@@ -46,6 +45,7 @@ Line widths appropriate for print:
 """
 function print_theme()
     return Theme(
+        size=(7 * 72, 4 * 72),
         Axis=(
             xlabelsize=10,
             ylabelsize=10,
@@ -98,15 +98,16 @@ Maximizes readability for poster viewing distances with:
 # Usage
 ```julia
 set_theme!(poster_theme())
-fig = Figure(size=(1200, 900))  # Large figure for posters
+fig = Figure()  # defaults to 1200 × 900 for posters
 ```
 """
 function poster_theme()
+    # size/backgroundcolor are TOP-LEVEL theme keys (a `Figure=(...)` sub-block
+    # is not read by Makie's Figure constructor and silently does nothing)
     return Theme(
-        Figure=(
-            size=(1200, 900),
-            backgroundcolor=:white,
-        ), Axis=(
+        size=(1200, 900),
+        backgroundcolor=:white,
+        Axis=(
             xlabelsize=28,
             ylabelsize=28,
             xticklabelsize=24,

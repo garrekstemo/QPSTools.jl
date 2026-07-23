@@ -1,5 +1,20 @@
 @isdefined(PROJECT_ROOT) || include("testsetup.jl")
 
+@testset "Publication themes carry figure defaults" begin
+    using Makie: to_value
+
+    # size/backgroundcolor must be TOP-LEVEL keys — a Figure=(...) sub-block
+    # is not read by Makie's Figure constructor and silently does nothing.
+    pt = print_theme()
+    @test to_value(pt.size) == (7 * 72, 4 * 72)
+    @test !haskey(pt, :Figure)
+
+    po = poster_theme()
+    @test to_value(po.size) == (1200, 900)
+    @test to_value(po.backgroundcolor) == :white
+    @test !haskey(po, :Figure)
+end
+
 @testset "DAS and plot_das" begin
     using Makie: Figure, Axis
 

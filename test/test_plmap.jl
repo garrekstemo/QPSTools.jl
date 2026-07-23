@@ -177,7 +177,7 @@ end
 end
 
 @testset "PLMap plotting" begin
-    using Makie: Figure, Axis
+    using Makie: Figure, Axis, Theme, with_theme, to_color
 
     m = load_pl_map(PLMAP_FIXTURE; nx=11, ny=11)
     m_norm = normalize_intensity(m)
@@ -191,4 +191,16 @@ end
     fig2, ax2 = plot_pl_spectra(m, [(m.x[6], m.y[6]), (m.x[1], m.y[1])])
     @test fig2 isa Figure
     @test ax2 isa Axis
+
+    # Theme transparency: a caller's active theme must reach the Axis
+    # (regression for the internal with_theme(qps_theme()) that wiped it),
+    # while the lab-convention inside ticks still apply via Axis kwargs.
+    with_theme(Theme(Axis=(titlecolor=:red,))) do
+        _, axt, _ = plot_pl_map(m_norm)
+        @test axt.titlecolor[] == to_color(:red)
+        @test axt.xtickalign[] == 1.0
+        _, axs = plot_pl_spectra(m, [(m.x[6], m.y[6])])
+        @test axs.titlecolor[] == to_color(:red)
+        @test axs.xtickalign[] == 1.0
+    end
 end
