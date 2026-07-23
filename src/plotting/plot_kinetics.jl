@@ -11,13 +11,14 @@ Create a standardized kinetics plot from raw vectors.
 
 # Returns
 Tuple of (figure, axis) for further customization.
+
+Respects the active Makie theme (`set_theme!` / `with_theme`). Lab-convention
+inside ticks are passed as Axis kwargs; change them on the returned Axis.
 """
 function plot_kinetics(time, signal; xlabel="Time (ps)", ylabel="ΔA", title="", kwargs...)
-    with_theme(qps_theme()) do
-        fig, ax = _layout_single(; xlabel=xlabel, ylabel=ylabel, title=title)
-        _draw_data!(ax, time, signal; kwargs...)
-        return fig, ax
-    end
+    fig, ax = _layout_single(; xlabel=xlabel, ylabel=ylabel, title=title)
+    _draw_data!(ax, time, signal; kwargs...)
+    return fig, ax
 end
 
 # Union type for all TA fit results
@@ -55,40 +56,38 @@ function plot_kinetics(trace::KineticTrace; fit::Union{TAFitResult,Nothing}=noth
     residuals::Bool=true,
     xlabel="Time (ps)", ylabel="ΔA", title="", kwargs...)
 
-    with_theme(qps_theme()) do
-        show_residuals = !isnothing(fit) && residuals
+    show_residuals = !isnothing(fit) && residuals
 
-        if show_residuals
-            fig, ax, ax_res = _layout_stacked(; xlabel=xlabel, ylabel=ylabel, title=title)
+    if show_residuals
+        fig, ax, ax_res = _layout_stacked(; xlabel=xlabel, ylabel=ylabel, title=title)
 
-            # Determine fit region (IRF fits use all data, non-IRF only t >= t0)
-            fit_mask = _kinetics_fit_mask(fit, trace)
+        # Determine fit region (IRF fits use all data, non-IRF only t >= t0)
+        fit_mask = _kinetics_fit_mask(fit, trace)
 
-            # Main panel
+        # Main panel
+        _draw_data!(ax, trace.time, trace.signal; scatter=true, label="Data", kwargs...)
+        y_fit = predict(fit, trace)
+        _draw_fit!(ax, trace.time[fit_mask], y_fit[fit_mask])
+        axislegend(ax, position=:rt)
+
+        # Residuals panel
+        resid = trace.signal .- y_fit
+        _draw_residuals!(ax_res, trace.time[fit_mask], resid[fit_mask])
+
+        return fig, ax, ax_res
+    else
+        fig, ax = _layout_single(; xlabel=xlabel, ylabel=ylabel, title=title)
+
+        if isnothing(fit)
+            _draw_data!(ax, trace.time, trace.signal; label="Data", kwargs...)
+        else
             _draw_data!(ax, trace.time, trace.signal; scatter=true, label="Data", kwargs...)
             y_fit = predict(fit, trace)
-            _draw_fit!(ax, trace.time[fit_mask], y_fit[fit_mask])
+            _draw_fit!(ax, trace.time, y_fit)
             axislegend(ax, position=:rt)
-
-            # Residuals panel
-            resid = trace.signal .- y_fit
-            _draw_residuals!(ax_res, trace.time[fit_mask], resid[fit_mask])
-
-            return fig, ax, ax_res
-        else
-            fig, ax = _layout_single(; xlabel=xlabel, ylabel=ylabel, title=title)
-
-            if isnothing(fit)
-                _draw_data!(ax, trace.time, trace.signal; label="Data", kwargs...)
-            else
-                _draw_data!(ax, trace.time, trace.signal; scatter=true, label="Data", kwargs...)
-                y_fit = predict(fit, trace)
-                _draw_fit!(ax, trace.time, y_fit)
-                axislegend(ax, position=:rt)
-            end
-
-            return fig, ax
         end
+
+        return fig, ax
     end
 end
 
@@ -133,30 +132,31 @@ save("ta_heatmap.pdf", fig)
 """
 function plot_ta_heatmap(matrix::TimeResolvedMatrix; colormap=:RdBu, colorrange=nothing,
     xlabel=nothing, ylabel=nothing, title="ΔA(t, λ)", kwargs...)
-    with_theme(qps_theme()) do
-        fig = Figure(size=(900, 500))
+    fig = Figure(size=(900, 500))
 
-        # Convention: wavelength on x-axis, time on y-axis (standard TA literature)
-        # data is (n_time, n_wavelength); transpose to (n_wavelength, n_time)
-        # interpolate=true prevents sub-pixel aliasing when n_wavelength >> pixel width
-        xl = something(xlabel, OpticalSpectroscopy.xlabel(matrix))  # "Wavelength (nm)"
-        yl = something(ylabel, OpticalSpectroscopy.ylabel(matrix))  # "Time (ps)"
+    # Convention: wavelength on x-axis, time on y-axis (standard TA literature)
+    # data is (n_time, n_wavelength); transpose to (n_wavelength, n_time)
+    # interpolate=true prevents sub-pixel aliasing when n_wavelength >> pixel width
+    xl = something(xlabel, OpticalSpectroscopy.xlabel(matrix))  # "Wavelength (nm)"
+    yl = something(ylabel, OpticalSpectroscopy.ylabel(matrix))  # "Time (ps)"
 
-        ax = Axis(fig[1, 1], xlabel=xl, ylabel=yl, title=title)
+    # Inside ticks as Axis kwargs, not an internal with_theme(qps_theme()),
+    # which would wipe any theme the caller has active.
+    ax = Axis(fig[1, 1], xlabel=xl, ylabel=yl, title=title,
+        xtickalign=1.0, ytickalign=1.0)
 
-        # Auto colorrange if not specified (symmetric around 0)
-        if isnothing(colorrange)
-            max_abs = maximum(abs, matrix.data)
-            colorrange = (-max_abs, max_abs)
-        end
-
-        hm = heatmap!(ax, matrix.wavelength, matrix.time, matrix.data';
-            colormap=colormap, colorrange=colorrange, interpolate=true, kwargs...)
-
-        Colorbar(fig[1, 2], hm, label="ΔA")
-
-        return fig, ax, hm
+    # Auto colorrange if not specified (symmetric around 0)
+    if isnothing(colorrange)
+        max_abs = maximum(abs, matrix.data)
+        colorrange = (-max_abs, max_abs)
     end
+
+    hm = heatmap!(ax, matrix.wavelength, matrix.time, matrix.data';
+        colormap=colormap, colorrange=colorrange, interpolate=true, kwargs...)
+
+    Colorbar(fig[1, 2], hm, label="ΔA")
+
+    return fig, ax, hm
 end
 
 """
@@ -182,27 +182,26 @@ save("kinetics.pdf", fig)
 """
 function plot_kinetics(matrix::TimeResolvedMatrix; λ::Union{Real,AbstractVector},
     xlabel="Time (ps)", ylabel="ΔA", title="", kwargs...)
-    with_theme(qps_theme()) do
-        fig = Figure()
-        ax = Axis(fig[1, 1], xlabel=xlabel, ylabel=ylabel, title=title)
+    fig = Figure()
+    ax = Axis(fig[1, 1], xlabel=xlabel, ylabel=ylabel, title=title,
+        xtickalign=1.0, ytickalign=1.0)
 
-        wavelengths = λ isa Real ? [λ] : collect(λ)
-        colors = Makie.wong_colors()
+    wavelengths = λ isa Real ? [λ] : collect(λ)
+    colors = Makie.wong_colors()
 
-        for (i, wl) in enumerate(wavelengths)
-            trace = matrix[λ=wl]
-            actual_wl = trace.wavelength
-            color = colors[mod1(i, length(colors))]
-            lines!(ax, trace.time, trace.signal; color=color,
-                label="$(round(Int, actual_wl)) nm", kwargs...)
-        end
-
-        if length(wavelengths) > 1
-            axislegend(ax, position=:rt)
-        end
-
-        return fig, ax
+    for (i, wl) in enumerate(wavelengths)
+        trace = matrix[λ=wl]
+        actual_wl = trace.wavelength
+        color = colors[mod1(i, length(colors))]
+        lines!(ax, trace.time, trace.signal; color=color,
+            label="$(round(Int, actual_wl)) nm", kwargs...)
     end
+
+    if length(wavelengths) > 1
+        axislegend(ax, position=:rt)
+    end
+
+    return fig, ax
 end
 
 """
@@ -228,31 +227,30 @@ save("spectra.pdf", fig)
 """
 function plot_spectra(matrix::TimeResolvedMatrix; t::Union{Real,AbstractVector},
     xlabel=nothing, ylabel="ΔA", title="", kwargs...)
-    with_theme(qps_theme()) do
-        fig = Figure()
+    fig = Figure()
 
-        # Use interface function for default x-label
-        xl = something(xlabel, OpticalSpectroscopy.xlabel(matrix))
+    # Use interface function for default x-label
+    xl = something(xlabel, OpticalSpectroscopy.xlabel(matrix))
 
-        ax = Axis(fig[1, 1], xlabel=xl, ylabel=ylabel, title=title)
+    ax = Axis(fig[1, 1], xlabel=xl, ylabel=ylabel, title=title,
+        xtickalign=1.0, ytickalign=1.0)
 
-        times = t isa Real ? [t] : collect(t)
-        colors = Makie.wong_colors()
+    times = t isa Real ? [t] : collect(t)
+    colors = Makie.wong_colors()
 
-        for (i, time_val) in enumerate(times)
-            spec = matrix[t=time_val]
-            actual_t = get(spec.metadata, :time_delay, time_val)
-            color = colors[mod1(i, length(colors))]
-            lines!(ax, xdata(spec), ydata(spec); color=color,
-                label="$(round(actual_t, digits=2)) ps", kwargs...)
-        end
-
-        hlines!(ax, 0; color=:black, linestyle=:dash, linewidth=0.5)
-
-        if length(times) > 1
-            axislegend(ax, position=:rt)
-        end
-
-        return fig, ax
+    for (i, time_val) in enumerate(times)
+        spec = matrix[t=time_val]
+        actual_t = get(spec.metadata, :time_delay, time_val)
+        color = colors[mod1(i, length(colors))]
+        lines!(ax, xdata(spec), ydata(spec); color=color,
+            label="$(round(actual_t, digits=2)) ps", kwargs...)
     end
+
+    hlines!(ax, 0; color=:black, linestyle=:dash, linewidth=0.5)
+
+    if length(times) > 1
+        axislegend(ax, position=:rt)
+    end
+
+    return fig, ax
 end

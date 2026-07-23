@@ -1,6 +1,7 @@
 @isdefined(PROJECT_ROOT) || include("testsetup.jl")
 
 using Statistics: std
+using Makie: Theme, with_theme, to_color
 
 @testset "Chirp correction (re-exports + integration)" begin
 
@@ -60,6 +61,15 @@ using Statistics: std
         cal2 = load_chirp(tmpfile)
         @test cal2.poly_coeffs ≈ cal.poly_coeffs
         rm(tmpfile)
+
+        # Theme transparency: a caller's active theme must reach the Axis
+        # (regression for the internal with_theme(qps_theme()) that wiped it),
+        # while the lab-convention inside ticks still apply via Axis kwargs.
+        with_theme(Theme(Axis=(titlecolor=:red,))) do
+            _, axt = plot_chirp(bg, cal)
+            @test axt.titlecolor[] == to_color(:red)
+            @test axt.xtickalign[] == 1.0
+        end
     end
 
 end

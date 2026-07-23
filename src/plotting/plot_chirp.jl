@@ -20,6 +20,9 @@ allowing visual assessment of chirp detection quality.
 # Returns
 `(Figure, Axis)` for further customization.
 
+Respects the active Makie theme (`set_theme!` / `with_theme`). Lab-convention
+inside ticks are passed as Axis kwargs; change them on the returned Axis.
+
 # Example
 ```julia
 cal = detect_chirp(matrix_bg)
@@ -30,29 +33,30 @@ save("chirp_diagnostic.png", fig)
 function plot_chirp(matrix::TimeResolvedMatrix, cal::ChirpCalibration;
     colormap=:RdBu, colorrange=nothing, title="Chirp Detection")
 
-    with_theme(qps_theme()) do
-        fig = Figure(size=(800, 500))
-        ax = Axis(fig[1, 1],
-            xlabel=OpticalSpectroscopy.xlabel(matrix),  # "Wavelength (nm)"
-            ylabel=OpticalSpectroscopy.ylabel(matrix),  # "Time (ps)"
-            title=title)
+    fig = Figure(size=(800, 500))
+    # Inside ticks as Axis kwargs, not an internal with_theme(qps_theme()),
+    # which would wipe any theme the caller has active.
+    ax = Axis(fig[1, 1],
+        xlabel=OpticalSpectroscopy.xlabel(matrix),  # "Wavelength (nm)"
+        ylabel=OpticalSpectroscopy.ylabel(matrix),  # "Time (ps)"
+        title=title,
+        xtickalign=1.0, ytickalign=1.0)
 
-        # Auto colorrange
-        if isnothing(colorrange)
-            max_abs = maximum(abs, matrix.data)
-            colorrange = (-max_abs, max_abs)
-        end
-
-        # Heatmap: wavelength on x, time on y (standard TA convention)
-        hm = heatmap!(ax, matrix.wavelength, matrix.time, matrix.data';
-            colormap=colormap, colorrange=colorrange, interpolate=true)
-        Colorbar(fig[1, 2], hm, label="ΔA")
-
-        # Overlay chirp curve and points
-        plot_chirp!(ax, cal)
-
-        return fig, ax
+    # Auto colorrange
+    if isnothing(colorrange)
+        max_abs = maximum(abs, matrix.data)
+        colorrange = (-max_abs, max_abs)
     end
+
+    # Heatmap: wavelength on x, time on y (standard TA convention)
+    hm = heatmap!(ax, matrix.wavelength, matrix.time, matrix.data';
+        colormap=colormap, colorrange=colorrange, interpolate=true)
+    Colorbar(fig[1, 2], hm, label="ΔA")
+
+    # Overlay chirp curve and points
+    plot_chirp!(ax, cal)
+
+    return fig, ax
 end
 
 """

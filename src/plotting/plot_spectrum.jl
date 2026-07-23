@@ -42,42 +42,40 @@ function _plot_spectrum_impl(x, y;
         @warn "`residuals=true` requires a `fit` result — ignoring. Pass `fit=result` to show residuals."
     end
 
-    with_theme(qps_theme()) do
-        if !isnothing(fit) && !isnothing(context)
-            # Three-panel: context + fit + residuals
-            return _spectrum_three_panel(x, y;
-                xlabel=xlabel, ylabel=ylabel, title=title, xreversed=xreversed,
-                fit=fit, context=context, annotation_units=annotation_units,
-                scatter_data=scatter_data, peaks=peaks, kwargs...)
-        elseif !isnothing(fit) && residuals
-            # Stacked: fit + residuals (peaks filtered to fit region)
-            return _spectrum_stacked(x, y;
-                xlabel=xlabel, ylabel=ylabel, title=title, xreversed=xreversed,
-                fit=fit, annotation_units=annotation_units,
-                scatter_data=scatter_data, peaks=peaks, kwargs...)
-        elseif !isnothing(fit) && !isnothing(peaks)
-            # Full spectrum with fit overlaid + all peaks
-            return _spectrum_with_fit_overview(x, y;
-                xlabel=xlabel, ylabel=ylabel, title=title, xreversed=xreversed,
-                fit=fit, annotation_units=annotation_units,
-                peaks=peaks, kwargs...)
-        elseif !isnothing(fit)
-            # Zoomed to fit region
-            return _spectrum_with_fit(x, y;
-                xlabel=xlabel, ylabel=ylabel, title=title, xreversed=xreversed,
-                fit=fit, annotation_units=annotation_units,
-                scatter_data=scatter_data, kwargs...)
-        else
-            # Single panel: survey with optional peak markers
-            fig, ax = _layout_single(; xlabel=xlabel, ylabel=ylabel, title=title, xreversed=xreversed)
-            _draw_data!(ax, x, y; scatter=scatter_data, kwargs...)
+    if !isnothing(fit) && !isnothing(context)
+        # Three-panel: context + fit + residuals
+        return _spectrum_three_panel(x, y;
+            xlabel=xlabel, ylabel=ylabel, title=title, xreversed=xreversed,
+            fit=fit, context=context, annotation_units=annotation_units,
+            scatter_data=scatter_data, peaks=peaks, kwargs...)
+    elseif !isnothing(fit) && residuals
+        # Stacked: fit + residuals (peaks filtered to fit region)
+        return _spectrum_stacked(x, y;
+            xlabel=xlabel, ylabel=ylabel, title=title, xreversed=xreversed,
+            fit=fit, annotation_units=annotation_units,
+            scatter_data=scatter_data, peaks=peaks, kwargs...)
+    elseif !isnothing(fit) && !isnothing(peaks)
+        # Full spectrum with fit overlaid + all peaks
+        return _spectrum_with_fit_overview(x, y;
+            xlabel=xlabel, ylabel=ylabel, title=title, xreversed=xreversed,
+            fit=fit, annotation_units=annotation_units,
+            peaks=peaks, kwargs...)
+    elseif !isnothing(fit)
+        # Zoomed to fit region
+        return _spectrum_with_fit(x, y;
+            xlabel=xlabel, ylabel=ylabel, title=title, xreversed=xreversed,
+            fit=fit, annotation_units=annotation_units,
+            scatter_data=scatter_data, kwargs...)
+    else
+        # Single panel: survey with optional peak markers
+        fig, ax = _layout_single(; xlabel=xlabel, ylabel=ylabel, title=title, xreversed=xreversed)
+        _draw_data!(ax, x, y; scatter=scatter_data, kwargs...)
 
-            if !isnothing(peaks)
-                plot_peaks!(ax, peaks)
-            end
-
-            return fig, ax
+        if !isnothing(peaks)
+            plot_peaks!(ax, peaks)
         end
+
+        return fig, ax
     end
 end
 
@@ -246,6 +244,9 @@ Plot a spectrum from raw x/y vectors.
 - `(Figure, Axis)` for single-panel views
 - `(Figure, Axis, Axis)` for fit + residuals
 - `(Figure, Axis, Axis, Axis)` for three-panel context view
+
+Respects the active Makie theme (`set_theme!` / `with_theme`). Lab-convention
+inside ticks are passed as Axis kwargs; change them on the returned axes.
 """
 function plot_spectrum(x::AbstractVector, y::AbstractVector;
     xlabel::String="Wavenumber (cm⁻¹)", ylabel::String="Absorbance",
@@ -377,42 +378,44 @@ save("plot.pdf", fig)
 ```
 """
 function plot_data(data::AbstractSpectroscopyData; colormap=nothing, colorrange=nothing, kwargs...)
-    with_theme(qps_theme()) do
-        if is_matrix(data)
-            # 2D heatmap
-            fig = Figure(size=(800, 500))
-            ax = Axis(fig[1, 1], xlabel=OpticalSpectroscopy.xlabel(data), ylabel=OpticalSpectroscopy.ylabel(data))
+    if is_matrix(data)
+        # 2D heatmap
+        fig = Figure(size=(800, 500))
+        # Inside ticks as Axis kwargs, not an internal with_theme(qps_theme()),
+        # which would wipe any theme the caller has active.
+        ax = Axis(fig[1, 1], xlabel=OpticalSpectroscopy.xlabel(data), ylabel=OpticalSpectroscopy.ylabel(data),
+            xtickalign=1.0, ytickalign=1.0)
 
-            z = zdata(data)
-            if data isa PLMap
-                # PLMap intensity is stored (nx, ny) = (length(x), length(y)) —
-                # Makie's expected shape, no transpose — and is strictly positive,
-                # so use a sequential map over its actual range.
-                zmat = z
-                cmap = something(colormap, :hot)
-                crange = something(colorrange, extrema(z))
-            else
-                # TimeResolvedMatrix stores (n_time, n_wl); transpose to (x, y) and
-                # use a symmetric diverging range about zero (signal straddles 0).
-                zmat = z'
-                cmap = something(colormap, :RdBu)
-                max_abs = maximum(abs, z)
-                crange = something(colorrange, (-max_abs, max_abs))
-            end
-
-            hm = heatmap!(ax, xdata(data), ydata(data), zmat;
-                colormap=cmap, colorrange=crange, kwargs...)
-            Colorbar(fig[1, 2], hm, label=zlabel(data))
-
-            return fig, ax, hm
+        z = zdata(data)
+        if data isa PLMap
+            # PLMap intensity is stored (nx, ny) = (length(x), length(y)) —
+            # Makie's expected shape, no transpose — and is strictly positive,
+            # so use a sequential map over its actual range.
+            zmat = z
+            cmap = something(colormap, :hot)
+            crange = something(colorrange, extrema(z))
         else
-            # 1D line plot
-            fig = Figure()
-            ax = Axis(fig[1, 1], xlabel=OpticalSpectroscopy.xlabel(data), ylabel=OpticalSpectroscopy.ylabel(data))
-            lines!(ax, xdata(data), ydata(data); kwargs...)
-
-            return fig, ax
+            # TimeResolvedMatrix stores (n_time, n_wl); transpose to (x, y) and
+            # use a symmetric diverging range about zero (signal straddles 0).
+            zmat = z'
+            cmap = something(colormap, :RdBu)
+            max_abs = maximum(abs, z)
+            crange = something(colorrange, (-max_abs, max_abs))
         end
+
+        hm = heatmap!(ax, xdata(data), ydata(data), zmat;
+            colormap=cmap, colorrange=crange, kwargs...)
+        Colorbar(fig[1, 2], hm, label=zlabel(data))
+
+        return fig, ax, hm
+    else
+        # 1D line plot
+        fig = Figure()
+        ax = Axis(fig[1, 1], xlabel=OpticalSpectroscopy.xlabel(data), ylabel=OpticalSpectroscopy.ylabel(data),
+            xtickalign=1.0, ytickalign=1.0)
+        lines!(ax, xdata(data), ydata(data); kwargs...)
+
+        return fig, ax
     end
 end
 
@@ -464,27 +467,25 @@ function plot_comparison(specs::AbstractVector;
     xreversed=nothing,
     kwargs...)
 
-    with_theme(qps_theme()) do
-        xl = something(xlabel, _spec_xlabel(first(specs)))
-        yl = something(ylabel, _spec_ylabel(first(specs)))
-        rev = something(xreversed, _spec_xreversed(first(specs)))
+    xl = something(xlabel, _spec_xlabel(first(specs)))
+    yl = something(ylabel, _spec_ylabel(first(specs)))
+    rev = something(xreversed, _spec_xreversed(first(specs)))
 
-        fig, ax = _layout_single(; xlabel=xl, ylabel=yl, title=title, xreversed=rev)
+    fig, ax = _layout_single(; xlabel=xl, ylabel=yl, title=title, xreversed=rev)
 
-        colors = Makie.wong_colors()
-        for (i, spec) in enumerate(specs)
-            x, y = _spec_xy(spec)
-            color = colors[mod1(i, length(colors))]
-            lbl = !isnothing(labels) && i <= length(labels) ? labels[i] : nothing
-            _draw_data!(ax, x, y; color=color, label=lbl, kwargs...)
-        end
-
-        if !isnothing(labels)
-            axislegend(ax, position=:rt)
-        end
-
-        return fig, ax
+    colors = Makie.wong_colors()
+    for (i, spec) in enumerate(specs)
+        x, y = _spec_xy(spec)
+        color = colors[mod1(i, length(colors))]
+        lbl = !isnothing(labels) && i <= length(labels) ? labels[i] : nothing
+        _draw_data!(ax, x, y; color=color, label=lbl, kwargs...)
     end
+
+    if !isnothing(labels)
+        axislegend(ax, position=:rt)
+    end
+
+    return fig, ax
 end
 
 """
@@ -519,26 +520,24 @@ function plot_waterfall(specs::AbstractVector;
     xreversed=nothing,
     kwargs...)
 
-    with_theme(qps_theme()) do
-        xl = something(xlabel, _spec_xlabel(first(specs)))
-        yl = something(ylabel, _spec_ylabel(first(specs)))
-        rev = something(xreversed, _spec_xreversed(first(specs)))
+    xl = something(xlabel, _spec_xlabel(first(specs)))
+    yl = something(ylabel, _spec_ylabel(first(specs)))
+    rev = something(xreversed, _spec_xreversed(first(specs)))
 
-        fig, ax = _layout_single(; xlabel=xl, ylabel=yl, title=title, xreversed=rev)
+    fig, ax = _layout_single(; xlabel=xl, ylabel=yl, title=title, xreversed=rev)
 
-        colors = Makie.wong_colors()
-        for (i, spec) in enumerate(specs)
-            x, y = _spec_xy(spec)
-            color = colors[mod1(i, length(colors))]
-            y_shifted = y .+ (i - 1) * offset
-            lbl = !isnothing(labels) && i <= length(labels) ? labels[i] : nothing
-            _draw_data!(ax, x, y_shifted; color=color, label=lbl, kwargs...)
-        end
-
-        if !isnothing(labels)
-            axislegend(ax, position=:rt)
-        end
-
-        return fig, ax
+    colors = Makie.wong_colors()
+    for (i, spec) in enumerate(specs)
+        x, y = _spec_xy(spec)
+        color = colors[mod1(i, length(colors))]
+        y_shifted = y .+ (i - 1) * offset
+        lbl = !isnothing(labels) && i <= length(labels) ? labels[i] : nothing
+        _draw_data!(ax, x, y_shifted; color=color, label=lbl, kwargs...)
     end
+
+    if !isnothing(labels)
+        axislegend(ax, position=:rt)
+    end
+
+    return fig, ax
 end

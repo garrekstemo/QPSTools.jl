@@ -1,7 +1,7 @@
 @isdefined(PROJECT_ROOT) || include("testsetup.jl")
 
 using Dates: DateTime
-using Makie: Figure, Axis
+using Makie: Figure, Axis, Theme, with_theme, to_color
 
 # StreakImage parsing (binary layout, scaling tables, metadata sentinels) is
 # tested in HamamatsuStreakFiles. This file exercises only the QPSTools-owned
@@ -89,6 +89,15 @@ end
                                     title="Streak PL")
     @test fig2 isa Figure
     @test ax2.title[] == "Streak PL"
+
+    # Theme transparency: a caller's active theme must reach the Axis
+    # (regression for the internal with_theme(qps_theme()) that wiped it),
+    # while the lab-convention inside ticks still apply via Axis kwargs.
+    with_theme(Theme(Axis=(titlecolor=:red,))) do
+        _, axt, _ = plot_streak_pl(pl)
+        @test axt.titlecolor[] == to_color(:red)
+        @test axt.xtickalign[] == 1.0
+    end
 end
 
 @testset "TimeResolvedMatrix(::StreakPL) converter" begin

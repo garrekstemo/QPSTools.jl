@@ -54,6 +54,9 @@ that wavelength information is available. Errors otherwise.
 # Returns
 `(Figure, Axis)` for further customization.
 
+Respects the active Makie theme (`set_theme!` / `with_theme`). Lab-convention
+inside ticks are passed as Axis kwargs; change them on the returned Axis.
+
 # Example
 ```julia
 result = fit_global(matrix; n_exp=2)
@@ -70,19 +73,20 @@ function plot_das(result::GlobalFitResult;
     isnothing(result.wavelengths) &&
         error("plot_das requires wavelength axis (use fit_global with TimeResolvedMatrix input)")
 
-    with_theme(qps_theme()) do
-        fig = Figure()
-        ax = Axis(fig[1, 1],
-            xlabel=something(xlabel, _das_xlabel(result)),
-            ylabel=ylabel,
-            title=title)
+    fig = Figure()
+    # Inside ticks as Axis kwargs, not an internal with_theme(qps_theme()),
+    # which would wipe any theme the caller has active.
+    ax = Axis(fig[1, 1],
+        xlabel=something(xlabel, _das_xlabel(result)),
+        ylabel=ylabel,
+        title=title,
+        xtickalign=1.0, ytickalign=1.0)
 
-        plot_das!(ax, result; kwargs...)
+    plot_das!(ax, result; kwargs...)
 
-        axislegend(ax, position=:rt)
+    axislegend(ax, position=:rt)
 
-        return fig, ax
-    end
+    return fig, ax
 end
 
 """
