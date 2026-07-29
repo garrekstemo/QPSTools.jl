@@ -15,10 +15,33 @@
     @test !haskey(po, :Figure)
 end
 
+@testset "Theme transparency on synthetic spectra" begin
+    using Makie: Axis, Theme, with_theme, to_color
+
+    # The matrix-backed half of this coverage lives in the CCD-guarded block
+    # below; these two take raw vectors, so they run everywhere.
+    red = to_color(:red)
+    themed(ax) = ax.titlecolor[] == red && ax.xtickalign[] == 1.0 && ax.ytickalign[] == 1.0
+
+    x = collect(1.0:50.0)
+    specs = [(x, sin.(x ./ 5)), (x, cos.(x ./ 5))]
+    with_theme(Theme(Axis=(titlecolor=:red,))) do
+        _, ax = plot_comparison(specs; labels=["a", "b"])
+        @test themed(ax)
+
+        _, ax = plot_waterfall(specs; offset=0.5)
+        @test themed(ax)
+    end
+end
+
+if !has_data("CCD")
+    @info "Skipping matrix-backed plotting tests (CCD not present under $DATA_ROOT)"
+else
+
 @testset "DAS and plot_das" begin
     using Makie: Figure, Axis, Theme, with_theme, to_color
 
-    data_dir = joinpath(PROJECT_ROOT, "data/CCD")
+    data_dir = datapath("CCD")
     matrix = load_ta_matrix(data_dir;
         time_file="time_axis.txt",
         wavelength_file="wavelength_axis.txt",
@@ -60,7 +83,7 @@ end
 @testset "plot_ta_heatmap" begin
     using Makie: Figure, Axis
 
-    data_dir = joinpath(PROJECT_ROOT, "data/CCD")
+    data_dir = datapath("CCD")
     matrix = load_ta_matrix(data_dir;
         time_file="time_axis.txt",
         wavelength_file="wavelength_axis.txt",
@@ -82,7 +105,7 @@ end
 @testset "Theme transparency across plot functions" begin
     using Makie: Figure, Axis, Theme, with_theme, to_color
 
-    data_dir = joinpath(PROJECT_ROOT, "data/CCD")
+    data_dir = datapath("CCD")
     matrix = load_ta_matrix(data_dir;
         time_file="time_axis.txt",
         wavelength_file="wavelength_axis.txt",
@@ -116,14 +139,6 @@ end
         _, ax = plot_spectrum(xdata(spec), ydata(spec))
         @test themed(ax)
 
-        x = collect(1.0:50.0)
-        specs = [(x, sin.(x ./ 5)), (x, cos.(x ./ 5))]
-        _, ax = plot_comparison(specs; labels=["a", "b"])
-        @test themed(ax)
-
-        _, ax = plot_waterfall(specs; offset=0.5)
-        @test themed(ax)
-
         _, ax, _ = plot_data(matrix)   # 2D heatmap branch
         @test themed(ax)
 
@@ -131,3 +146,5 @@ end
         @test themed(ax)
     end
 end
+
+end  # has_data("CCD")

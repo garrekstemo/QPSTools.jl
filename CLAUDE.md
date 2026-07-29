@@ -38,6 +38,12 @@ QPSTools' `src/cavity.jl` holds **only lab accessors** over the generic `Spectru
 
 Figures save to `figures/` subfolders (`figures/EXAMPLES/` for example-script output). Never save to project root or alongside scripts. PNG for saved output, PDF for publication.
 
+## Measurement data
+
+Data lives outside the repo, under `~/Data`, one folder per technique (`CCD`, `MIRpumpprobe`, `ftir`, `raman`, `uvvis`, `xrd`). Nothing measured belongs in version control.
+
+Tests that read real files go through `datapath(...)` from `test/testsetup.jl`, which resolves against `$QPSTOOLS_DATA` (default `~/Data`), and guard themselves with `has_data(...)` so they run wherever the data is present and skip everywhere else. CI therefore exercises only the synthetic fixtures — a loader regression against a real instrument file shows up when you run the suite locally, not on GitHub.
+
 ## Layout
 
 Entry point: `src/QPSTools.jl` (imports, includes, exports). Loaders in `src/io.jl` / `scan_loading.jl` / `streak.jl` / `plmap.jl`; lab accessors in `cavity.jl`; raw types (`AxisType`, `PumpProbeData`) in `types.jl`; plots under `src/plotting/`. Browse `src/` for the rest.

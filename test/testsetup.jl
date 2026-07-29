@@ -17,6 +17,13 @@ import OpticalSpectroscopy: xlabel, ylabel
 
 const PROJECT_ROOT = dirname(@__DIR__)
 
+# Raw instrument data lives outside the repo (see CLAUDE.md), so tests that read
+# real files are opt-in: they run wherever the data is present and skip
+# elsewhere (CI runners, fresh clones). Set QPSTOOLS_DATA to relocate.
+const DATA_ROOT = get(ENV, "QPSTOOLS_DATA", joinpath(homedir(), "Data"))
+datapath(parts...) = joinpath(DATA_ROOT, parts...)
+has_data(parts...) = ispath(datapath(parts...))
+
 include("fixtures/plmap.jl")
 const PLMAP_FIXTURE = make_plmap_fixture(joinpath(mktempdir(), "plmap_fixture.lvm"))
 

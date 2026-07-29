@@ -1,8 +1,12 @@
 @isdefined(PROJECT_ROOT) || include("testsetup.jl")
 
+if !has_data("CCD")
+    @info "Skipping TimeResolvedMatrix real-file tests (CCD not present under $DATA_ROOT)"
+else
+
 @testset "TimeResolvedMatrix loading and indexing" begin
     # Load TimeResolvedMatrix
-    data_dir = joinpath(PROJECT_ROOT, "data/CCD")
+    data_dir = datapath("CCD")
     matrix = load_ta_matrix(data_dir;
         time_file="time_axis.txt",
         wavelength_file="wavelength_axis.txt",
@@ -35,7 +39,7 @@
 end
 
 @testset "TimeResolvedMatrix fitting" begin
-    data_dir = joinpath(PROJECT_ROOT, "data/CCD")
+    data_dir = datapath("CCD")
     matrix = load_ta_matrix(data_dir;
         time_file="time_axis.txt",
         wavelength_file="wavelength_axis.txt",
@@ -54,3 +58,5 @@ end
     @test length(curve) == length(trace.time)
     @test all(isfinite, curve)
 end
+
+end  # has_data("CCD")

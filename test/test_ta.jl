@@ -1,7 +1,23 @@
 @isdefined(PROJECT_ROOT) || include("testsetup.jl")
 
+@testset "find_peak_time" begin
+    time = collect(-5.0:0.1:10.0)
+
+    # ESA signal (positive peak)
+    signal_esa = exp.(-(time .- 0.5).^2)
+    @test find_peak_time(time, signal_esa) ≈ 0.5 atol=0.1
+
+    # GSB signal (negative peak)
+    signal_gsb = -exp.(-(time .+ 1.0).^2)
+    @test find_peak_time(time, signal_gsb) ≈ -1.0 atol=0.1
+end
+
+if !has_data("MIRpumpprobe")
+    @info "Skipping MIR pump-probe real-file tests (MIRpumpprobe not present under $DATA_ROOT)"
+else
+
 @testset "TA trace loading" begin
-    trace = load_ta_trace(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/pp_kinetics_esa.lvm"); mode=:OD)
+    trace = load_ta_trace(datapath("MIRpumpprobe/pp_kinetics_esa.lvm"); mode=:OD)
 
     @test trace isa KineticTrace
     @test length(trace.time) > 0
@@ -16,26 +32,14 @@
     @test maximum(trace.time) > 0
 
     # Test without time shift - peak should NOT be at t=0
-    trace_unshifted = load_ta_trace(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/pp_kinetics_esa.lvm");
+    trace_unshifted = load_ta_trace(datapath("MIRpumpprobe/pp_kinetics_esa.lvm");
                                     mode=:OD, shift_t0=false)
     peak_idx_unshifted = argmax(trace_unshifted.signal)
     @test abs(trace_unshifted.time[peak_idx_unshifted]) > 0.1  # Peak NOT at zero
 end
 
-@testset "find_peak_time" begin
-    time = collect(-5.0:0.1:10.0)
-
-    # ESA signal (positive peak)
-    signal_esa = exp.(-(time .- 0.5).^2)
-    @test find_peak_time(time, signal_esa) ≈ 0.5 atol=0.1
-
-    # GSB signal (negative peak)
-    signal_gsb = -exp.(-(time .+ 1.0).^2)
-    @test find_peak_time(time, signal_gsb) ≈ -1.0 atol=0.1
-end
-
 @testset "TA spectrum loading" begin
-    spec = load_ta_spectrum(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/spectra/bare_1M_1ps.lvm");
+    spec = load_ta_spectrum(datapath("MIRpumpprobe/spectra/bare_1M_1ps.lvm");
                             mode=:OD, calibration=-19.0, time_delay=1.0)
 
     @test spec isa Spectrum
@@ -53,14 +57,14 @@ end
     @test spec.metadata[:calibration] == -19.0
 
     # Test different modes
-    spec_diff = load_ta_spectrum(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/spectra/bare_1M_1ps.lvm");
+    spec_diff = load_ta_spectrum(datapath("MIRpumpprobe/spectra/bare_1M_1ps.lvm");
                                  mode=:diff)
     @test spec_diff isa Spectrum
     @test length(ydata(spec_diff)) == length(xdata(spec_diff))
 end
 
 @testset "fit_ta_spectrum" begin
-    spec = load_ta_spectrum(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/spectra/bare_1M_1ps.lvm");
+    spec = load_ta_spectrum(datapath("MIRpumpprobe/spectra/bare_1M_1ps.lvm");
                             mode=:OD, calibration=-19.0)
 
     # Fit with region (default: ESA + GSB peaks)
@@ -89,7 +93,7 @@ end
 end
 
 @testset "fit_exp_decay with IRF" begin
-    trace = load_ta_trace(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/pp_kinetics_esa.lvm"); mode=:OD)
+    trace = load_ta_trace(datapath("MIRpumpprobe/pp_kinetics_esa.lvm"); mode=:OD)
     result = fit_exp_decay(trace; irf=true)
 
     @test result isa ExpDecayFit
@@ -100,7 +104,7 @@ end
 end
 
 @testset "fit_exp_decay without IRF" begin
-    trace = load_ta_trace(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/pp_kinetics_esa.lvm"); mode=:OD)
+    trace = load_ta_trace(datapath("MIRpumpprobe/pp_kinetics_esa.lvm"); mode=:OD)
     result = fit_exp_decay(trace; irf=false)
 
     @test result isa ExpDecayFit
@@ -116,7 +120,7 @@ end
 end
 
 @testset "predict" begin
-    trace = load_ta_trace(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/pp_kinetics_esa.lvm"); mode=:OD)
+    trace = load_ta_trace(datapath("MIRpumpprobe/pp_kinetics_esa.lvm"); mode=:OD)
 
     # With IRF
     result_irf = fit_exp_decay(trace)
@@ -138,8 +142,8 @@ end
 end
 
 @testset "fit_global" begin
-    trace_esa = load_ta_trace(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/pp_kinetics_esa.lvm"); mode=:OD)
-    trace_gsb = load_ta_trace(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/pp_kinetics_gsb.lvm"); mode=:OD)
+    trace_esa = load_ta_trace(datapath("MIRpumpprobe/pp_kinetics_esa.lvm"); mode=:OD)
+    trace_gsb = load_ta_trace(datapath("MIRpumpprobe/pp_kinetics_gsb.lvm"); mode=:OD)
 
     result = fit_global([trace_esa, trace_gsb]; labels=["ESA", "GSB"])
 
@@ -163,7 +167,7 @@ end
 end
 
 @testset "Biexponential fitting (n_exp=2)" begin
-    trace = load_ta_trace(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/pp_kinetics_esa.lvm"); mode=:OD)
+    trace = load_ta_trace(datapath("MIRpumpprobe/pp_kinetics_esa.lvm"); mode=:OD)
 
     # With IRF
     result_irf = fit_exp_decay(trace; n_exp=2, irf=true)
@@ -195,7 +199,7 @@ end
 end
 
 @testset "Multi-exponential fitting (n_exp parameter)" begin
-    trace = load_ta_trace(joinpath(PROJECT_ROOT, "data/MIRpumpprobe/pp_kinetics_esa.lvm"); mode=:OD)
+    trace = load_ta_trace(datapath("MIRpumpprobe/pp_kinetics_esa.lvm"); mode=:OD)
 
     # n_exp=1 should return ExpDecayFit
     result1 = fit_exp_decay(trace; n_exp=1)
@@ -244,6 +248,8 @@ end
     @test length(curve_no_irf) == length(trace.time)
     @test all(isfinite, curve_no_irf)
 end
+
+end  # has_data("MIRpumpprobe")
 
 @testset "load_ta_matrix wavelength fallback + explicit vector" begin
     dir = mktempdir()
