@@ -9,22 +9,26 @@ using Dates: DateTime
 
 @testset "Cavity spectroscopy" begin
 
-    @testset "load_spectrum stamps FTIR tokens" begin
-        spec = load_spectrum(joinpath(PROJECT_ROOT, "data/ftir/1.0M_NH4SCN_DMF.csv"))
-        @test spec isa Spectrum
-        @test spec.metadata[:technique] == :ftir
-        @test spec.metadata[:xquantity] == :wavenumber
-        # FTIR convention: high wavenumber on the left
-        @test xreversed(spec) == true
+    if has_data("ftir")
+        @testset "load_spectrum stamps FTIR tokens" begin
+            spec = load_spectrum(datapath("ftir/1.0M_NH4SCN_DMF.csv"))
+            @test spec isa Spectrum
+            @test spec.metadata[:technique] == :ftir
+            @test spec.metadata[:xquantity] == :wavenumber
+            # FTIR convention: high wavenumber on the left
+            @test xreversed(spec) == true
 
-        # cavity_length is promoted to the top-level :cavity_length token (where
-        # OpticalSpectroscopy's fit_cavity_spectrum(::Spectrum) reads L), not
-        # buried in :sample alongside descriptive kwargs.
-        cav = load_spectrum(joinpath(PROJECT_ROOT, "data/ftir/1.0M_NH4SCN_DMF.csv");
-            mirror="Au", cavity_length=12.0e-4)
-        @test cav.metadata[:cavity_length] == 12.0e-4
-        @test !haskey(cav.metadata[:sample], "cavity_length")
-        @test cav.metadata[:sample]["mirror"] == "Au"
+            # cavity_length is promoted to the top-level :cavity_length token (where
+            # OpticalSpectroscopy's fit_cavity_spectrum(::Spectrum) reads L), not
+            # buried in :sample alongside descriptive kwargs.
+            cav = load_spectrum(datapath("ftir/1.0M_NH4SCN_DMF.csv");
+                mirror="Au", cavity_length=12.0e-4)
+            @test cav.metadata[:cavity_length] == 12.0e-4
+            @test !haskey(cav.metadata[:sample], "cavity_length")
+            @test cav.metadata[:sample]["mirror"] == "Au"
+        end
+    else
+        @info "Skipping FTIR token-stamping test (ftir not present under $DATA_ROOT)"
     end
 
     @testset "fit_cavity_spectrum reachable from a token-stamped Spectrum" begin

@@ -136,8 +136,8 @@ end
     @test issorted(xdata(g))
 end
 
-# Real instrument file (data/ is not in version control — guard with isfile)
-real_img = joinpath(PROJECT_ROOT, "data", "PL", "15K.img")
+# Real instrument file (raw data lives outside the repo — guard with isfile)
+real_img = datapath("PL", "15K.img")
 if isfile(real_img)
     @testset "load_streak_pl — real 15K.img" begin
         pl = load_streak_pl(real_img; temperature="15K")
@@ -160,5 +160,5 @@ if isfile(real_img)
         @test m.time[end] ≈ 47.24 atol=0.01
     end
 else
-    @info "Skipping real streak-file tests (data/PL/15K.img not present)"
+    @info "Skipping real streak-file tests (PL/15K.img not present under $DATA_ROOT)"
 end

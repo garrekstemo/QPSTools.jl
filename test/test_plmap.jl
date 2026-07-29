@@ -159,9 +159,9 @@ end
     # Correctness on the actual LabVIEW CCD raster files. These live outside the
     # repo, so the testset auto-skips wherever they are absent (e.g. CI).
     realcases = [
-        ("/Users/garrek/Data/test/PLmap/20260623/CCDtmp_260623_201749.lvm",
+        (datapath("test/PLmap/20260623/CCDtmp_260623_201749.lvm"),
          (nx=65, ny=55, serpentine=false, n_points=3575)),
-        ("/Users/garrek/Data/test/PLmap/20260308/CCDtmp_260308_141314.lvm",
+        (datapath("test/PLmap/20260308/CCDtmp_260308_141314.lvm"),
          (nx=86, ny=96, serpentine=false, n_points=8256)),
     ]
     present = filter(c -> isfile(first(c)), realcases)
