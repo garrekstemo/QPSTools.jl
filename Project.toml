@@ -1,6 +1,6 @@
 name = "QPSTools"
 uuid = "91240044-bfa4-4bca-8577-4d123ebe80d7"
-version = "0.3.2"
+version = "0.3.3"
 authors = ["Garrek Stemo <8449000+garrekstemo@users.noreply.github.com>"]
 
 [deps]
@@ -25,7 +25,7 @@ QPSScanFormat = {url = "https://github.com/garrekstemo/QPSScanFormat.jl"}
 
 [compat]
 Aqua = "0.8"
-ElabFTW = "0.1, 0.2"
+ElabFTW = "0.1, 0.2, 0.3"
 HamamatsuStreakFiles = "0.1"
 JASCOFiles = "3.0"
 Logging = "1"
