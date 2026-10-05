@@ -5,8 +5,9 @@ on:
     branches:
       - main
     tags: '*'
+  # No `paths` filter: `build` is a required check on main, so it must report
+  # on every PR. The job skips the docs build itself when nothing relevant changed.
   pull_request:
-    paths: ['docs/**', 'src/**']
 
 jobs:
   build:
@@ -15,12 +16,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check for docs-relevant changes
+        id: changes
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ "$EVENT" != "pull_request" ] ||
+             git diff --name-only "origin/$BASE_REF...HEAD" |
+               grep -qE '^(docs/|src/|Project\.toml$|\.github/workflows/Documentation\.yml$)'; then
+            echo "docs=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs=false" >> "$GITHUB_OUTPUT"
+            echo "No changes under docs/, src/, Project.toml or this workflow; skipping the docs build."
+          fi
       - uses: julia-actions/setup-julia@v2
+        if: steps.changes.outputs.docs == 'true'
         with:
           version: '1'
       - name: Install dependencies
+        if: steps.changes.outputs.docs == 'true'
         run: julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
       - name: Build and deploy
+        if: steps.changes.outputs.docs == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
